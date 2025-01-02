@@ -1,0 +1,26 @@
+/* カスタムイベントの見た目ここから */
+.money {
+    white-space: nowrap; /* テキストを折り返さない */
+    overflow: hidden; /* はみ出したテキストを隠す */
+    text-overflow: ellipsis; /* はみ出したテキストの代わりに省略記号を表示 */
+}
+
+#event-income {
+    color: #2196f3;
+}
+
+#event-expense {
+    color: #f44336;
+}
+
+#event-balance {
+    color: #4caf50;
+}
+
+.MuiFormHelperText-root {
+    color: red !important;
+}
+/* 
+.css-hioia-MuiFormLabel-root-MuiInputLabel-root {
+    background-color: "#f5f5f5" !important;
+} */

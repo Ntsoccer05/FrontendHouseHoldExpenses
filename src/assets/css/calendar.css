@@ -1,0 +1,85 @@
+/* aタグ */
+.fc-h-event {
+    background-color: transparent;
+    border: none;
+    text-align: right;
+    pointer-events: none; /* ポインターイベントを無視する */
+}
+
+/* カレンダーの背景色設定 */
+.fc-daygrid-body,
+.fc-day {
+    background-color: white; /* 背景色を白に設定 */
+}
+
+.fc-col-header-cell {
+    background-color: #42a5f5;
+    color: white; /* ヘッダーのテキスト色を白に設定 */
+}
+
+.fc .fc-daygrid-day-frame {
+    height: 100%;
+    min-height: 100px;
+}
+
+td.fc-day-sat {
+    background-color: #eaf4ff;
+}
+td.fc-day-sun {
+    background-color: #ffeaea;
+}
+
+.fc-col-header {
+    width: 100% !important;
+}
+
+.fc-scroller {
+    overflow: hidden hidden !important;
+}
+
+.fc-view-harness.fc-view-harness-active {
+    display: flex;
+    height: 528px !important;
+}
+@media screen and (min-width: 768px) {
+    .fc-view-harness.fc-view-harness-active {
+        display: block;
+        height: 636.481px !important;
+    }
+}
+
+.fc-header-toolbar.fc-toolbar {
+    margin-top: 10px;
+}
+.fc-toolbar-title {
+    cursor: pointer !important;
+}
+.custom-event {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.custom-event-content {
+    text-align: right;
+}
+
+.fc-daygrid-event-harness a.fc-daygrid-event {
+    pointer-events: none;
+}
+
+.non-current-month {
+    background-color: #8080802e !important;
+}
+
+.MuiPickersArrowSwitcher-root {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+,
+@media screen and (max-width: 600px) {
+    .fc .fc-scrollgrid table {
+        height: 100% !important;
+    }
+}
