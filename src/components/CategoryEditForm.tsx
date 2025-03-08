@@ -1,4 +1,5 @@
 import * as React from "react";
+import {useRef} from "react";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
@@ -33,6 +34,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import DragHandleIcon from "@mui/icons-material/DragHandle";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 interface CategoryEditProps {
     edited: boolean;
@@ -92,6 +94,9 @@ const CategoryEditForm = React.memo(
         const { editCategory, sortCategories } = useCategoryContext();
 
         const [initialized, setInitialized] = useState<boolean>(false);
+
+        const [debounceTime, setDebounceTime] = useState(500); // デバウンス時間を状態として保存
+        const timer = useRef<ReturnType<typeof setTimeout> | null>(null); // タイマーを保存するためのref
 
         // Check if the target element is interactive
         const isInteractiveElement = (target: EventTarget | null) => {
@@ -241,8 +246,10 @@ const CategoryEditForm = React.memo(
             }
         }, [deleted, categories]);
 
+        // デバウンスとは、一定時間内に複数回のイベントが発生した場合、最後のイベントのみを実行する処理
         const handleCategoryChange =
-            (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+             (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+                if (timer.current) clearTimeout(timer.current); // タイマーが存在する場合はクリア
                 if (categories && categories?.length > 0) {
                     const ids = extractIds(event.target.name);
                     if (ids) {
@@ -265,7 +272,9 @@ const CategoryEditForm = React.memo(
                             type,
                             // fixed_category_id,
                         };
-                        editCategory(argument);
+                        timer.current = setTimeout(async ()=>{
+                            await editCategory(argument);
+                        }, debounceTime)
                     }
                 }
             };
@@ -294,6 +303,7 @@ const CategoryEditForm = React.memo(
                             type,
                             // fixed_category_id,
                         };
+                        debugger
                         editCategory(argument);
                     }
                 }
@@ -325,6 +335,8 @@ const CategoryEditForm = React.memo(
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
+                // 縦方向だけの移動に制限
+                modifiers={[restrictToVerticalAxis]}
                 // autoScroll={false}
             >
                 <SortableContext

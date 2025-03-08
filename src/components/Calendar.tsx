@@ -7,7 +7,6 @@ import {
     DayCellContentArg,
     EventContentArg,
 } from "@fullcalendar/core";
-import { Balance, CalendarContent, Transaction } from "../types";
 import { calculateDailyBalances } from "../utils/financeCalculations";
 import { formatCurrency } from "../utils/formatting";
 import interactionPlugin, { DateClickArg } from "@fullcalendar/interaction";
@@ -101,13 +100,32 @@ const Calendar = memo(
 
         // 祝日イベントを生成する関数
         const backgroundHoliday = useCallback((): HolidayEvent[] => {
-            return calendarState.holidays.map((holiday) => ({
-                start: format(holiday.date, "yyyy-MM-dd"),
-                title: holiday.name,
-                display: "background",
-                backgroundColor: theme.palette.holidayColor.main,
-            }));
-        }, [calendarState.holidays, theme]);
+            if (!calendarRef?.current) return [];
+        
+            const api = calendarRef.current.getApi();
+            const viewDate = api.getDate();
+        
+            return calendarState.holidays
+            .filter((holiday) => {
+                    const holidayDate = new Date(holiday.date);
+                    
+                    // 非表示にする条件：
+                    // 1. 表示されている月以外の祝日
+                    // 2. 祝日が日曜日の場合
+                    const isNonCurrentMonth =
+                        holidayDate.getFullYear() !== viewDate.getFullYear() ||
+                        holidayDate.getMonth() !== viewDate.getMonth();
+                    const isSunday = holidayDate.getDay() === 0;
+        
+                    return !isNonCurrentMonth && !isSunday;
+                })
+                .map((holiday) => ({
+                    start: format(holiday.date, "yyyy-MM-dd"),
+                    title: holiday.name,
+                    display: "background",
+                    backgroundColor: theme.palette.holidayColor.main,
+                }));
+        }, [calendarState.holidays, theme, calendarRef]);
 
         useEffect(() => {
             setCalendarState((prevState) => ({

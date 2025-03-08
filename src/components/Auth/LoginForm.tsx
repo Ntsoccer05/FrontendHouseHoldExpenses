@@ -177,11 +177,18 @@ function LoginForm() {
                     <Controller
                         name="password"
                         control={control}
-                        render={({ field }) => (
+                        rules={{
+                            required: "パスワードは必須です",
+                            minLength: {
+                                value: 8,
+                                message: "パスワードは8文字以上で入力してください",
+                            },
+                        }}
+                        render={({ field, fieldState }) => (
                             <TextField
                                 {...field}
-                                error={!!errors.password}
-                                helperText={errorMsgs?.passErrMsg}
+                                error={!!fieldState.error || !!errors.password}
+                                helperText={fieldState.error?.message || errorMsgs?.passErrMsg}
                                 required
                                 label="パスワード"
                                 type={showPassword ? "text" : "password"}

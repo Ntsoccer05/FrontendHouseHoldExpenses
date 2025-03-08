@@ -1,21 +1,21 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import apiClient from "../../utils/axios";
+import { useNavigate } from "react-router-dom";
 
 const VerifyEmail = () => {
     const { id, hash } = useParams();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const verifyEmail = async () => {
-            const token = localStorage.getItem("token"); // 認証トークンを取得
             try {
                 const response = await apiClient.get(
                     `/email/verify/${id}/${hash}`
                 );
-                alert(response.data.message);
+                navigate('/');
             } catch (error) {
                 console.error("Error verifying email:", error);
-                alert("Failed to verify email.");
             }
         };
 

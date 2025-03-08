@@ -19,109 +19,105 @@ type PasswordForgetErrs = {
 
 export function RegisterError(errorMsgs: RegisterErrs, setErrorMsgs) {
     // 既にあるオブジェクトを更新するときは...state,を使う
-    if (errorMsgs) {
-        if ("name" in errorMsgs) {
+    errorMsgs.map((error) => {
+        if (error.field === "name") {
             setErrorMsgs((state) => {
                 return {
                     ...state,
-                    nameErrMsg: errorMsgs.name[0],
+                    nameErrMsg: error.detail,
                 };
             });
         }
-        if ("email" in errorMsgs) {
+        if (error.field === "email") {
             setErrorMsgs((state) => {
                 return {
                     ...state,
-                    emailErrMsg: errorMsgs.email[0],
+                    emailErrMsg: error.detail,
                 };
             });
         }
-        if ("password" in errorMsgs) {
+        if (error.field === "password") {
             setErrorMsgs((state) => {
-                if (errorMsgs.password?.length > 1) {
+                if (error.detail.indexOf("パスワード確認") > 0) {
                     return {
                         ...state,
-                        passErrMsg: errorMsgs.password[1],
+                        passConfErrMsg: error.detail,
                     };
                 }
-                if (errorMsgs.password[0].indexOf("パスワード確認") > 0) {
+                else{
                     return {
                         ...state,
-                        passConfErrMsg: errorMsgs.password[0],
+                        passErrMsg: error.detail,
                     };
                 }
-                return {
-                    ...state,
-                    passErrMsg: errorMsgs.password[0],
-                };
             });
         }
-    }
+    })
 }
 export function LoginError(errorMsgs: LoginErrs, setErrorMsgs) {
     // 既にあるオブジェクトを更新するときは...state,を使う
-    if (errorMsgs) {
-        if ("email" in errorMsgs) {
+    errorMsgs.map((error) => {
+        if (error.field === "email") {
             setErrorMsgs((state) => {
                 return {
                     ...state,
-                    emailErrMsg: errorMsgs.email[0],
+                    emailErrMsg: error.detail,
                 };
             });
         }
-        if ("password" in errorMsgs) {
+        if (error.field === "password") {
             setErrorMsgs((state) => {
                 return {
                     ...state,
-                    passErrMsg: errorMsgs.password[0],
+                    passErrMsg: error.detail,
                 };
             });
         }
-    }
+    })
 }
 
 export function PasswordResetError(errorMsgs: PasswordResetErrs, setErrorMsgs) {
     // 既にあるオブジェクトを更新するときは...state,を使う
-    if (errorMsgs) {
-        if ("email" in errorMsgs) {
+    errorMsgs.map((error) => {
+        if (error.field === "email") {
             setErrorMsgs((state) => {
                 return {
                     ...state,
-                    emailErrMsg: errorMsgs.email[0],
+                    emailErrMsg: error.detail,
                 };
             });
         }
-        if ("password" in errorMsgs) {
+        if (error.field === "password") {
             setErrorMsgs((state) => {
                 return {
                     ...state,
-                    passErrMsg: errorMsgs.password[0],
+                    passErrMsg: error.detail,
                 };
             });
         }
-        if ("password_confirmation" in errorMsgs) {
+        if (error.field === "password_confirmation") {
             setErrorMsgs((state) => {
                 return {
                     ...state,
-                    passConfErrMsg: errorMsgs.password_confirmation[0],
+                    passConfErrMsg: error.detail,
                 };
             });
         }
-    }
+    })
 }
 export function PasswordForgetError(
     errorMsgs: PassworddForgetErrs,
     setErrorMsgs
 ) {
     // 既にあるオブジェクトを更新するときは...state,を使う
-    if (errorMsgs) {
-        if ("email" in errorMsgs) {
+    errorMsgs.map((error) => {
+        if (error.field === "email") {
             setErrorMsgs((state) => {
                 return {
                     ...state,
-                    emailErrMsg: errorMsgs.email[0],
+                    emailErrMsg: error.detail,
                 };
             });
         }
-    }
+    })
 }

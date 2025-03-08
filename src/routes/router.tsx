@@ -35,7 +35,9 @@ function DefineRouter() {
                                 // PrivateRoute：ログインしていなかったらログイン画面へリダイレクト
                                 element={
                                     <TransactionProvider>
-                                        <Home />
+                                        <PrivateRoute>
+                                            <Home />
+                                        </PrivateRoute>
                                     </TransactionProvider>
                                 }
                             />
@@ -87,9 +89,7 @@ function DefineRouter() {
                             <Route
                                 path="/api/email/verify/:id/:hash"
                                 element={
-                                    <OnlyPublicRoute>
-                                        <VerifyEmail />
-                                    </OnlyPublicRoute>
+                                    <VerifyEmail />
                                 }
                             />
                             <Route

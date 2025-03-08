@@ -82,7 +82,6 @@ function RegisterForm() {
                 setModalMessage(
                     "認証用メールを送信しました。ご確認お願いします。"
                 );
-                reset();
 
                 setIsLoading(false);
             })
@@ -146,11 +145,18 @@ function RegisterForm() {
                     <Controller
                         name="password"
                         control={control}
-                        render={({ field }) => (
+                        rules={{
+                            required: "パスワードは必須です",
+                            minLength: {
+                                value: 8,
+                                message: "パスワードは8文字以上で入力してください",
+                            },
+                        }}
+                        render={({ field, fieldState }) => (
                             <TextField
                                 {...field}
-                                error={!!errorMsgs.passErrMsg}
-                                helperText={errorMsgs?.passErrMsg}
+                                error={!!fieldState.error || !!errorMsgs.passErrMsg}
+                                helperText={fieldState.error?.message || errorMsgs?.passErrMsg}
                                 required
                                 label="パスワード"
                                 type={showPassword ? "text" : "password"}
@@ -183,11 +189,18 @@ function RegisterForm() {
                     <Controller
                         name="password_confirmation"
                         control={control}
-                        render={({ field }) => (
+                        rules={{
+                            required: "パスワード確認は必須です",
+                            minLength: {
+                                value: 8,
+                                message: "パスワードは8文字以上で入力してください",
+                            }
+                        }}
+                        render={({ field, fieldState }) => (
                             <TextField
                                 {...field}
-                                error={!!errorMsgs.passConfErrMsg}
-                                helperText={errorMsgs?.passConfErrMsg}
+                                error={!!fieldState.error || !!errorMsgs.passConfErrMsg}
+                                helperText={fieldState.error?.message || errorMsgs?.passConfErrMsg}
                                 required
                                 label="パスワード確認"
                                 type={showPasswordConf ? "text" : "password"}
