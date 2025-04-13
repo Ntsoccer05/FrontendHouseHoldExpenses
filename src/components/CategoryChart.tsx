@@ -17,7 +17,6 @@ import {
     Select,
     SelectChangeEvent,
     Typography,
-    useTheme,
 } from "@mui/material";
 import { TransactionType } from "../types";
 import { useAppContext } from "../context/AppContext";
@@ -45,7 +44,6 @@ const CategoryChart = ({ viewType }: CategoryChartProps) => {
     // const yearlyTransactions = useYearlyTransactions();
     const { monthlyTransactions, yearlyTransactions } = useTransactionContext();
 
-    const theme = useTheme();
     const [selectedType, setSelectedType] =
         useState<TransactionType>("expense");
 

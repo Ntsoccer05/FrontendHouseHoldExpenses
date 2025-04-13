@@ -10,7 +10,7 @@ import {
 import { calculateDailyBalances } from "../utils/financeCalculations";
 import { formatCurrency } from "../utils/formatting";
 import interactionPlugin, { DateClickArg } from "@fullcalendar/interaction";
-import { useTheme } from "@mui/material";
+import { Box, useTheme } from "@mui/material";
 import {
     isSameMonth,
     startOfMonth,
@@ -54,7 +54,7 @@ const Calendar = memo(
     }: CalendarProps) => {
         const { getMonthlyTransactions, monthlyTransactions } =
             useTransactionContext();
-        const { setCurrentMonth, currentMonth } = useAppContext();
+        const { setCurrentMonth, currentMonth, isMobile } = useAppContext();
         const theme = useTheme();
 
         // 状態をまとめて管理
@@ -177,7 +177,7 @@ const Calendar = memo(
         // イベントレンダリング関数
         const renderEventContent = useCallback(
             (eventInfo: EventContentArg) => (
-                <div className="custom-event">
+                <div className="custom-event" style={{fontSize: isMobile ? "11px" : "auto"}}>
                     <div
                         className="money custom-event-content"
                         id="event-income"
@@ -202,27 +202,36 @@ const Calendar = memo(
         );
 
         return (
-            <FullCalendar
-                ref={calendarRef}
-                locale={jaLocale}
-                plugins={[dayGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                events={[
-                    ...calendarEvents,
-                    ...calendarState.holidayEvents,
-                    {
-                        start: currentDay,
-                        display: "background",
-                        backgroundColor: theme.palette.incomeColor.light,
+            <Box
+                sx={{
+                    "& .fc-header-toolbar": {
+                    paddingLeft: isMobile ? "16px" : "auto",
+                    paddingRight: isMobile ? "16px" : "auto",
                     },
-                ]}
-                eventContent={renderEventContent}
-                dayCellClassNames={handleDayCellClassNames}
-                datesSet={handleDateSet}
-                dateClick={onDateClick}
-                buttonText={{ today: "今月" }}
-                fixedWeekCount={false}
-            />
+                }}
+            >
+                <FullCalendar
+                    ref={calendarRef}
+                    locale={jaLocale}
+                    plugins={[dayGridPlugin, interactionPlugin]}
+                    initialView="dayGridMonth"
+                    events={[
+                        ...calendarEvents,
+                        ...calendarState.holidayEvents,
+                        {
+                            start: currentDay,
+                            display: "background",
+                            backgroundColor: theme.palette.incomeColor.light,
+                        },
+                    ]}
+                    eventContent={renderEventContent}
+                    dayCellClassNames={handleDayCellClassNames}
+                    datesSet={handleDateSet}
+                    dateClick={onDateClick}
+                    buttonText={{ today: "今月" }}
+                    fixedWeekCount={false}
+                />
+            </Box>
         );
     }
 );

@@ -1,10 +1,10 @@
 import { Box, Button, TextField, InputAdornment } from "@mui/material";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFnsV3";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { ja } from "date-fns/locale";
-import { addMonths, format } from "date-fns";
+import { addMonths, format, startOfMonth } from "date-fns";
 import { useAppContext } from "../context/AppContext";
 import TodayIcon from "@mui/icons-material/Today";
 import { useTransactionContext } from "../context/TransactionContext";
@@ -15,11 +15,11 @@ const MonthSelector = () => {
     const { getMonthlyTransactions } = useTransactionContext();
 
     const handleDateChange = (newDate: Date | null) => {
-        if (newDate) {
+        if (newDate instanceof Date && !isNaN(newDate.getTime())) {
             setCurrentMonth(newDate);
         } else {
             // Handle the case when the input is cleared
-            setCurrentMonth(new Date());
+            setCurrentMonth(startOfMonth(new Date()));
         }
     };
 
@@ -57,6 +57,20 @@ const MonthSelector = () => {
         setIsOpen(true); // Open the DatePicker when CalendarIcon is clicked
     };
 
+    const datePickerStyles = useMemo(
+        () => ({
+            mx: 2,
+            background: "white", 
+            "& .MuiOutlinedInput-root": {
+                "& input": {
+                    cursor: "pointer",
+                },
+                cursor: "pointer",
+            },
+        }),
+        []
+    );
+
     return (
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ja}>
             <Box
@@ -77,7 +91,7 @@ const MonthSelector = () => {
                     onChange={handleDateChange}
                     value={currentMonth}
                     label="年月を選択"
-                    sx={{ mx: 2, background: "white" }}
+                    sx={datePickerStyles}
                     views={["year", "month"]}
                     format="yyyy/MM"
                     openTo="month"
@@ -87,7 +101,6 @@ const MonthSelector = () => {
                     slotProps={{
                         textField: {
                             onClick: handleTextFieldClick, // Open DatePicker on TextField click
-                            sx: { mx: 2, background: "white" },
                             onKeyDown: (event) => {
                                 // Handle key down events
                                 if (
@@ -98,6 +111,7 @@ const MonthSelector = () => {
                                 }
                             },
                             InputProps: {
+                                readOnly: true,
                                 endAdornment: (
                                     <InputAdornment position="end">
                                         <TodayIcon

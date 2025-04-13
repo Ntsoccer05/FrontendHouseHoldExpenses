@@ -1,4 +1,3 @@
-import React from "react";
 import PasswordForgetForm from "../components/Auth/PasswordForgetForm";
 
 function PasswordForget() {

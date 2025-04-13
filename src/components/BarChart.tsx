@@ -31,8 +31,6 @@ interface BarChartProps {
 
 const BarChart = ({ viewType }: BarChartProps) => {
     const { isLoading } = useAppContext();
-    // const monthlyTransactions = useMonthlyTransactions();
-    // const yearlyTransactions = useYearlyTransactions();
     const { monthlyTransactions, yearlyTransactions } = useTransactionContext();
 
     const theme = useTheme();

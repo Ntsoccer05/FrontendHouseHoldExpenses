@@ -18,6 +18,7 @@ import "../assets/css/calendar.css";
 import { useNavigate } from "react-router-dom";
 import { CalendarApi } from "fullcalendar";
 import { useTransactionContext } from "../context/TransactionContext";
+import { useAuthContext } from "../context/AuthContext";
 
 const Home = () => {
     const today = format(new Date(), "yyyy-MM-dd");
@@ -28,10 +29,9 @@ const Home = () => {
         useState<Transaction | null>(null);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    // const theme = useTheme();
-    // const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
 
-    const { isMobile, LoginUser } = useAppContext();
+    const { isMobile } = useAppContext();
+    const { isAuthenticated } = useAuthContext();
 
     //ページ遷移に使用する
     const navigate = useNavigate();
@@ -40,7 +40,6 @@ const Home = () => {
         null
     );
 
-    // const monthlyTransactions = useMonthlyTransactions();
     const { monthlyTransactions } = useTransactionContext();
 
     // 一日分のデータを取得
@@ -61,7 +60,7 @@ const Home = () => {
 
     // フォームの開閉処理(内訳追加ボタンを押したとき)
     const handleAddTransactionForm = () => {
-        if (LoginUser) {
+        if (isAuthenticated) {
             if (isMobile) {
                 setIsDialogOpen(true);
             } else {
@@ -131,13 +130,21 @@ const Home = () => {
                         calendarRef={calendarRef.current as FullCalendar}
                     />
                 </Grid>
-                <Calendar
-                    setCurrentDay={setCurrentDay}
-                    currentDay={currentDay}
-                    today={today}
-                    onDateClick={handleDateClick}
-                    calendarRef={calendarRef as React.LegacyRef<FullCalendar>}
-                />
+                <Box
+                    sx={{
+                        position: isMobile ? "fixed" : "relative",
+                        left: isMobile ? 0 : "auto",
+                        width: isMobile ? "100vw" : "auto",
+                    }}
+                >
+                    <Calendar
+                        setCurrentDay={setCurrentDay}
+                        currentDay={currentDay}
+                        today={today}
+                        onDateClick={handleDateClick}
+                        calendarRef={calendarRef as React.LegacyRef<FullCalendar>}
+                    />
+                </Box>
             </Box>
             {/* 右側コンテンツ */}
             <Box>
@@ -146,7 +153,6 @@ const Home = () => {
                     currentDay={currentDay}
                     onAddTransactionForm={handleAddTransactionForm}
                     onSelectTransaction={handleSelectTransaction}
-                    // isMobile={isMobile}
                     open={isMobileDrawerOpen}
                     onClose={handleCloseMobileDrawer}
                 />
@@ -156,7 +162,6 @@ const Home = () => {
                     currentDay={currentDay}
                     selectedTransaction={selectedTransaction}
                     setSelectedTransaction={setSelectedTransaction}
-                    // isMobile={isMobile}
                     isDialogOpen={isDialogOpen}
                     setIsDialogOpen={setIsDialogOpen}
                 />

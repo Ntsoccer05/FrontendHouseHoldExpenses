@@ -6,6 +6,7 @@ type Props = {
     label: string;
     checkBoxItems: CheckBoxItem[];
     setCheckBoxItems: React.Dispatch<React.SetStateAction<CheckBoxItem[]>>;
+    setPage: React.Dispatch<React.SetStateAction<number>>;
 };
 
 const judgeCheckBoxListState = (items: CheckBoxItem[]): CheckedState => {
@@ -27,6 +28,7 @@ export const CheckBoxList = ({
     label,
     checkBoxItems,
     setCheckBoxItems,
+    setPage,
 }: Props) => {
     const [checkedState, setCheckedState] = useState<CheckedState>(
         judgeCheckBoxListState(checkBoxItems)
@@ -76,6 +78,7 @@ export const CheckBoxList = ({
     const onValueChange = useCallback(
         (index: number, checked: boolean) => {
             setCheckBoxItems((currentItems) => {
+                setPage(0);
                 const copiedItems = [...currentItems];
                 copiedItems[index].checked = !checked;
                 return copiedItems;

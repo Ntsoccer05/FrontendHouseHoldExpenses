@@ -12,12 +12,15 @@ import SideBar from "../common/SideBar";
 import { Transaction } from "../../types";
 import { useAppContext } from "../../context/AppContext";
 import apiClient from "../../utils/axios";
+import { useAuthContext } from "../../context/AuthContext";
+import { getSessionStorage, setSessionStorage } from "../../utils/manageSessionStorage";
 
 const drawerWidth = 240;
 
 export default function AppLayout() {
     const [mobileOpen, setMobileOpen] = React.useState(false);
-    const { LoginUser, setTransactions, setIsLoading } = useAppContext();
+    const { setTransactions, setIsLoading } = useAppContext();
+    const { loginUser } = useAuthContext();
     const navigate = useNavigate();
 
     // サイドバーの開閉をトグル
@@ -27,13 +30,13 @@ export default function AppLayout() {
 
     //家計簿データを全て取得
     React.useEffect(() => {
-        if (LoginUser) {
+        if (loginUser) {
             const fecheTransactions = async () => {
                 try {
                     const querySnapshot = await apiClient.get(
                         "/getTransactions",
                         {
-                            params: { user_id: LoginUser.id },
+                            params: { user_id: loginUser.id },
                         }
                     );
                     if (querySnapshot.data.transactions) {
@@ -45,17 +48,18 @@ export default function AppLayout() {
                                     } as Transaction;
                                 }
                             );
+                        setSessionStorage('transactionsData', transactionsData);
                         setTransactions(transactionsData);
                     }
                 } catch (err) {
                     console.error("一般的なエラーは:", err);
-                } finally {
-                    setIsLoading(false);
                 }
             };
-            fecheTransactions();
+            const sessionTransactionsData = getSessionStorage('transactionsData')
+            sessionTransactionsData ? setTransactions(sessionTransactionsData) : fecheTransactions();
+            setIsLoading(false);
         }
-    }, [LoginUser]);
+    }, [loginUser]);
 
     // ホームへのナビゲーション
     const toHome = React.useCallback(() => {

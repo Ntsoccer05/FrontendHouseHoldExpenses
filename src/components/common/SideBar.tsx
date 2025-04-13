@@ -18,11 +18,10 @@ import { NavLink } from "react-router-dom";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
-import { useAppContext } from "../../context/AppContext";
 import ModalComponent from "./ModalComponent";
 import CategoryIcon from "@mui/icons-material/Category";
 import CloseIcon from "@mui/icons-material/Close";
-import apiClient from "../../utils/axios";
+import { useAuthContext } from "../../context/AuthContext";
 
 interface SidebarProps {
     drawerWidth: number;
@@ -41,7 +40,7 @@ const Sidebar = ({
     mobileOpen,
     handleDrawerToggle,
 }: SidebarProps) => {
-    const { LoginUser, setLoginUser, setLoginFlg, loginFlg } = useAppContext();
+    const { logout, isAuthenticated, fetchLoginUserLoading } = useAuthContext()
 
     const MenuItems: menuItem[] = [
         { text: "トップ", path: "/", icon: HomeIcon },
@@ -52,7 +51,6 @@ const Sidebar = ({
     const LogoutItems = [{ text: "ログアウト", icon: LockOutlinedIcon }];
 
     const NotLoginMenuItems: menuItem[] = [
-        { text: "トップ", path: "/", icon: HomeIcon },
         { text: "ログイン", path: "/login", icon: MeetingRoomIcon },
         { text: "サインイン", path: "/register", icon: LockOpenIcon },
     ];
@@ -70,18 +68,22 @@ const Sidebar = ({
     const [modalOption, setModalOption] = useState<number>(0);
 
     useEffect(() => {
-        if (loginFlg === 1) {
-            setMenuItems((beforeData) => {
-                const menusList = { ...beforeData, ...MenuItems };
-                return objToArray(menusList);
-            });
-        } else if (loginFlg === 2) {
-            setMenuItems((beforeData) => {
-                const menusList = { ...beforeData, ...NotLoginMenuItems };
-                return objToArray(menusList);
-            });
+        if(!fetchLoginUserLoading) {
+            if (isAuthenticated) {
+                setMenuItems((beforeData) => {
+                    const menusList = MenuItems;
+                    return objToArray(menusList);
+                });
+            } else {
+                setMenuItems((beforeData) => {
+                    const menusList = NotLoginMenuItems;
+                    return objToArray(menusList);
+                });
+            }
+        }else{
+            setMenuItems([]);
         }
-    }, [loginFlg]);
+    }, [isAuthenticated, fetchLoginUserLoading]);
 
     const baseLinkStyle: CSSProperties = {
         textDecoration: "none",
@@ -100,19 +102,15 @@ const Sidebar = ({
         setModalOption(1);
     };
 
-    const logout = async () => {
-        await apiClient
-            .post("/logout", LoginUser)
-            .then((res) => {
-                setLoginUser(undefined);
-                setLoginFlg(2);
-                setModalMainMessage("ログアウト完了");
-                setModalMessage("ログアウトしました");
-                setModalOption(0);
-            })
-            .catch((err) => {
-                handleCloseModal();
-            });
+    const handleLogout = async () => {
+        try{
+            await logout();
+            setModalMainMessage("ログアウト完了");
+            setModalMessage("ログアウトしました");
+            setModalOption(0);
+        }catch(error) {
+            handleCloseModal();
+        }
     };
 
     const handleCloseModal: () => void = () => {
@@ -153,7 +151,7 @@ const Sidebar = ({
                         </ListItem>
                     </NavLink>
                 ))}
-                {loginFlg === 1 &&
+                {isAuthenticated &&
                     LogoutItems.map((item, index) => (
                         <NavLink
                             key={item.text}
@@ -225,7 +223,7 @@ const Sidebar = ({
                 contentMessage={modalMessage}
                 modalOption={modalOption}
                 handleCloseModal={handleCloseModal}
-                handleFunc={logout}
+                handleFunc={handleLogout}
             />
         </Box>
     );

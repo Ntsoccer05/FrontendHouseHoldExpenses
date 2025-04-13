@@ -146,7 +146,7 @@ const TransactionForm = memo(
             }
             //reset()でフォームフィールドの内容を引数の値でリセット
             reset({
-                type: "expense",
+                type: currentType,
                 date: currentDay,
                 amount: 0,
                 category: "",

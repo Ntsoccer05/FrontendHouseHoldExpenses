@@ -85,12 +85,10 @@ const CategoryEditForm = React.memo(
         added,
         deleted,
         setSelected,
-        setCategories,
         setAdded,
         setEdited,
         setDeleted,
     }: CategoryEditProps) => {
-        // const { editCategory, sortCategory } = useCategoryContext();
         const { editCategory, sortCategories } = useCategoryContext();
 
         const [initialized, setInitialized] = useState<boolean>(false);
@@ -258,8 +256,6 @@ const CategoryEditForm = React.memo(
                         setContentValues(newValues);
                         const id = ids && Number(ids.id);
                         const filtered_id = ids && Number(ids.filtered_id);
-                        // const fixed_category_id =
-                        //     ids && Number(ids.fixed_category_id);
                         const content = event.target.value;
                         const tgtCategory = categories.filter((category) => {
                             return category.filtered_id === filtered_id;
@@ -270,7 +266,6 @@ const CategoryEditForm = React.memo(
                             content,
                             icon,
                             type,
-                            // fixed_category_id,
                         };
                         timer.current = setTimeout(async ()=>{
                             await editCategory(argument);
@@ -289,8 +284,6 @@ const CategoryEditForm = React.memo(
                         setIconValues(newValues);
                         const id = ids && Number(ids.id);
                         const filtered_id = ids && Number(ids.filtered_id);
-                        // const fixed_category_id =
-                        //     ids && Number(ids.fixed_category_id);
                         const icon = event.target.value;
                         const tgtCategory = categories.filter((category) => {
                             return category.filtered_id === filtered_id;
@@ -301,9 +294,7 @@ const CategoryEditForm = React.memo(
                             icon,
                             content,
                             type,
-                            // fixed_category_id,
                         };
-                        debugger
                         editCategory(argument);
                     }
                 }
@@ -314,16 +305,12 @@ const CategoryEditForm = React.memo(
         ): {
             id: string;
             filtered_id: string;
-            // fixed_category_id: string;
         } | null => {
-            // const regex = /(\D+)(\d+)(\D+)(\d+)(\D+)(\d+)/;
             const regex = /(\D+)(\d+)(\D+)(\d+)/;
             const matches = str.match(regex);
             if (matches) {
                 const id = matches[2];
                 const filtered_id = matches[4];
-                // const fixed_category_id = matches[6];
-                // return { id, filtered_id, fixed_category_id };
                 return { id, filtered_id };
             }
             return null;
@@ -337,7 +324,6 @@ const CategoryEditForm = React.memo(
                 onDragEnd={handleDragEnd}
                 // 縦方向だけの移動に制限
                 modifiers={[restrictToVerticalAxis]}
-                // autoScroll={false}
             >
                 <SortableContext
                     items={
@@ -389,11 +375,6 @@ const CategoryEditForm = React.memo(
                                                     String(category.id) +
                                                     "filteredContent_" +
                                                     String(category.filtered_id)
-                                                    // "fixed_category_id_" +
-                                                    // String(
-                                                    //     category.fixed_category_id ||
-                                                    //         0
-                                                    // )
                                                 }
                                                 value={contentValues[index]}
                                                 onChange={handleCategoryChange(
@@ -422,11 +403,6 @@ const CategoryEditForm = React.memo(
                                                         String(
                                                             category.filtered_id,
                                                         )
-                                                        // "fixed_category_id_" +
-                                                        // String(
-                                                        //     category.fixed_category_id ||
-                                                        //         0
-                                                        // )
                                                     }
                                                     onChange={handleIconChange(
                                                         index,

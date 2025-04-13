@@ -1,20 +1,12 @@
-import { ReactNode } from "react";
-import { useAppContext } from "../context/AppContext";
 import { Navigate } from "react-router-dom";
 import Loading from "../components/common/Loading";
+import { useAuthContext } from "../context/AuthContext";
 
-// カスタムコンポーネントは大文字で始める必要がある
-const PrivateRoute = ({ children }: { children: ReactNode }) => {
-    const { loginFlg } = useAppContext();
-    if (loginFlg === 0) {
-        return (
-            <Loading
-                loadingTxt="ユーザ情報取得中"
-                loadingColor="info"
-            ></Loading>
-        );
-    }
-    return loginFlg === 2 ? <Navigate to="/login" /> : children;
+export const PrivateRoute = ({ children }: { children: JSX.Element }) => {
+  const { fetchLoginUserLoading, isAuthenticated } = useAuthContext();
+  
+  if (fetchLoginUserLoading) return <Loading loadingTxt="ユーザ情報取得中" loadingColor="info"/>;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  return children;
 };
-
-export default PrivateRoute;

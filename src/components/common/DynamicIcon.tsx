@@ -1,4 +1,3 @@
-// import * as Icons from "@mui/icons-material";
 import { memo } from "react";
 import AlarmIcon from "@mui/icons-material/Alarm";
 import AddHomeIcon from "@mui/icons-material/AddHome";
@@ -20,8 +19,6 @@ import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-
-// type MuiIcons = typeof Icons;
 
 const Icons = {
     AlarmIcon,
@@ -58,7 +55,6 @@ const DynamicIcon = memo(
         try {
             if (iconName) {
                 FastfoodIcon;
-                // const IconComponent = Icons[iconName as keyof MuiIcons] || null;
                 const IconComponent = Icons[`${iconName}Icon`] || null;
 
                 if (!IconComponent) {

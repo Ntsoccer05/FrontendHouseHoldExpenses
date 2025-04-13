@@ -16,26 +16,17 @@ import { LoginError } from "../../utils/errorHandling";
 import ModalComponent from "../common/ModalComponent";
 import { Link } from "react-router-dom";
 import AppTitle from "../layout/AppTitle";
-import { useAppContext } from "../../context/AppContext";
 import { MeetingRoomOutlined } from "@mui/icons-material";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import SocialLoginBtn from "./Common/SocialLoginBtn";
 import apiClient from "../../utils/axios";
+import { useAuthContext } from "../../context/AuthContext";
 
 function LoginForm() {
-    type LoginInput = {
-        email: string;
-        password: string;
-    };
-
     type LoginErrMsgs = {
         emailErrMsg?: string;
         passErrMsg?: string;
-    };
-
-    type ResendConfirmEmail = {
-        email: string;
     };
 
     const [errorMsgs, setErrorMsgs] = useState<LoginErrMsgs>({
@@ -43,12 +34,7 @@ function LoginForm() {
         passErrMsg: "",
     });
 
-    const [loginInput, setLogin] = useState<LoginInput>({
-        email: "",
-        password: "",
-    });
-
-    const { setLoginFlg, getLoginUser, LoginUser } = useAppContext();
+    const { login } = useAuthContext();
 
     const [reConfirmEmail, setReConfirmEmail] = useState<boolean>(false);
 
@@ -87,40 +73,25 @@ function LoginForm() {
             };
         });
         // CSRF保護
-        await apiClient
-            .get("/sanctum/csrf-cookie")
-            .then(async (res) => {
-                //フォームデータ送信時に画面を再更新しないようにする処理
-                await apiClient
-                    .post("/login", data)
-                    .then(async (response) => {
-                        if (response.data.status_code === 200) {
-                            await getLoginUser();
-                            setLoginFlg(1);
-                            navigate("/");
-                        }
-                    })
-                    .catch(function (error) {
-                        // 送信失敗時の処理
-                        setIsLoading(false);
-                        if (error.response.status == 403) {
-                            setErrorMsgs((state) => {
-                                return {
-                                    ...state,
-                                    emailErrMsg: error.response.data.error,
-                                };
-                            });
-                            setReConfirmEmail(true);
-                        }
-                        const errorResMsgs = error.response.data.errors;
-                        LoginError(errorResMsgs, setErrorMsgs);
-                        console.log("通信に失敗しました");
-                    });
-            })
-            .catch((e) => {
-                console.log(e);
-                setIsLoading(false);
-            });
+        try{
+            await login(data);
+            navigate("/");
+        }catch(error){
+            // 送信失敗時の処理
+            if (error.response.status == 403) {
+                setErrorMsgs((state) => {
+                    return {
+                        ...state,
+                        emailErrMsg: error.response.data.error,
+                    };
+                });
+                setReConfirmEmail(true);
+            }
+            const errorResMsgs = error.response.data.errors;
+            LoginError(errorResMsgs, setErrorMsgs);
+        }finally{
+            setIsLoading(false);
+        }
     };
 
     const resendConfirmEmail: () => void = async () => {

@@ -15,105 +15,108 @@ import VerifyEmail from "../components/Auth/VerifyEmail";
 import PasswordForget from "../pages/PasswordForget";
 import ResetPassword from "../pages/ResetPassword";
 import Category from "../pages/Category";
-import PrivateRoute from "./PrivateRoute";
 import OnlyPublicRoute from "./OnlyPublicRoute";
 import { TransactionProvider } from "../context/TransactionContext";
 import GoogleCallback from "../components/Auth/GoogleCallback";
+import { PrivateRoute } from "./PrivateRoute";
+import { AuthProvider } from "../context/AuthContext";
 
 function DefineRouter() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            {/* AppProviderで囲まれている中でvalueで設定した値をグローバルに参照できる */}
-            <AppProvider>
-                <Router>
-                    <Routes>
-                        <Route path="/" element={<AppLayout />}>
-                            {/* 親と同じパスはindexと記述できる */}
-                            <Route
-                                index
-                                // PrivateRoute：ログインしていなかったらログイン画面へリダイレクト
-                                element={
-                                    <TransactionProvider>
-                                        <PrivateRoute>
-                                            <Home />
-                                        </PrivateRoute>
-                                    </TransactionProvider>
-                                }
-                            />
-                            <Route
-                                path="/login"
-                                element={
-                                    <OnlyPublicRoute>
-                                        <Login />
-                                    </OnlyPublicRoute>
-                                }
-                            />
-                            <Route
-                                path="/register"
-                                element={
-                                    <OnlyPublicRoute>
-                                        <Register />
-                                    </OnlyPublicRoute>
-                                }
-                            />
-                            <Route
-                                path="/login/:provider/callback"
-                                element={
-                                    <OnlyPublicRoute>
-                                        <GoogleCallback />
-                                    </OnlyPublicRoute>
-                                }
-                            />
-                            <Route
-                                path="/report"
-                                element={
-                                    <TransactionProvider>
-                                        <PrivateRoute>
-                                            <Report />
-                                        </PrivateRoute>
-                                    </TransactionProvider>
-                                }
-                            />
-                            {/* routerの中でcontextを一部に使いたいときはelementの中で指定する */}
-                            <Route
-                                path="/category"
-                                element={
-                                    <PrivateRoute>
-                                        <CategoryProvider>
-                                            <Category />
-                                        </CategoryProvider>
-                                    </PrivateRoute>
-                                }
-                            />
-                            <Route
-                                path="/api/email/verify/:id/:hash"
-                                element={
-                                    <VerifyEmail />
-                                }
-                            />
-                            <Route
-                                path="/api/password/reset"
-                                element={
-                                    <OnlyPublicRoute>
-                                        <ResetPassword />
-                                    </OnlyPublicRoute>
-                                }
-                            />
-                            <Route
-                                path="/password/forget"
-                                element={
-                                    <OnlyPublicRoute>
-                                        <PasswordForget />
-                                    </OnlyPublicRoute>
-                                }
-                            />
-                            {/* 最後にpath='*'で上記に当てはまらない全てのページを指す */}
-                            <Route path="*" element={<NoMatch />} />
-                        </Route>
-                    </Routes>
-                </Router>
-            </AppProvider>
+            <Router>
+                <AuthProvider>
+                    {/* AppProviderで囲まれている中でvalueで設定した値をグローバルに参照できる */}
+                    <AppProvider>
+                            <Routes>
+                                <Route path="/" element={<AppLayout />}>
+                                    {/* 親と同じパスはindexと記述できる */}
+                                    <Route
+                                        index
+                                        // PrivateRoute：ログインしていなかったらログイン画面へリダイレクト
+                                        element={
+                                            <TransactionProvider>
+                                                <PrivateRoute>
+                                                    <Home />
+                                                </PrivateRoute>
+                                            </TransactionProvider>
+                                        }
+                                    />
+                                    <Route
+                                        path="/login"
+                                        element={
+                                            <OnlyPublicRoute>
+                                                <Login />
+                                            </OnlyPublicRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/register"
+                                        element={
+                                            <OnlyPublicRoute>
+                                                <Register />
+                                            </OnlyPublicRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/login/:provider/callback"
+                                        element={
+                                            <OnlyPublicRoute>
+                                                <GoogleCallback />
+                                            </OnlyPublicRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/report"
+                                        element={
+                                            <TransactionProvider>
+                                                <PrivateRoute>
+                                                    <Report />
+                                                </PrivateRoute>
+                                            </TransactionProvider>
+                                        }
+                                    />
+                                    {/* routerの中でcontextを一部に使いたいときはelementの中で指定する */}
+                                    <Route
+                                        path="/category"
+                                        element={
+                                            <PrivateRoute>
+                                                <CategoryProvider>
+                                                    <Category />
+                                                </CategoryProvider>
+                                            </PrivateRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/api/email/verify/:id/:hash"
+                                        element={
+                                            <VerifyEmail />
+                                        }
+                                    />
+                                    <Route
+                                        path="/api/password/reset"
+                                        element={
+                                            <OnlyPublicRoute>
+                                                <ResetPassword />
+                                            </OnlyPublicRoute>
+                                        }
+                                    />
+                                    <Route
+                                        path="/password/forget"
+                                        element={
+                                            <OnlyPublicRoute>
+                                                <PasswordForget />
+                                            </OnlyPublicRoute>
+                                        }
+                                    />
+                                    {/* 最後にpath='*'で上記に当てはまらない全てのページを指す */}
+                                    <Route path="*" element={<NoMatch />} />
+                                </Route>
+                            </Routes>
+                    </AppProvider>
+                </AuthProvider>
+            </Router>
         </ThemeProvider>
     );
 }

@@ -14,7 +14,7 @@ interface ChangeCalendarMonthProps {
 
 const ChangeCalendarMonth = memo(
     ({ calendarRef }: ChangeCalendarMonthProps) => {
-        const { currentMonth, setCurrentMonth } = useAppContext();
+        const { currentMonth, setCurrentMonth, isMobile } = useAppContext();
 
         // モーダルを閉じる関数をメモ化
         const closeModal = useCallback(
@@ -66,11 +66,16 @@ const ChangeCalendarMonth = memo(
                 position: "absolute",
                 top: { xs: "183px", sm: "202px", md: "205px" },
                 left: { xs: "0%", md: "235px" },
+                cursor: "pointer",
+                "& .MuiInputLabel-root": {
+                    color: "rgba(0, 0, 0, 0.6)!important"
+                },
                 "& .MuiInputBase-root": {
                     color: "transparent",
                     border: "none",
                 },
                 "& .MuiOutlinedInput-root": {
+                    maxHeight: isMobile ? "35px" : "auto",
                     "& fieldset": {
                         border: "none",
                         width: "65%",
@@ -78,10 +83,12 @@ const ChangeCalendarMonth = memo(
                     },
                     "& input": {
                         border: "none",
-                        width: "70%",
+                        width: isMobile ? "40%" : "62%",
+                        opacity: 0,
+                        zIndex: 1000,
                         cursor: "pointer",
                     },
-                    cursor: "auto",
+                    cursor: "pointer",
                 },
                 "& .MuiPickersArrowSwitcher-root": {
                     visibility: "visible", // 矢印を表示

@@ -1,13 +1,12 @@
 import { useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import useSocialLogin from "../../hooks/useSocialLogin";
 import { Provider } from "../../types";
-import { useAppContext } from "../../context/AppContext";
 import queryString from "query-string";
+import { useAuthContext } from "../../context/AuthContext";
 import Loading from "../common/Loading";
 
 const GoogleCallback = () => {
-    const navigate = useNavigate();
     const { provider } = useParams<{ provider: Provider }>();
     const socialResponse = useMemo(
         () => queryString.parse(location.search) ?? {},
@@ -15,29 +14,19 @@ const GoogleCallback = () => {
     );
     // const authCode = queryParams.code;
     const socialLogin = useSocialLogin();
-    const { setLoginFlg, getLoginUser } = useAppContext();
+    const { fetchLoginUserLoading } = useAuthContext();
 
     const handleLogin = async () => {
-        try {
-            await socialLogin(provider, socialResponse);
-            await getLoginUser();
-            setLoginFlg(1);
-            navigate("/");
-        } catch (e) {
-            console.log(e);
-        }
+        await socialLogin(provider, socialResponse);
     };
 
     useEffect(() => {
         handleLogin();
-    }, [navigate]);
+    }, []);
 
-    return (
-        <Loading
-            loadingTxt="ログインしています..."
-            loadingColor="info"
-        ></Loading>
-    );
+    return  (fetchLoginUserLoading &&
+        <Loading loadingTxt="ユーザ情報取得中" loadingColor="info" />
+    )
 };
 
 export default GoogleCallback;

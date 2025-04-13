@@ -9,4 +9,14 @@ const apiClient = axios.create({
   },
 });
 
+apiClient.interceptors.response.use(
+  (response) => response, // 通常のレスポンスはそのまま返す
+  (error) => {
+    if (error.response?.status === 401) {
+      console.warn("認証エラー: ログインページへリダイレクトします");
+    }
+    return Promise.reject(error); // エラーをそのまま投げる
+  }
+);
+
 export default apiClient;
