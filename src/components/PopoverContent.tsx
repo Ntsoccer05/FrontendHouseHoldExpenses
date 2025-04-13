@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { CheckBoxItem } from "../types";
 import SearchIcon from "@mui/icons-material/Search";
+import { useAppContext } from "../context/AppContext";
 
 type Props = {
     searchPlaceholder: string;
@@ -41,15 +42,16 @@ export const PopoverContent = ({
     anchorEl,
 }: Props) => {
     const [text, setText] = useState("");
+    const {isMobile} = useAppContext();
 
     return (
         <Popover
             open={Boolean(anchorEl)}
             anchorEl={anchorEl}
             onClose={onPopoverClose}
-            sx={{ top: "50px", left: "120px" }}
+            sx={{ top: "50px", left: isMobile ? "0px" :"120px" }}
         >
-            <Grid container direction="column" sx={{ width: "250px" }}>
+            <Grid container direction="column" sx={{ width: isMobile ? "100%" : "250px" }}>
                 {/* 検索ボックス */}
                 <Paper
                     className="searchText"

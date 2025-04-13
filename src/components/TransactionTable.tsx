@@ -59,6 +59,7 @@ function TransactionTableHead(props: TransactionTableHeadProps) {
     } = props;
 
     const popoverRef = React.useRef(null);
+    const {isMobile} = useAppContext();
 
     const createSortHandler =
         (property: string) => (event: React.MouseEvent<unknown>) => {
@@ -71,7 +72,7 @@ function TransactionTableHead(props: TransactionTableHeadProps) {
                 {viewType === "monthly" && (
                     <TableCell
                         padding="checkbox"
-                        sx={{ width: "50px", minWidth: "50px" }}
+                        sx={{ width: "50px", minWidth: "50px", display: isMobile ? "none" : "masonry"}}
                     >
                         <Checkbox
                             color="primary"
@@ -91,8 +92,9 @@ function TransactionTableHead(props: TransactionTableHeadProps) {
                 <TableCell
                     align="left"
                     sx={{
-                        width: { xs: "100px", sm: "150px", md: "200px" },
-                        minWidth: "100px",
+                        whiteSpace: "nowrap",
+                        width: "auto",
+                        minWidth: "0",
                     }} // 固定幅
                 >
                     {viewType === "monthly" ? "日付" : "月"}
@@ -100,8 +102,9 @@ function TransactionTableHead(props: TransactionTableHeadProps) {
                 <TableCell
                     align="left"
                     sx={{
-                        width: { xs: "150px", sm: "200px", md: "250px" },
-                        minWidth: "150px",
+                        whiteSpace: "nowrap",
+                        width: "auto",
+                        minWidth: "0",
                     }} // 固定幅
                     ref={popoverRef}
                 >
@@ -161,6 +164,25 @@ function TransactionTableHead(props: TransactionTableHeadProps) {
                 >
                     {viewType === "monthly" && "内容"}
                 </TableCell>
+                {viewType === "monthly" && (
+                    <TableCell
+                        padding="checkbox"
+                        sx={{ width: "50px", minWidth: "50px", display: isMobile ? "masonry" : "none"}}
+                    >
+                        <Checkbox
+                            color="primary"
+                            indeterminate={
+                                (numSelected as number) > 0 &&
+                                (numSelected as number) < rowCount
+                            }
+                            checked={rowCount > 0 && numSelected === rowCount}
+                            onChange={onSelectAllClick}
+                            inputProps={{
+                                "aria-label": "select all desserts",
+                            }}
+                        />
+                    </TableCell>
+                )}
             </TableRow>
         </TableHead>
     );
@@ -175,7 +197,7 @@ interface TransactionTableToolbarProps {
 // ツールバー
 function TransactionTableToolbar(props: TransactionTableToolbarProps) {
     const { numSelected, viewType, onDelete } = props;
-    const { currentYear, currentMonth } = useAppContext();
+    const { currentYear, currentMonth, isMobile } = useAppContext();
 
     const jpCurrentMonth = formatJPMonth(currentMonth);
     const jpCurrentYear = formatJPYear(currentYear);
@@ -243,7 +265,7 @@ function FinancialItem({ title, value, color }: FinancialItemProps) {
                 fontWeight={"fontWeightBold"}
                 sx={{
                     color: color,
-                    fontSize: { xs: ".8rem", sm: "1rem", md: "1.2rem" },
+                    fontSize: { xs: ".9rem", sm: "1rem", md: "1.2rem" },
                     wordBreak: "break-word",
                 }}
             >
@@ -270,7 +292,7 @@ interface Summary {
 // 本体
 export default function TransactionTable({ viewType }: TransactionTableProps) {
     const { onDeleteTransaction, monthlyTransactions, yearlyTransactions } = useTransactionContext();
-    const { currentYear, currentMonth } = useAppContext();
+    const { currentYear, currentMonth, isMobile } = useAppContext();
 
     const theme = useTheme();
     const [selected, setSelected] = React.useState<readonly string[]>([]);
@@ -579,7 +601,7 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
                 {/* 取引一覧*/}
                 <TableContainer>
                     <Table
-                        sx={{ minWidth: 750 }}
+                        sx={{ minWidth: isMobile ? "none" : 750, whiteSpace: "nowrap" }}
                         aria-labelledby="tableTitle"
                         size={"medium"}
                     >
@@ -648,21 +670,20 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
                                             }}
                                         >
                                             {viewType === "monthly" && (
-                                                <TableCell padding="checkbox">
+                                                <TableCell padding="checkbox" sx={{display: isMobile ? "none" : "masonry",}}>
                                                     <Checkbox
                                                         color="primary"
                                                         checked={isItemSelected}
                                                     />
                                                 </TableCell>
                                             )}
-
                                             <TableCell
                                                 component="th"
                                                 scope="row"
                                                 padding="none"
                                                 sx={{
                                                     paddingLeft:
-                                                        viewType === "yearly"
+                                                        isMobile || viewType === "yearly"
                                                             ? "12px"
                                                             : "",
                                                 }}
@@ -692,6 +713,14 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
                                             <TableCell align="left">
                                                 {transaction.content}
                                             </TableCell>
+                                            {viewType === "monthly" && (
+                                                <TableCell padding="checkbox" sx={{display: isMobile ? "masonry" : "none"}}>
+                                                    <Checkbox
+                                                        color="primary"
+                                                        checked={isItemSelected}
+                                                    />
+                                                </TableCell>
+                                            )}
                                         </TableRow>
                                     )
                                 );
