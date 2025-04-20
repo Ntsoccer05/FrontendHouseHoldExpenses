@@ -356,6 +356,7 @@ const CategoryEditForm = React.memo(
                                         <TableCell
                                             padding="checkbox"
                                             align="center"
+                                            sx={{cursor: "pointer"}}
                                         >
                                             <DragHandleIcon />
                                         </TableCell>
@@ -366,6 +367,7 @@ const CategoryEditForm = React.memo(
                                         scope="row"
                                         padding="none"
                                         align="center"
+                                        sx={{cursor: "pointer"}}
                                     >
                                         {edited ? (
                                             <TextField
