@@ -1,0 +1,58 @@
+name: Deploy React App to S3 + CloudFront
+
+on:
+  push:
+    branches:
+      - main
+    workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-1  # または任意のリージョン
+  AWS_ROLE_TO_ASSUME: arn:aws:iam::123456789012:role/github-actions-deploy-role # ← あなたのIAMロールARNに変更
+  S3_BUCKET_NAME: your-s3-bucket-name # オプションで環境変数に移動可能
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Inject .env from Secrets
+        run: |
+          echo "${{ secrets.PRODUCTION_ENV }}" > .env
+          cat .env >> $GITHUB_ENV  # GitHub Actions 用に環境変数として読み込む
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build React app
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+
+      - name: Deploy to S3
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        with:
+          args: --delete
+        env:
+          AWS_S3_BUCKET: ${{ env.S3_BUCKET_NAME }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          SOURCE_DIR: build
+
+      - name: Invalidate CloudFront cache
+        uses: chetan/invalidate-cloudfront-action@v2
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+          DISTRIBUTION: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+          PATHS: "/*"
