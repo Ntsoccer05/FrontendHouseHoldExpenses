@@ -70,8 +70,8 @@ export default function AppLayout() {
     const topImgLogoStyle = React.useMemo(
         () => ({
             width: "260px",
-            height: "50px",
-            objectFit: "cover",
+            height: "64px",
+            objectFit: "contain",
             marginRight: "10px",
         }),
         []
@@ -120,11 +120,11 @@ export default function AppLayout() {
                         }}
                         onClick={toHome}
                     >
-                        {/* <span className="topTitle">スマート家計簿</span> */}
+                        {/* <span className="topTitle">カケポン</span> */}
                         <img
                             style={topImgLogoStyle}
                             // publicフォルダ内のロゴを参照
-                            src="/src/assets/logo/スマカケ.webp"
+                            src="/src/assets/logo/カケポン.png"
                             alt="toplogo"
                         />
                     </Typography>

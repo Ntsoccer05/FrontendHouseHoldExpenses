@@ -237,13 +237,28 @@ function TransactionTableToolbar(props: TransactionTableToolbarProps) {
                         : jpCurrentYear + "の取引一覧"}
                 </Typography>
             )}
-            {numSelected > 0 && (
-                <Tooltip title="Delete">
-                    <IconButton onClick={onDelete}>
-                        <DeleteIcon />
-                    </IconButton>
-                </Tooltip>
-            )}
+            {isMobile ? 
+                (
+                    numSelected > 0 && (
+                        <Tooltip title="Delete">
+                            <IconButton onClick={onDelete} sx={{flexDirection: "column"}}>
+                                <DeleteIcon />
+                                <Typography variant="caption">削除</Typography>
+                            </IconButton>
+                        </Tooltip>
+                    )
+                ) 
+                : 
+                (
+                    numSelected > 0 && (
+                        <Tooltip title="Delete">
+                            <IconButton onClick={onDelete}>
+                                <DeleteIcon />
+                            </IconButton>
+                        </Tooltip>
+                    )
+                )
+            }
         </Toolbar>
     );
 }
