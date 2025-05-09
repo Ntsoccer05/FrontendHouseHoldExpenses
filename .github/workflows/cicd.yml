@@ -6,11 +6,6 @@ on:
       - main
     workflow_dispatch:
 
-env:
-  AWS_REGION: ap-northeast-1  # または任意のリージョン
-  AWS_ROLE_TO_ASSUME: arn:aws:iam::123456789012:role/github-actions-deploy-role # ← あなたのIAMロールARNに変更
-  S3_BUCKET_NAME: your-s3-bucket-name # オプションで環境変数に移動可能
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
