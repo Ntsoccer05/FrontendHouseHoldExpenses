@@ -10,4 +10,7 @@ export default defineConfig({
   optimizeDeps: {
     include: ['process'],
   },
+  build: {
+    outDir: 'build' // ここが 'dist' になっている可能性大
+  }
 })
