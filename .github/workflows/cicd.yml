@@ -15,10 +15,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Inject .env from Secrets
+      - name: Export .env to environment variables
         run: |
-          echo "${{ secrets.PRODUCTION_ENV }}" > .env
-          cat .env >> $GITHUB_ENV  # GitHub Actions 用に環境変数として読み込む
+          echo "${{ secrets.PRODUCTION_ENV }}" | sed 's/\r$//' | while read line; do
+            echo "$line" >> $GITHUB_ENV
+          done
 
       - name: Checkout code
         uses: actions/checkout@v4
