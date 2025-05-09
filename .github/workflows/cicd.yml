@@ -43,7 +43,7 @@ jobs:
 
       - name: Copy files to S3
         run: |
-          aws s3 sync build s3://${{ env.S3_BUCKET_NAME }} --delete
+          aws s3 sync ${{ env.BUILD_URI }} s3://${{ env.S3_BUCKET_NAME }} --delete
 
       - name: Invalidate CloudFront cache
         uses: chetan/invalidate-cloudfront-action@v2
