@@ -41,18 +41,13 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
 
-      - name: Deploy to S3
-        uses: jakejarvis/s3-sync-action@v0.5.1
-        with:
-          args: --delete
-        env:
-          AWS_S3_BUCKET: ${{ env.S3_BUCKET_NAME }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-          SOURCE_DIR: build
+      - name: Copy files to S3
+        run: |
+          aws s3 sync ${{ env.BUILD_URI }} s3://${{ env.S3_BUCKET_NAME }} --delete
 
       - name: Invalidate CloudFront cache
         uses: chetan/invalidate-cloudfront-action@v2
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
-          DISTRIBUTION: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+          DISTRIBUTION: ${{ env.CLOUDFRONT_DISTRIBUTION_ID }}
           PATHS: "/*"
