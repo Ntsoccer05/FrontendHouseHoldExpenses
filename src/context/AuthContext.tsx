@@ -28,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try{
       const expireAt = new Date(Date.now() + holdingCookieTime * 60 * 1000);
       setFetchLoginUserLoading((prevValue) => prevValue = true);
+      debugger;
       const res = await apiClient.get("/user");
       updateCookie(res.data, {
         expires: expireAt,
@@ -35,6 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       setLoginUser(res.data);
     }catch(error) {
+      debugger;
       setLoginUser(null);
       deleteCookie();
       deleteAllSessionStorage();
@@ -56,7 +58,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try{
       await apiClient.get("/sanctum/csrf-cookie");
       await apiClient.post("/login", credentials);
-      debugger;
       await fetchUser();
     } catch (error) {
       return Promise.reject(error);;
