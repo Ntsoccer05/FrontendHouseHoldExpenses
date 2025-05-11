@@ -56,24 +56,23 @@ export function RegisterError(errorMsgs: RegisterErrs, setErrorMsgs) {
 }
 export function LoginError(errorMsgs: LoginErrs, setErrorMsgs) {
     // 既にあるオブジェクトを更新するときは...state,を使う
-    errorMsgs.map((error) => {
-        if (error.field === "email") {
-            setErrorMsgs((state) => {
-                return {
-                    ...state,
-                    emailErrMsg: error.detail,
-                };
-            });
+    Object.entries(errorMsgs).forEach(([field, messages]) => {
+        const detail = Array.isArray(messages) ? messages[0] : messages;
+    
+        if (field === "email") {
+          setErrorMsgs((state) => ({
+            ...state,
+            emailErrMsg: detail,
+          }));
         }
-        if (error.field === "password") {
-            setErrorMsgs((state) => {
-                return {
-                    ...state,
-                    passErrMsg: error.detail,
-                };
-            });
+    
+        if (field === "password") {
+          setErrorMsgs((state) => ({
+            ...state,
+            passErrMsg: detail,
+          }));
         }
-    })
+    });
 }
 
 export function PasswordResetError(errorMsgs: PasswordResetErrs, setErrorMsgs) {

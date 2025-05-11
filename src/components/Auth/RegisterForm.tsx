@@ -61,7 +61,7 @@ function RegisterForm() {
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
-    const registerSubmit: SubmitHandler<RegisterScheme> = (data) => {
+    const registerSubmit: SubmitHandler<RegisterScheme> = async (data) => {
         //フォームデータ送信時に画面を再更新しないようにする処理
         setIsLoading(true);
         setErrorMsgs(() => {
@@ -73,7 +73,8 @@ function RegisterForm() {
             };
         });
 
-        apiClient
+        await apiClient.get("/sanctum/csrf-cookie");
+        await apiClient
             .post("/register", data)
             .then((response) => {
                 // 送信成功時の処理
