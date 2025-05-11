@@ -56,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try{
       await apiClient.get("/sanctum/csrf-cookie");
       await apiClient.post("/login", credentials);
+      debugger;
       await fetchUser();
     } catch (error) {
       return Promise.reject(error);;
