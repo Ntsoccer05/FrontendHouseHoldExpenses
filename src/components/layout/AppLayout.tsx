@@ -22,6 +22,7 @@ export default function AppLayout() {
     const { setTransactions, setIsLoading } = useAppContext();
     const { loginUser } = useAuthContext();
     const navigate = useNavigate();
+    const headerIMG = import.meta.env.VITE_APP_HEADER_IMG_URL || "/src/assets/logo/カケポン.png"
 
     // サイドバーの開閉をトグル
     const handleDrawerToggle = React.useCallback(() => {
@@ -124,7 +125,7 @@ export default function AppLayout() {
                         <img
                             style={topImgLogoStyle}
                             // publicフォルダ内のロゴを参照
-                            src="/src/assets/logo/カケポン.png"
+                            src={headerIMG}
                             alt="toplogo"
                         />
                     </Typography>
