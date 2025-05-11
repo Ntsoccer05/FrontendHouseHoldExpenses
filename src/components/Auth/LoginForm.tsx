@@ -86,6 +86,8 @@ function LoginForm() {
                     };
                 });
                 setReConfirmEmail(true);
+            }else{
+                setReConfirmEmail(false);
             }
             const errorResMsgs = error.response.data.errors;
             LoginError(errorResMsgs, setErrorMsgs);
