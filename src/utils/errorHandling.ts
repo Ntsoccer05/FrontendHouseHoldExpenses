@@ -56,23 +56,42 @@ export function RegisterError(errorMsgs: RegisterErrs, setErrorMsgs) {
 }
 export function LoginError(errorMsgs: LoginErrs, setErrorMsgs) {
     // 既にあるオブジェクトを更新するときは...state,を使う
-    Object.entries(errorMsgs).forEach(([field, messages]) => {
-        const detail = Array.isArray(messages) ? messages[0] : messages;
-    
-        if (field === "email") {
-          setErrorMsgs((state) => ({
-            ...state,
-            emailErrMsg: detail,
-          }));
-        }
-    
-        if (field === "password") {
-          setErrorMsgs((state) => ({
-            ...state,
-            passErrMsg: detail,
-          }));
-        }
-    });
+    if (Array.isArray(errorMsgs)) {
+        // 配列形式: [{ field: 'email', detail: '...' }, ...]
+        errorMsgs.forEach((error) => {
+          if (error.field === "email") {
+            setErrorMsgs((state) => ({
+              ...state,
+              emailErrMsg: error.detail,
+            }));
+          }
+          if (error.field === "password") {
+            setErrorMsgs((state) => ({
+              ...state,
+              passErrMsg: error.detail,
+            }));
+          }
+        });
+    } else if (typeof errorMsgs === "object" && errorMsgs !== null) {
+        // オブジェクト形式: { email: ['...'], password: '...' }
+        Object.entries(errorMsgs).forEach(([field, messages]) => {
+          const detail = Array.isArray(messages) ? messages[0] : messages;
+      
+          if (field === "email") {
+            setErrorMsgs((state) => ({
+              ...state,
+              emailErrMsg: detail,
+            }));
+          }
+      
+          if (field === "password") {
+            setErrorMsgs((state) => ({
+              ...state,
+              passErrMsg: detail,
+            }));
+          }
+        });
+    }
 }
 
 export function PasswordResetError(errorMsgs: PasswordResetErrs, setErrorMsgs) {
