@@ -19,6 +19,8 @@ import { useNavigate } from "react-router-dom";
 import { CalendarApi } from "fullcalendar";
 import { useTransactionContext } from "../context/TransactionContext";
 import { useAuthContext } from "../context/AuthContext";
+import { Helmet } from "react-helmet-async";
+import { ogIMG } from "../config/ogImg";
 
 const Home = () => {
     const today = format(new Date(), "yyyy-MM-dd");
@@ -114,59 +116,76 @@ const Home = () => {
     };
 
     return (
-        <Box sx={{ display: "flex" }}>
-            {/* 左側コンテンツ */}
-            <Box sx={{ flexGrow: 1, fontSize: { xs: "12px", sm: "1em" } }}>
-                <MonthlySummary monthlyTransactions={monthlyTransactions} />
-                <Grid
-                    item
-                    xs={12}
-                    sx={{
-                        marginBottom: { xs: "13px", sm: 0 },
-                    }}
-                >
-                    {/* 日付選択エリア */}
-                    <ChangeCalendarMonth
-                        calendarRef={calendarRef.current as FullCalendar}
-                    />
-                </Grid>
-                <Box
-                    sx={{
-                        position: isMobile ? "fixed" : "relative",
-                        left: isMobile ? 0 : "auto",
-                        width: isMobile ? "100vw" : "auto",
-                    }}
-                >
-                    <Calendar
-                        setCurrentDay={setCurrentDay}
+        <>
+            <Helmet>
+                <title>カレンダーで見える家計簿管理｜無料アプリ「カケポン」</title>
+                <meta
+                    name="description"
+                    content="「カケポン」は、カレンダー上で日々の支出や収入を視覚的に管理できる家計簿アプリです。月ごとの記録やグラフ分析も可能。無料で簡単に使えます。"
+                />
+                <meta property="og:title" content="カレンダーで家計簿を管理｜無料で使える「カケポン」" />
+                <meta
+                    property="og:description"
+                    content="毎日の収支をカレンダーに記録して、グラフで分析。視覚的に使いやすい家計簿アプリ「カケポン」は、完全無料・登録も簡単です。"
+                />
+                <meta property="og:url" content="https://kake-pon.com/" />
+                <meta property="og:type" content="website" />
+                <meta property="og:image" content={ogIMG} />
+            </Helmet>
+            <Box sx={{ display: "flex" }}>
+                {/* 左側コンテンツ */}
+                <Box sx={{ flexGrow: 1, fontSize: { xs: "12px", sm: "1em" } }}>
+                    <MonthlySummary monthlyTransactions={monthlyTransactions} />
+                    <Grid
+                        item
+                        xs={12}
+                        sx={{
+                            marginBottom: { xs: "13px", sm: 0 },
+                        }}
+                    >
+                        {/* 日付選択エリア */}
+                        <ChangeCalendarMonth
+                            calendarRef={calendarRef.current as FullCalendar}
+                        />
+                    </Grid>
+                    <Box
+                        sx={{
+                            position: isMobile ? "fixed" : "relative",
+                            left: isMobile ? 0 : "auto",
+                            width: isMobile ? "100vw" : "auto",
+                        }}
+                    >
+                        <Calendar
+                            setCurrentDay={setCurrentDay}
+                            currentDay={currentDay}
+                            today={today}
+                            onDateClick={handleDateClick}
+                            calendarRef={calendarRef as React.LegacyRef<FullCalendar>}
+                        />
+                    </Box>
+                </Box>
+                {/* 右側コンテンツ */}
+                <Box>
+                    <TransactionMenu
+                        dailyTransactions={dailyTransactions}
                         currentDay={currentDay}
-                        today={today}
-                        onDateClick={handleDateClick}
-                        calendarRef={calendarRef as React.LegacyRef<FullCalendar>}
+                        onAddTransactionForm={handleAddTransactionForm}
+                        onSelectTransaction={handleSelectTransaction}
+                        open={isMobileDrawerOpen}
+                        onClose={handleCloseMobileDrawer}
+                    />
+                    <TransactionForm
+                        onCloseForm={closeForm}
+                        isEntryDrawerOpen={isEntryDrawerOpen}
+                        currentDay={currentDay}
+                        selectedTransaction={selectedTransaction}
+                        setSelectedTransaction={setSelectedTransaction}
+                        isDialogOpen={isDialogOpen}
+                        setIsDialogOpen={setIsDialogOpen}
                     />
                 </Box>
             </Box>
-            {/* 右側コンテンツ */}
-            <Box>
-                <TransactionMenu
-                    dailyTransactions={dailyTransactions}
-                    currentDay={currentDay}
-                    onAddTransactionForm={handleAddTransactionForm}
-                    onSelectTransaction={handleSelectTransaction}
-                    open={isMobileDrawerOpen}
-                    onClose={handleCloseMobileDrawer}
-                />
-                <TransactionForm
-                    onCloseForm={closeForm}
-                    isEntryDrawerOpen={isEntryDrawerOpen}
-                    currentDay={currentDay}
-                    selectedTransaction={selectedTransaction}
-                    setSelectedTransaction={setSelectedTransaction}
-                    isDialogOpen={isDialogOpen}
-                    setIsDialogOpen={setIsDialogOpen}
-                />
-            </Box>
-        </Box>
+        </>
     );
 };
 export default Home;

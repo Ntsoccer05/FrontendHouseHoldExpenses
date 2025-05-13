@@ -24,6 +24,8 @@ import CategoryEditForm from "../components/CategoryEditForm";
 import AddIcon from "@mui/icons-material/Add";
 import AddCategoryForm from "../components/AddCategoryForm";
 import { useCategoryContext } from "../context/CategoryContext";
+import { Helmet } from "react-helmet-async";
+import { ogIMG } from "../config/ogImg";
 
 interface Data {
     id: number;
@@ -198,153 +200,170 @@ function Category() {
     };
 
     return (
-        <Box sx={{ width: "100%", display: "flex" }}>
-            {/* 左側コンテンツ */}
-            <Box sx={{ flexGrow: 1 }}>
-                {/* 収支切り替えボタン */}
-                <Stack spacing={2}>
-                    <ButtonGroup fullWidth>
-                        <Button
-                            variant={
-                                type === "expense" ? "contained" : "outlined"
-                            }
-                            color="error"
-                            onClick={() => incomeExpenseToggle("expense")}
+        <>
+            <Helmet>
+                <title>カテゴリを自由にカスタマイズ｜家計簿アプリ「カケポン」</title>
+                <meta
+                    name="description"
+                    content="家計簿の支出・収入カテゴリを自由に追加・編集。好きな色やアイコンで自分だけの家計簿を作成できます。"
+                />
+                <meta property="og:title" content="カテゴリを自由にカスタマイズ｜カケポン" />
+                <meta
+                    property="og:description"
+                    content="「カケポン」なら支出や収入カテゴリを自分好みに設定可能。色やアイコンも自由に選べて、使いやすさアップ！"
+                />
+                <meta property="og:url" content="https://kake-pon.com/categories" />
+                <meta property="og:type" content="website" />
+                <meta property="og:image" content={ogIMG} />
+            </Helmet>
+            <Box sx={{ width: "100%", display: "flex" }}>
+                {/* 左側コンテンツ */}
+                <Box sx={{ flexGrow: 1 }}>
+                    {/* 収支切り替えボタン */}
+                    <Stack spacing={2}>
+                        <ButtonGroup fullWidth>
+                            <Button
+                                variant={
+                                    type === "expense" ? "contained" : "outlined"
+                                }
+                                color="error"
+                                onClick={() => incomeExpenseToggle("expense")}
+                            >
+                                支出
+                            </Button>
+                            <Button
+                                onClick={() => incomeExpenseToggle("income")}
+                                color={"primary"}
+                                variant={
+                                    type === "income" ? "contained" : "outlined"
+                                }
+                            >
+                                収入
+                            </Button>
+                        </ButtonGroup>
+                    </Stack>
+                    <Paper sx={{ width: "100%", mb: 2, mt: 5, overflow: "hidden" }}>
+                    <Toolbar
+                        sx={{
+                            pl: { sm: 2 },
+                            pr: { xs: 1, sm: 1 },
+                            ...(numSelected > 0 && {
+                            bgcolor: (theme) =>
+                                alpha(
+                                theme.palette.primary.main,
+                                theme.palette.action.activatedOpacity,
+                                ),
+                            }),
+                        }}
                         >
-                            支出
-                        </Button>
-                        <Button
-                            onClick={() => incomeExpenseToggle("income")}
-                            color={"primary"}
-                            variant={
-                                type === "income" ? "contained" : "outlined"
-                            }
-                        >
-                            収入
-                        </Button>
-                    </ButtonGroup>
-                </Stack>
-                <Paper sx={{ width: "100%", mb: 2, mt: 5, overflow: "hidden" }}>
-                <Toolbar
-                    sx={{
-                        pl: { sm: 2 },
-                        pr: { xs: 1, sm: 1 },
-                        ...(numSelected > 0 && {
-                        bgcolor: (theme) =>
-                            alpha(
-                            theme.palette.primary.main,
-                            theme.palette.action.activatedOpacity,
-                            ),
-                        }),
-                    }}
-                    >
-                    {numSelected > 0 ? (
-                        <Typography
-                        sx={{ flex: "1 1 100%" }}
-                        color="inherit"
-                        variant="subtitle1"
-                        component="div"
-                        >
-                        {numSelected} 件
-                        </Typography>
-                    ) : (
-                        <Typography
-                        sx={{ flex: "1 1 100%" }}
-                        variant="h6"
-                        id="tableTitle"
-                        component="div"
-                        >
-                        カテゴリ編集
-                        </Typography>
-                    )}
-                        {isMobile ? (
-                            <Box display="flex" gap={2} alignItems="center">
-                                <Box textAlign="center">
-                                    <IconButton onClick={openAddCategoryForm} sx={{flexDirection: "column"}}>
-                                        <AddIcon />
-                                        <Typography variant="caption">追加</Typography>
-                                    </IconButton>
-                                </Box>
-                                {numSelected > 0 ? (
-                                    <Box textAlign="center">
-                                    <IconButton onClick={onDeleteCategories} sx={{flexDirection: "column"}}>
-                                        <DeleteIcon />
-                                        <Typography variant="caption">削除</Typography>
-                                    </IconButton>
-                                    </Box>
-                                ) : (
-                                    <Box textAlign="center">
-                                    <IconButton onClick={onUpdateCategories} sx={{flexDirection: "column"}}>
-                                        {edited ? <SaveIcon /> : <EditIcon />}
-                                        <Typography variant="caption">{edited ? "保存" : "編集"}</Typography>
-                                    </IconButton>
-                                    </Box>
-                                    )}
-                            </Box>
-                            ) : (
-                            <>
-                                <Tooltip title="追加">
-                                    <IconButton onClick={openAddCategoryForm}>
-                                    <AddIcon />
-                                    </IconButton>
-                                </Tooltip>
-                                {numSelected > 0 ? (
-                                    <Tooltip title="削除">
-                                    <IconButton onClick={onDeleteCategories}>
-                                        <DeleteIcon />
-                                    </IconButton>
-                                    </Tooltip>
-                                ) : (
-                                    <Tooltip title={edited ? "保存" : "編集"}>
-                                    <IconButton onClick={onUpdateCategories}>
-                                        {edited ? <SaveIcon /> : <EditIcon />}
-                                    </IconButton>
-                                    </Tooltip>
-                                )}
-                            </>
+                        {numSelected > 0 ? (
+                            <Typography
+                            sx={{ flex: "1 1 100%" }}
+                            color="inherit"
+                            variant="subtitle1"
+                            component="div"
+                            >
+                            {numSelected} 件
+                            </Typography>
+                        ) : (
+                            <Typography
+                            sx={{ flex: "1 1 100%" }}
+                            variant="h6"
+                            id="tableTitle"
+                            component="div"
+                            >
+                            カテゴリ編集
+                            </Typography>
                         )}
-                    </Toolbar>
-                    <TableContainer sx={{ maxHeight: 740 }}>
-                        <Table
-                            aria-labelledby="tableTitle"
-                            stickyHeader
-                            aria-label="sticky"
-                        >
-                            <EnhancedTableHead
-                                numSelected={selected.length}
-                                onSelectAllClick={handleSelectAllClick}
-                                rowCount={categories ? categories.length : 0}
-                                edited={edited}
-                            />
-                            <CategoryEditForm
-                                edited={edited}
-                                type={type}
-                                categories={categories}
-                                selected={selected}
-                                swichedCategory={swichedCategory}
-                                setSelected={setSelected}
-                                setCategories={setCategories}
-                                added={added}
-                                deleted={deleted}
-                                setAdded={setAdded}
-                                setEdited={setEdited}
-                                setDeleted={setDeleted}
-                            />
-                        </Table>
-                    </TableContainer>
-                </Paper>
+                            {isMobile ? (
+                                <Box display="flex" gap={2} alignItems="center">
+                                    <Box textAlign="center">
+                                        <IconButton onClick={openAddCategoryForm} sx={{flexDirection: "column"}}>
+                                            <AddIcon />
+                                            <Typography variant="caption">追加</Typography>
+                                        </IconButton>
+                                    </Box>
+                                    {numSelected > 0 ? (
+                                        <Box textAlign="center">
+                                        <IconButton onClick={onDeleteCategories} sx={{flexDirection: "column"}}>
+                                            <DeleteIcon />
+                                            <Typography variant="caption">削除</Typography>
+                                        </IconButton>
+                                        </Box>
+                                    ) : (
+                                        <Box textAlign="center">
+                                        <IconButton onClick={onUpdateCategories} sx={{flexDirection: "column"}}>
+                                            {edited ? <SaveIcon /> : <EditIcon />}
+                                            <Typography variant="caption">{edited ? "保存" : "編集"}</Typography>
+                                        </IconButton>
+                                        </Box>
+                                        )}
+                                </Box>
+                                ) : (
+                                <>
+                                    <Tooltip title="追加">
+                                        <IconButton onClick={openAddCategoryForm}>
+                                        <AddIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                    {numSelected > 0 ? (
+                                        <Tooltip title="削除">
+                                        <IconButton onClick={onDeleteCategories}>
+                                            <DeleteIcon />
+                                        </IconButton>
+                                        </Tooltip>
+                                    ) : (
+                                        <Tooltip title={edited ? "保存" : "編集"}>
+                                        <IconButton onClick={onUpdateCategories}>
+                                            {edited ? <SaveIcon /> : <EditIcon />}
+                                        </IconButton>
+                                        </Tooltip>
+                                    )}
+                                </>
+                            )}
+                        </Toolbar>
+                        <TableContainer sx={{ maxHeight: 740 }}>
+                            <Table
+                                aria-labelledby="tableTitle"
+                                stickyHeader
+                                aria-label="sticky"
+                            >
+                                <EnhancedTableHead
+                                    numSelected={selected.length}
+                                    onSelectAllClick={handleSelectAllClick}
+                                    rowCount={categories ? categories.length : 0}
+                                    edited={edited}
+                                />
+                                <CategoryEditForm
+                                    edited={edited}
+                                    type={type}
+                                    categories={categories}
+                                    selected={selected}
+                                    swichedCategory={swichedCategory}
+                                    setSelected={setSelected}
+                                    setCategories={setCategories}
+                                    added={added}
+                                    deleted={deleted}
+                                    setAdded={setAdded}
+                                    setEdited={setEdited}
+                                    setDeleted={setDeleted}
+                                />
+                            </Table>
+                        </TableContainer>
+                    </Paper>
+                </Box>
+                {/* 右側コンテンツ */}
+                <Box>
+                    <AddCategoryForm
+                        type={type}
+                        open={isMobileDrawerOpen}
+                        onClose={handleCloseMobileDrawer}
+                        setIsMobileDrawerOpen={setIsMobileDrawerOpen}
+                        setAdded={setAdded}
+                    ></AddCategoryForm>
+                </Box>
             </Box>
-            {/* 右側コンテンツ */}
-            <Box>
-                <AddCategoryForm
-                    type={type}
-                    open={isMobileDrawerOpen}
-                    onClose={handleCloseMobileDrawer}
-                    setIsMobileDrawerOpen={setIsMobileDrawerOpen}
-                    setAdded={setAdded}
-                ></AddCategoryForm>
-            </Box>
-        </Box>
+        </>
     );
 }
 
