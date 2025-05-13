@@ -1,0 +1,1 @@
+export const ogIMG = import.meta.env.VITE_APP_OG_IMG_URL || ""
