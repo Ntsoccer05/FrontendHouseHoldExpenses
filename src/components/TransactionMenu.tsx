@@ -47,7 +47,7 @@ const TransactionMenu = memo(
                         boxSizing: "border-box",
                         p: 2,
                         ...(isMobile && {
-                            height: "80vh",
+                            height: "67vh",
                             borderTopRightRadius: 8,
                             borderTopLeftRadius: 8,
                         }),
@@ -123,10 +123,12 @@ const TransactionMenu = memo(
                                             }
                                         >
                                             <CardActionArea>
-                                                <CardContent>
+                                                <CardContent sx={{
+                                                    padding: { xs: 1, md: 2  }, // ← モバイルは狭く
+                                                }}>
                                                     <Grid
                                                         container
-                                                        spacing={1}
+                                                        spacing={{ xs: 0.5, sm: 1 }}
                                                         alignItems="center"
                                                         wrap="wrap"
                                                     >

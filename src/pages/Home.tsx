@@ -150,10 +150,12 @@ const Home = () => {
                     </Grid>
                     <Box
                         sx={{
-                            position: isMobile ? "fixed" : "relative",
+                            position: isMobile ? "absolute" : "relative",
                             left: isMobile ? 0 : "auto",
                             width: isMobile ? "100vw" : "auto",
-                        }}
+                            height: isMobile ? "100vh" : "auto", // 全画面分を使う
+                            overflowY: isMobile ? "auto" : "visible", // スクロール有効化
+                          }}
                     >
                         <Calendar
                             setCurrentDay={setCurrentDay}
