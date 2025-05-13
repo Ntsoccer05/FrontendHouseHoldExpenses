@@ -64,7 +64,7 @@ export default function AppLayout() {
 
     // ホームへのナビゲーション
     const toHome = React.useCallback(() => {
-        handleDrawerToggle();
+        // handleDrawerToggle();
         navigate("/");
     }, [navigate]);
 
