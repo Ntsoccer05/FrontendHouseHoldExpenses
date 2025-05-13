@@ -155,8 +155,6 @@ const Home = () => {
                             width: isMobile ? "100vw" : "auto",
                             height: isMobile ? "100vh" : "auto", // 全画面分を使う
                             overflowY: isMobile ? "auto" : "visible", // スクロール有効化
-                            zIndex: 1, // 他の要素より前面に出す（必要に応じて）
-                            backgroundColor: "background.default", // 背景が透けないように
                           }}
                     >
                         <Calendar
