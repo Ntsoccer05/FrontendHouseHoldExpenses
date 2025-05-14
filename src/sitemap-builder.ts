@@ -19,7 +19,7 @@ const generateSitemap = () => {
   const urlSet = urls.map((url) => {
     return `
     <url>
-      <loc>${'https://your-domain.com' + url}</loc>
+      <loc>${'https://kake-pon.com' + url}</loc>
       <changefreq>monthly</changefreq>
       <priority>0.8</priority>
     </url>
