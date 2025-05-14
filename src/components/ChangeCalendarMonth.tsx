@@ -64,7 +64,17 @@ const ChangeCalendarMonth = memo(
             () => ({
                 mx: 2,
                 position: "absolute",
-                top: { xs: "183px", sm: "202px", md: "205px" },
+                top: {
+                    xs: "183px",
+                    sm: "202px",
+                    md: "205px",
+                    "@supports (-webkit-touch-callout: none)": {
+                      // Safari固有のスタイル
+                      xs: "185px",
+                      sm: "204px",
+                      md: "207px",
+                    },
+                },
                 left: { xs: "0%", md: "235px" },
                 cursor: "pointer",
                 "& .MuiInputLabel-root": {
@@ -107,7 +117,9 @@ const ChangeCalendarMonth = memo(
                 <Box
                     sx={{
                         display: "flex",
-                        justifyContent: "left",
+                        justifyContent: "flex-start",
+                        alignItems: "center",
+                        padding: isMobile ? "8px 0" : "0px",
                     }}
                 >
                     <MobileDatePicker
