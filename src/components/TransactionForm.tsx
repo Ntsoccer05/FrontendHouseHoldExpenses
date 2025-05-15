@@ -27,6 +27,7 @@ import { useTransactionContext } from "../context/TransactionContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalculator } from "@fortawesome/free-solid-svg-icons";
 import Caluculator from "./Caluculator/Caluculator";
+import DraggablePaper from "./Dialog/DraggablePaper";
 interface TransactionFormProps {
     onCloseForm: () => void;
     isEntryDrawerOpen: boolean;
@@ -346,9 +347,32 @@ const TransactionForm = memo(
                                             onClose={dispCalculator}
                                             fullWidth
                                             maxWidth={"xs"}
+                                            PaperComponent={DraggablePaper}
                                         >
+                                            {/* ドラッグの取っ手 */}
+                                            <div
+                                                id="draggable-dialog-title"
+                                                style={{
+                                                    padding: "10px 10px",
+                                                    cursor: "move",
+                                                    backgroundColor: "#f5f5f5",
+                                                    borderBottom: "1px solid #ccc",
+                                                    display: "flex",
+                                                    justifyContent: "flex-end",  // ボタンを右端に寄せる
+                                                    alignItems: "center",
+                                                }}
+                                                >
+                                                <IconButton
+                                                    aria-label="close"
+                                                    onClick={dispCalculator}
+                                                    size="small"
+                                                    sx={{ cursor: "pointer" }}
+                                                >
+                                                    <CloseIcon />
+                                                </IconButton>
+                                            </div>
                                             <DialogContent
-                                                sx={{ textAlign: "center" }}
+                                                sx={{ textAlign: "center", padding: "16px 0 0 0" }}
                                             >
                                                 <Caluculator
                                                     setShowCalculator={
