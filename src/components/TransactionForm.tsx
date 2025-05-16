@@ -329,14 +329,18 @@ const TransactionForm = memo(
                                             field.value === 0 ? "" : field.value
                                         }
                                         onChange={(e) => {
-                                            // parseIntの第二引数は10進数表示とするため
-                                            const newValue =
-                                                parseInt(e.target.value, 10) ||
-                                                0;
-                                            field.onChange(newValue);
+                                            const raw = e.target.value;
+                                            // 数字とマイナスのバリデーション
+                                            const parsed = parseFloat (raw, 10);
+                                            field.onChange(isNaN(parsed) ? 0 : parsed);
                                         }}
                                         label="金額"
-                                        type="number"
+                                        type="text"
+                                        inputMode="numeric"
+                                        inputProps={{
+                                            inputMode: "numeric",
+                                            pattern: "-?[0-9]*",
+                                        }}
                                     />
                                     <IconButton onClick={dispCalculator}>
                                         <FontAwesomeIcon icon={faCalculator} />
@@ -366,7 +370,7 @@ const TransactionForm = memo(
                                                     aria-label="close"
                                                     onClick={dispCalculator}
                                                     size="small"
-                                                    sx={{ cursor: "pointer" }}
+                                                    sx={{ cursor: "pointer", zIndex:1000 }}
                                                 >
                                                     <CloseIcon />
                                                 </IconButton>
