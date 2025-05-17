@@ -184,12 +184,12 @@ function Category() {
     }, [type]);
 
     //削除処理
-    const onDeleteCategories = () => {
+    const onDeleteCategories = async () => {
         if (selected.length > 0) {
             const tgtCategories = categories?.filter((category, index) => {
                 return selected.includes(category.filtered_id as number);
             }) as CategoryItem[];
-            deleteCategories(tgtCategories, type);
+            await deleteCategories(tgtCategories, type);
             setSelected([]);
             setDeleted(true);
         }
