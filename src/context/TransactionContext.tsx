@@ -78,7 +78,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
             console.error("Error fetching monthly transactions:", err);
             return [];
         }
-    }, []);
+    }, [loginUser]);
 
     // 年間取引データの取得
     const getYearlyTransactions = useCallback(async (currentYear: string) => {
@@ -92,7 +92,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
             console.error("Error fetching yearly transactions:", err);
             return [];
         }
-    }, []);
+    }, [loginUser]);
 
     // 取引を保存
     const onSaveTransaction = useCallback(
