@@ -70,7 +70,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
     const getMonthlyTransactions = useCallback(async (currentMonth: string) => {
         try {
             const response = await apiClient.get("/monthly-transaction", {
-                params: { currentMonth },
+                params: { currentMonth, user_id: loginUser?.id },
             });
             setMonthlyTransactions(response.data.monthlyTransactionData);
             return response.data.monthlyTransactionData;
@@ -84,7 +84,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
     const getYearlyTransactions = useCallback(async (currentYear: string) => {
         try {
             const response = await apiClient.get("/yearly-transaction", {
-                params: { currentYear },
+                params: { currentYear, user_id: loginUser?.id },
             });
             setYearlyTransactions(response.data.yearlyTransactionData);
             return response.data.yearlyTransactionData;
