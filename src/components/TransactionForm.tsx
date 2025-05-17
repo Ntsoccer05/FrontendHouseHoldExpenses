@@ -28,6 +28,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalculator } from "@fortawesome/free-solid-svg-icons";
 import Caluculator from "./Caluculator/Caluculator";
 import DraggablePaper from "./Dialog/DraggablePaper";
+import { toHalfWidth } from "../utils/formatting";
 interface TransactionFormProps {
     onCloseForm: () => void;
     isEntryDrawerOpen: boolean;
