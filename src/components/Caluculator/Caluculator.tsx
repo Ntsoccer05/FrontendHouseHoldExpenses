@@ -92,7 +92,7 @@ const Caluculator = ({
                             setInput={setInput}
                         />
                         <OperatorKey
-                            character={"－"}
+                            character={"-"}
                             input={input}
                             setInput={setInput}
                         />

@@ -337,9 +337,8 @@ const TransactionForm = memo(
                                         }}
                                         label="金額"
                                         type="text"
-                                        inputMode="numeric"
+                                        inputMode="decimal"
                                         inputProps={{
-                                            inputMode: "numeric",
                                             pattern: "-?[0-9]*",
                                         }}
                                     />
