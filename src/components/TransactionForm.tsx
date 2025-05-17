@@ -328,10 +328,10 @@ const TransactionForm = memo(
                                         value={
                                             field.value === 0 ? "" : field.value
                                         }
-                                        onChange={(e) => {
-                                            const raw = e.target.value;
+                                        onBlur={(e) => {
+                                            const raw = toHalfWidth(e.target.value);
                                             // 数字とマイナスのバリデーション
-                                            const parsed = parseFloat (raw, 10);
+                                            const parsed = parseInt(raw, 10);
                                             field.onChange(isNaN(parsed) ? 0 : parsed);
                                         }}
                                         label="金額"
@@ -370,7 +370,13 @@ const TransactionForm = memo(
                                                     aria-label="close"
                                                     onClick={dispCalculator}
                                                     size="small"
-                                                    sx={{ cursor: "pointer", zIndex:1000 }}
+                                                    sx={{
+                                                        cursor: "pointer",
+                                                        zIndex: 1000,
+                                                        position: "relative", // ← 必要に応じて追加
+                                                        touchAction: "manipulation", // ← スマホ対応補強
+                                                        pointerEvents: "auto"
+                                                    }}
                                                 >
                                                     <CloseIcon />
                                                 </IconButton>
