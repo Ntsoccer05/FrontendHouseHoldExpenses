@@ -369,13 +369,14 @@ const TransactionForm = memo(
                                                 >
                                                 <IconButton
                                                     aria-label="close"
+                                                    onTouchStart={dispCalculator}
                                                     onClick={dispCalculator}
                                                     size="small"
                                                     sx={{
                                                         cursor: "pointer",
                                                         zIndex: 1000,
-                                                        position: "relative", // ← 必要に応じて追加
-                                                        touchAction: "manipulation", // ← スマホ対応補強
+                                                        position: "relative",
+                                                        touchAction: "auto",
                                                         pointerEvents: "auto"
                                                     }}
                                                 >
