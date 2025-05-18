@@ -203,6 +203,10 @@ const TransactionForm = memo(
         const dispCalculator = () => {
             setShowCalculator(!showCalculator);
         };
+
+        const toggleSign = (value: number) => {
+            return value === 0 ? 0 : -value;
+        };
         const formContent = (
             <>
                 {/* 入力エリアヘッダー */}
@@ -320,7 +324,20 @@ const TransactionForm = memo(
                             name="amount"
                             control={control}
                             render={({ field }) => (
-                                <Box display="flex">
+                                <Box display="flex" alignItems="center">
+                                    <IconButton
+                                        onClick={() => field.onChange(toggleSign(field.value))}
+                                        size="small"
+                                        sx={{
+                                        border: "1px solid #ccc",
+                                        borderRadius: "8px",
+                                        marginRight: "8px",
+                                        width: 30,
+                                        height: 30,
+                                        }}
+                                    >
+                                        <Typography variant="h6">±</Typography>
+                                    </IconButton>
                                     <TextField
                                         sx={{ flexGrow: 1 }}
                                         error={!!errors.amount}
@@ -337,9 +354,9 @@ const TransactionForm = memo(
                                         }}
                                         label="金額"
                                         type="text"
-                                        inputMode="decimal"
+                                        inputMode="numeric"
                                         inputProps={{
-                                            inputMode: "decimal",
+                                            inputMode: "numeric",
                                             pattern: "-?[0-9]*",
                                         }}
                                     />
