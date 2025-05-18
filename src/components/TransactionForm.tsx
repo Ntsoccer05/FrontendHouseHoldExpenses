@@ -339,6 +339,7 @@ const TransactionForm = memo(
                                         type="text"
                                         inputMode="decimal"
                                         inputProps={{
+                                            inputMode: "decimal",
                                             pattern: "-?[0-9]*",
                                         }}
                                     />
