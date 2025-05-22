@@ -6,15 +6,15 @@ function Register() {
     return (
         <>
             <Helmet>
-                <title>無料で始める家計簿アプリ｜カケポン</title>
+                <title>無料で始めるカレンダー家計簿アプリ｜主婦・学生も簡単登録｜カケポン</title>
                 <meta
-                    name="description"
-                    content="家計管理をもっとカンタンに。カレンダー形式で日々の支出・収入を楽しく記録できる「カケポン」。Googleログインですぐに使えます。"
+                name="description"
+                content="面倒な家計簿は卒業！『カケポン』はカレンダー形式で日々の支出・収入を楽しく記録できる無料家計簿アプリ。Googleログイン対応で、主婦・学生・一人暮らしの節約にも最適。"
                 />
-                <meta property="og:title" content="無料で始める家計簿アプリ｜カケポン" />
+                <meta property="og:title" content="家計簿アプリを無料で始める｜簡単登録「カケポン」" />
                 <meta
-                    property="og:description"
-                    content="面倒な家計簿はもう卒業。カレンダーで直感的に収支管理ができる家計簿アプリ「カケポン」。Googleアカウントでかんたん登録！"
+                property="og:description"
+                content="収支管理をカレンダーで見える化！初心者・主婦・学生にもおすすめの無料家計簿アプリ『カケポン』。Googleアカウントでかんたん登録、今日から節約生活スタート。"
                 />
                 <meta property="og:url" content="https://kake-pon.com/register" />
                 <meta property="og:type" content="website" />
