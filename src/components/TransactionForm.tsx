@@ -16,7 +16,7 @@ import {
     Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { Controller, SubmitHandler, useForm } from "react-hook-form";
+import { Controller, ControllerRenderProps, SubmitHandler, useForm } from "react-hook-form";
 import { CategoryItem, Transaction } from "../types";
 import React, { memo, useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -67,6 +67,8 @@ const TransactionForm = memo(
                 icon: "",
             },
         ]);
+
+        const [isFocused, setIsFocused] = useState<boolean>(false);
 
         useEffect(() => {
             setCategories(ExpenseCategories);
@@ -207,6 +209,41 @@ const TransactionForm = memo(
         const toggleSign = (value: number) => {
             return value === 0 ? 0 : -value;
         };
+
+        // 金額フォーカス時に数値化
+        const handleFocus = (
+            e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+            field: ControllerRenderProps<any, any>
+            ) => {
+            const raw = e.target.value.replace(/,/g, "");
+            const parsed = Number(raw);
+            if (!isNaN(parsed)) {
+                field.onChange(parsed);
+            }
+        };
+
+        // 金額ブラー時にカンマ区切り
+        const handleBlur = (
+            e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+            field: ControllerRenderProps<any, any>
+            ) => {
+            const raw = toHalfWidth(e.target.value).replace(/,/g, "");
+            const parsed = Number(raw);
+            field.onChange(isNaN(parsed) ? 0 : parsed);
+        };
+
+        // 金額修正
+        const handleChange = (
+            e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+            field: ControllerRenderProps<any, any>
+            ) => {
+            const raw = e.target.value.replace(/[^\d-]/g, "");
+            const parsed = Number(raw);
+            if (!isNaN(parsed) || raw === "") {
+                field.onChange(raw === "" ? 0 : parsed);
+            }
+        };
+
         const formContent = (
             <>
                 {/* 入力エリアヘッダー */}
@@ -329,11 +366,11 @@ const TransactionForm = memo(
                                         onClick={() => field.onChange(toggleSign(field.value))}
                                         size="small"
                                         sx={{
-                                        border: "1px solid #ccc",
-                                        borderRadius: "8px",
-                                        marginRight: "8px",
-                                        width: 30,
-                                        height: 30,
+                                            border: "1px solid #ccc",
+                                            borderRadius: "8px",
+                                            marginRight: "8px",
+                                            width: 30,
+                                            height: 30,
                                         }}
                                     >
                                         <Typography variant="h6">±</Typography>
@@ -344,20 +381,28 @@ const TransactionForm = memo(
                                         helperText={errors.amount?.message}
                                         {...field}
                                         value={
-                                            field.value === 0 ? "" : field.value
+                                            isFocused
+                                            ? field.value === 0
+                                                ? ""
+                                                : String(field.value) // カンマ無し表示
+                                            : field.value === 0
+                                                ? ""
+                                                : Number(field.value).toLocaleString() // カンマ付き表示
                                         }
-                                        onBlur={(e) => {
-                                            const raw = toHalfWidth(e.target.value);
-                                            // 数字とマイナスのバリデーション
-                                            const parsed = parseInt(raw, 10);
-                                            field.onChange(isNaN(parsed) ? 0 : parsed);
+                                        onFocus={(e) => {
+                                            setIsFocused(true);
+                                            handleFocus(e, field);
                                         }}
+                                        onBlur={(e) => {
+                                            setIsFocused(false);
+                                            handleBlur(e, field);
+                                        }}
+                                        onChange={(e) => handleChange(e, field)}
                                         label="金額"
                                         type="text"
                                         inputMode="numeric"
                                         inputProps={{
                                             inputMode: "numeric",
-                                            pattern: "-?[0-9]*",
                                         }}
                                     />
                                     <IconButton onClick={dispCalculator}>
