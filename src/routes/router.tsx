@@ -39,9 +39,7 @@ function DefineRouter() {
                                             // PrivateRoute：ログインしていなかったらログイン画面へリダイレクト
                                             element={
                                                 <TransactionProvider>
-                                                    <PrivateRoute>
-                                                        <Home />
-                                                    </PrivateRoute>
+                                                    <Home />
                                                 </TransactionProvider>
                                             }
                                         />
