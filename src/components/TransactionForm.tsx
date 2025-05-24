@@ -237,7 +237,9 @@ const TransactionForm = memo(
             e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
             field: ControllerRenderProps<any, any>
             ) => {
-            const raw = e.target.value.replace(/[^\d-]/g, "");
+            const raw = e.target.value
+                            .replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)) // 全角数字を半角に変換
+                            .replace(/[^\d-]/g, ""); // 半角数字とハイフン以外を除去
             const parsed = Number(raw);
             if (!isNaN(parsed) || raw === "") {
                 field.onChange(raw === "" ? 0 : parsed);
