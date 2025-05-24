@@ -3,8 +3,10 @@ import { Avatar, Box, Typography } from "@mui/material";
 interface AppTitleProps {
     title: string;
     icon?: JSX.Element;
+    src?: string;
+    alt?: string
 }
-function AppTitle({ title, icon }: AppTitleProps) {
+function AppTitle({ title, icon, src, alt }: AppTitleProps) {
     return (
         <Box>
             <Typography
@@ -13,11 +15,19 @@ function AppTitle({ title, icon }: AppTitleProps) {
                 sx={
                     icon
                         ? { cursor: "default", mb: 0 }
-                        : { cursor: "default", mb: 5 }
+                        : { cursor: "default", mb: src ? 2 : 5 }
                 }
             >
                 {title}
             </Typography>
+            {src && (
+                <img src={src} alt={alt} style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        margin: "0 auto",
+                        marginBottom: 5,
+                    }}></img>
+            )}
             {icon && (
                 <Avatar
                     sx={{

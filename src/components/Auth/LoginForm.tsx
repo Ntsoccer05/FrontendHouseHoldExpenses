@@ -230,7 +230,7 @@ function LoginForm() {
                         gap: "20px",
                     }}
                 >
-                    <AppTitle title="ログイン" icon={IconComponents}></AppTitle>
+                    <AppTitle title="ログイン" src={`${import.meta.env.VITE_API_URL}/storage/images/kakepon_login_jump.gif`} alt="ログイン|カケポン"></AppTitle>
                     <SocialLoginBtn></SocialLoginBtn>
 
                     {formContent}
