@@ -118,15 +118,15 @@ const Home = () => {
     return (
         <>
             <Helmet>
-                <title>カレンダーで見える家計簿管理｜無料アプリ「カケポン」</title>
+                <title>無料で使えるカレンダー家計簿アプリ｜人気「カケポン」</title>
                 <meta
                     name="description"
-                    content="「カケポン」は、カレンダー上で日々の支出や収入を視覚的に管理できる家計簿アプリです。月ごとの記録やグラフ分析も可能。無料で簡単に使えます。"
+                    content="『カケポン』は無料で使える家計簿アプリ。カレンダー形式で支出・収入を直感的に管理でき、グラフ分析も簡単。初心者や主婦にもおすすめの節約サポートアプリ。"
                 />
-                <meta property="og:title" content="カレンダーで家計簿を管理｜無料で使える「カケポン」" />
+                <meta property="og:title" content="無料カレンダー家計簿アプリ｜「カケポン」" />
                 <meta
                     property="og:description"
-                    content="毎日の収支をカレンダーに記録して、グラフで分析。視覚的に使いやすい家計簿アプリ「カケポン」は、完全無料・登録も簡単です。"
+                    content="カレンダーで家計簿を見える化！『カケポン』は収支を毎日記録・分析できる無料アプリ。主婦・学生・一人暮らしの節約に最適。登録不要ですぐ使える。"
                 />
                 <meta property="og:url" content="https://kake-pon.com/" />
                 <meta property="og:type" content="website" />
