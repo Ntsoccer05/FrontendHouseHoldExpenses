@@ -242,7 +242,7 @@ function LoginForm() {
                         </Grid>
                         <Grid item>
                             <Link to="/register">
-                                {"アカウントをお持ちでないですか？ 新規登録"}
+                                {"アカウントをお持ちでないですか？ 新規アカウント登録"}
                             </Link>
                         </Grid>
                     </Grid>

@@ -6,11 +6,8 @@ function Register() {
     return (
         <>
             <Helmet>
-                <title>無料で始めるカレンダー家計簿アプリ｜主婦・学生も簡単登録｜カケポン</title>
-                <meta
-                name="description"
-                content="面倒な家計簿は卒業！『カケポン』はカレンダー形式で日々の支出・収入を楽しく記録できる無料家計簿アプリ。Googleログイン対応で、主婦・学生・一人暮らしの節約にも最適。"
-                />
+                <title>家計簿アプリを今すぐ無料登録｜カレンダー管理が人気の「カケポン」</title>
+                <meta name="description" content="初心者も簡単！Googleログインで今すぐ無料登録。カレンダー式で支出・収入を見える化できる家計簿アプリ「カケポン」。主婦・学生・節約中の方に大好評！" />
                 <meta property="og:title" content="家計簿アプリを無料で始める｜簡単登録「カケポン」" />
                 <meta
                 property="og:description"
