@@ -23,6 +23,10 @@
     margin-bottom: 10px;
     border-radius: 4px;
     box-sizing: border-box;
+    position :relative;
+    overflow-x: auto!important;
+    overflow-y: hidden!important;
+    white-space: nowrap;
 }
 
 .key-rows {
@@ -59,6 +63,10 @@
         font-size: 32px;
         height: 90px;
         line-height: 90px;
+        position :relative;
+        overflow-x: auto!important;
+        overflow-y: hidden!important;
+        white-space: nowrap;
     }
 
     .key {
@@ -76,6 +84,10 @@
         font-size: 36px;
         height: 100px;
         line-height: 100px;
+        position :relative;
+        overflow-x: auto!important;
+        overflow-y: hidden!important;
+        white-space: nowrap;
     }
 
     .key {
