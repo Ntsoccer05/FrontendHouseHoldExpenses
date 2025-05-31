@@ -454,6 +454,7 @@ const TransactionForm = memo(
                                                     setShowCalculator={
                                                         setShowCalculator
                                                     }
+                                                    amount={field.value}
                                                     onAmountChange={(
                                                         newValue
                                                     ) => {

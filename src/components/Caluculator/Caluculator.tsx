@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Key from "./Key";
 import ZeroKey from "./ZeroKey";
 import DotKey from "./DotKey";
@@ -9,32 +9,55 @@ import EqualKey from "./EqualKey";
 import "../../assets/css/calculator.css"
 import PlusMinusKey from "./PlusMinusKey";
 import { Button } from "@mui/material";
+import { safeEvaluate } from "../../utils/calculate";
 
 type CaluculatorProps = {
+    amount: number;
     setShowCalculator: React.Dispatch<React.SetStateAction<boolean>>;
     onAmountChange: (newValue: number) => void;
 };
 
 const Caluculator = ({
+    amount,
     setShowCalculator,
     onAmountChange,
 }: CaluculatorProps) => {
-    const [input, setInput] = useState("");
+    const [input, setInput] = useState<string>(!!amount ? String(amount) : "");
+    const inputRef = useRef(null);
 
     const reflectAmount = () => {
-        onAmountChange(Number(input));
+        const hasOperator = /[+\-×÷]/.test(input);
+
+        let result = input;
+
+        if (hasOperator) {
+            try {
+                const sanitized = input.replace(/×/g, "*").replace(/÷/g, "/");
+                const evalResult = safeEvaluate(sanitized);
+                result = String(evalResult);
+                setInput(result);
+            } catch (e) {
+                alert("計算に失敗しました");
+                return;
+            }
+        }
+
+        onAmountChange(Number(result));
         setShowCalculator(false);
     };
+
+    useEffect(() => {
+        if (inputRef.current) {
+            inputRef.current.scrollLeft = inputRef.current.scrollWidth;
+        }
+    }, [input]);
 
     return (
         <>
             <div className="container">
-                <input
-                    className="calulator-display"
-                    type="text"
-                    value={input}
-                    disabled
-                />
+                <div className="calulator-display" ref={inputRef}>
+                    {input}
+                </div>
                 <div className="key-rows">
                     <div className="key-row">
                         <ClearKey
