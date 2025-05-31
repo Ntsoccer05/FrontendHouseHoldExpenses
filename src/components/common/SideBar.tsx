@@ -52,7 +52,7 @@ const Sidebar = ({
 
     const NotLoginMenuItems: menuItem[] = [
         { text: "ログイン", path: "/login", icon: MeetingRoomIcon },
-        { text: "サインイン", path: "/register", icon: LockOpenIcon },
+        { text: "アカウント登録", path: "/register", icon: LockOpenIcon },
     ];
 
     const [menuItems, setMenuItems] = useState<menuItem[]>([

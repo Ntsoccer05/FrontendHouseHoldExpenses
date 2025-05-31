@@ -262,8 +262,8 @@ function RegisterForm() {
                     }}
                 >
                     <AppTitle
-                        title="サインイン"
-                        src={`${import.meta.env.VITE_API_URL}/storage/images/kakepon_register_jump.gif`} alt="サインイン|カケポン"
+                        title="新規アカウント登録"
+                        src={`${import.meta.env.VITE_API_URL}/storage/images/kakepon_register_jump.gif`} alt="新規アカウント登録|カケポン"
                     ></AppTitle>
                     <SocialLoginBtn></SocialLoginBtn>
                     {formContent}
