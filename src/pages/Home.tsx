@@ -38,7 +38,7 @@ const Home = () => {
     //ページ遷移に使用する
     const navigate = useNavigate();
 
-    const calendarRef = useRef<React.LegacyRef<FullCalendar> | FullCalendar>(
+    const calendarRef = useRef<React.RefObject<FullCalendar> | FullCalendar>(
         null
     );
 
@@ -118,13 +118,10 @@ const Home = () => {
     return (
         <>
             <Helmet>
-                <title>無料家計簿アプリ「カケポン」｜カレンダーで支出・収入を見える化</title>
-                <meta name="description" content="家計簿が続かない人におすすめ！カレンダー形式で収支を管理・分析できる無料の家計簿アプリ「カケポン」。主婦・学生・一人暮らしの節約に最適。登録不要ですぐ使える！" />
-                <meta property="og:title" content="無料カレンダー家計簿アプリ｜「カケポン」" />
-                <meta
-                    property="og:description"
-                    content="カレンダーで家計簿を見える化！『カケポン』は収支を毎日記録・分析できる無料アプリ。主婦・学生・一人暮らしの節約に最適。登録不要ですぐ使える。"
-                />
+                <title>完全無料家計簿アプリ「カケポン」｜カレンダーで支出・収入をかんたん管理</title>
+                <meta name="description" content="登録してすぐ使える完全無料家計簿アプリ「カケポン」。カレンダー形式で支出・収入を見える化し、家計管理を続けたい主婦・社会人・カップル・一人暮らし・学生におすすめです。" />
+                <meta property="og:title" content="カレンダーで見える家計簿｜完全無料アプリ「カケポン」" />
+                <meta property="og:description" content="毎日の支出・収入をカレンダーで見える化！登録してすぐ使える完全無料家計簿アプリ『カケポン』。忙しくても続けやすい設計です。" />
                 <meta property="og:url" content="https://kake-pon.com/" />
                 <meta property="og:type" content="website" />
                 <meta property="og:image" content={ogIMG} />

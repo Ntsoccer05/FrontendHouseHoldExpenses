@@ -1,5 +1,5 @@
 import FullCalendar from "@fullcalendar/react";
-import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import jaLocale from "@fullcalendar/core/locales/ja";
 import {
@@ -42,7 +42,7 @@ interface CalendarProps {
     currentDay: string;
     today: string;
     onDateClick: (dateInfo: DateClickArg) => void;
-    calendarRef: React.LegacyRef<FullCalendar>;
+    calendarRef: React.RefObject<FullCalendar>;
 }
 const Calendar = memo(
     ({
@@ -56,6 +56,8 @@ const Calendar = memo(
             useTransactionContext();
         const { setCurrentMonth, currentMonth, isMobile } = useAppContext();
         const theme = useTheme();
+
+        const swipeStart = useRef({ x: 0, y: 0 });
 
         // 状態をまとめて管理
         const [calendarState, setCalendarState] = useState({
@@ -173,6 +175,49 @@ const Calendar = memo(
             },
             [calendarRef]
         );
+
+        useEffect(() => {
+            const timeout = setTimeout(() => {
+                debugger
+                const calendarElement = (calendarRef.current as any)?.elRef?.current as HTMLElement;
+                if (!calendarElement) return;
+
+                const thresholdX = 50;
+                const thresholdY = 30;
+
+                const handleTouchStart = (e: TouchEvent) => {
+                const touch = e.touches[0];
+                swipeStart.current = { x: touch.clientX, y: touch.clientY };
+                };
+
+                const handleTouchEnd = (e: TouchEvent) => {
+                const touch = e.changedTouches[0];
+                const diffX = touch.clientX - swipeStart.current.x;
+                const diffY = touch.clientY - swipeStart.current.y;
+
+                if (Math.abs(diffY) > thresholdY || Math.abs(diffX) < thresholdX) return;
+
+                const api = calendarRef.current?.getApi();
+                if (!api) return;
+
+                if (diffX > 0) {
+                    api.prev();
+                } else {
+                    api.next();
+                }
+                };
+
+                calendarElement.addEventListener("touchstart", handleTouchStart, { passive: true });
+                calendarElement.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+                return () => {
+                calendarElement.removeEventListener("touchstart", handleTouchStart);
+                calendarElement.removeEventListener("touchend", handleTouchEnd);
+                };
+            }, 100); // DOMが確実にレンダリングされるタイミングを保証
+
+            return () => clearTimeout(timeout);
+        }, [calendarRef]);
 
         // イベントレンダリング関数
         const renderEventContent = useCallback(
