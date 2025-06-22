@@ -252,7 +252,7 @@ const Calculator = ({
     <div style={{ 
       fontFamily: 'Arial, sans-serif',
       maxWidth: '400px',
-      margin: '20px auto',
+      margin: '0px auto 20px',
       padding: '20px',
       backgroundColor: '#f5f5f5',
       borderRadius: '10px',
