@@ -2,6 +2,7 @@ import {
     Box,
     Button,
     ButtonGroup,
+    CircularProgress,
     Dialog,
     DialogContent,
     FormControl,
@@ -70,6 +71,11 @@ const TransactionForm = memo(
 
         const [isFocused, setIsFocused] = useState<boolean>(false);
 
+        // 削除中ローディング
+        const [isDeleting, setIsDeleting] = useState(false);
+
+        const defaultCategory = ExpenseCategories?.[0]?.label ?? "";
+
         useEffect(() => {
             setCategories(ExpenseCategories);
         }, [ExpenseCategories]);
@@ -79,7 +85,7 @@ const TransactionForm = memo(
             setValue,
             watch,
             // errorsにバリデーションメッセージが格納される
-            formState: { errors },
+            formState: { errors, isSubmitting },
             handleSubmit,
             reset,
         } = useForm<Schema>({
@@ -111,13 +117,29 @@ const TransactionForm = memo(
                 type: "expense",
                 date: currentDay,
                 amount: 0,
-                category: "",
+                category: defaultCategory,
                 content: "",
             });
         }, [currentDay]);
 
+        // 支出デフォルト値セット
+        useEffect(() => {
+            if (ExpenseCategories?.length) {
+                reset({
+                    type: "expense",
+                    date: currentDay,
+                    amount: 0,
+                    category: ExpenseCategories[0].label ?? "",
+                    content: "",
+                });
+                setCategories(ExpenseCategories);
+            }
+        }, [ExpenseCategories]);
+
         //収支タイプを監視
         const currentType = watch("type");
+        // 現在選択しているカテゴリ
+        const selectedLabel = watch("category");
 
         //収支タイプに応じたカテゴリを取得
         useEffect(() => {
@@ -125,13 +147,20 @@ const TransactionForm = memo(
                 currentType === "expense"
                     ? ExpenseCategories
                     : IncomeCategories;
-            setCategories(newCategories);
+            setCategories((prevCategory)=>prevCategory = newCategories);
+            reset({
+                type: currentType,
+                date: currentDay,
+                amount: 0,
+                category: newCategories?.[0]?.label,
+                content: "",
+            });
         }, [currentType]);
 
         // 送信処理
-        const onSubmit: SubmitHandler<Schema> = (data) => {
+        const onSubmit: SubmitHandler<Schema> = async(data) => {
             if (selectedTransaction) {
-                onUpdateTransaction(data, selectedTransaction.id)
+                await onUpdateTransaction(data, selectedTransaction.id)
                     .then(() => {
                         setSelectedTransaction(null);
                         if (isMobile) {
@@ -142,7 +171,7 @@ const TransactionForm = memo(
                         console.error(error);
                     });
             } else {
-                onSaveTransaction(data)
+                await onSaveTransaction(data)
                     .then(() => {})
                     .catch((error) => {
                         console.error(error);
@@ -153,7 +182,7 @@ const TransactionForm = memo(
                 type: currentType,
                 date: currentDay,
                 amount: 0,
-                category: "",
+                category: selectedLabel,
                 content: "",
             });
         };
@@ -185,20 +214,27 @@ const TransactionForm = memo(
                     type: "expense",
                     date: currentDay,
                     amount: 0,
-                    category: "",
+                    category: categories?.[0].label,
                     content: "",
                 });
             }
         }, [selectedTransaction]);
 
         //削除処理
-        const handleDelete = () => {
+        const handleDelete = async () => {
             if (selectedTransaction) {
-                onDeleteTransaction(selectedTransaction.id);
-                if (isMobile) {
-                    setIsDialogOpen(false);
+                setIsDeleting(true);
+                try {
+                    await onDeleteTransaction(selectedTransaction.id);
+                    if (isMobile) {
+                        setIsDialogOpen(false);
+                    }
+                    setSelectedTransaction(null);
+                } catch (error) {
+                    console.error(error);
+                } finally {
+                    setIsDeleting(false);
                 }
-                setSelectedTransaction(null);
             }
         };
 
@@ -492,8 +528,31 @@ const TransactionForm = memo(
                                 currentType === "expense" ? "error" : "primary"
                             }
                             fullWidth
+                            startIcon={
+                                isSubmitting && (
+                                    <CircularProgress color="inherit" size={20} />
+                                )
+                            }
+                            disabled={isSubmitting || isDeleting}
+                            sx={{
+                                bgcolor: (theme) =>
+                                    (isSubmitting || isDeleting)
+                                        ? theme.palette.action.disabledBackground
+                                        : undefined,
+                                color: (theme) =>
+                                    (isSubmitting || isDeleting)
+                                        ? theme.palette.action.disabled
+                                        : undefined,
+                            }}
                         >
-                            {selectedTransaction ? "更新" : "保存"}
+                            {isSubmitting
+                                ? selectedTransaction
+                                    ? "更新中…"
+                                    : "保存中…"
+                                : selectedTransaction
+                                    ? "更新"
+                                    : "保存"
+                            }
                         </Button>
                         {selectedTransaction && (
                             <Button
@@ -501,8 +560,24 @@ const TransactionForm = memo(
                                 variant="outlined"
                                 color={"secondary"}
                                 fullWidth
+                                startIcon={
+                                    isDeleting && (
+                                        <CircularProgress color="inherit" size={20} />
+                                    )
+                                }
+                                disabled={isSubmitting || isDeleting}
+                                sx={{
+                                    bgcolor: (theme) =>
+                                        (isSubmitting || isDeleting)
+                                            ? theme.palette.action.disabledBackground
+                                            : undefined,
+                                    color: (theme) =>
+                                        (isSubmitting || isDeleting)
+                                            ? theme.palette.action.disabled
+                                            : undefined,
+                                }}
                             >
-                                削除
+                                {isDeleting ? "削除中…" : "削除"}
                             </Button>
                         )}
                     </Stack>

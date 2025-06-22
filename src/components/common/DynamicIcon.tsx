@@ -19,6 +19,7 @@ import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 
 const Icons = {
     AlarmIcon,
@@ -41,6 +42,7 @@ const Icons = {
     AccountBalanceWalletIcon,
     AttachMoneyIcon,
     TrendingUpIcon,
+    MoreHorizIcon
 };
 
 const DynamicIcon = memo(

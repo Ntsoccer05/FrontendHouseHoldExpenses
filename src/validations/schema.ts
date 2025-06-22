@@ -6,6 +6,7 @@ export const transactionSchema = z.object({
     date: z.string().min(1, { message: "日付は必須です" }),
     amount: z
         .number()
+        .gt(0, { message: "金額は1円以上で入力してください" })
         .refine((value) => value.toLocaleString().length <= 10, {
             message: "金額は10桁以内にしてください",
         }),

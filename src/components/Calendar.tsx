@@ -178,7 +178,6 @@ const Calendar = memo(
 
         useEffect(() => {
             const timeout = setTimeout(() => {
-                debugger
                 const calendarElement = (calendarRef.current as any)?.elRef?.current as HTMLElement;
                 if (!calendarElement) return;
 

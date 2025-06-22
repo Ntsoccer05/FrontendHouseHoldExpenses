@@ -11,6 +11,7 @@ export const expenseMuiIcons = [
     "LocalHospital", // 健康
     "School", // 教育
     "LocalGroceryStore",
+    "MoreHoriz", // 未分類
 ];
 export const incomeMuiIcons = [
     "Work",
@@ -21,4 +22,5 @@ export const incomeMuiIcons = [
     "AccountBalanceWallet", // 資産管理、財布
     "AttachMoney",
     "TrendingUp",
+    "MoreHoriz", // 未分類
 ];
