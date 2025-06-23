@@ -210,11 +210,43 @@ const Calculator = ({
     }
   };
 
-  // 金額反映処理
+  // 計算中かどうかを判定する関数
+  const isCalculationInProgress = () => {
+    return operator !== null && previousValue !== null && !waitingForOperand;
+  };
+
+  // 金額反映処理（計算中の場合は自動で計算完了させる）
   const reflectAmount = () => {
-    const value = parseFloat(display);
-    if (!isNaN(value)) {
-      onAmountChange(value);
+    let finalValue: number;
+    
+    // 計算中の場合は自動で計算を完了する
+    if (isCalculationInProgress()) {
+      const inputValue = parseFloat(display);
+      const currentValue = previousValue || 0;
+      finalValue = calculate(currentValue, inputValue, operator!);
+      
+      if (isNaN(finalValue)) {
+        alert("計算エラーが発生しました");
+        return;
+      }
+      
+      // 履歴に追加
+      const historyEntry = `${currentValue} ${getOperatorSymbol(operator!)} ${inputValue} = ${finalValue}`;
+      setHistory(prev => [historyEntry, ...prev.slice(0, 9)]);
+      
+      // 計算機の状態をリセット
+      setDisplay(String(finalValue));
+      setExpression(`${currentValue} ${getOperatorSymbol(operator!)} ${inputValue} =`);
+      setPreviousValue(null);
+      setOperator(null);
+      setWaitingForOperand(true);
+    } else {
+      // 通常の場合はディスプレイの値を使用
+      finalValue = parseFloat(display);
+    }
+    
+    if (!isNaN(finalValue)) {
+      onAmountChange(finalValue);
       setShowCalculator(false);
     }
   };
