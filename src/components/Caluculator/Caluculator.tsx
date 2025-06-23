@@ -87,7 +87,6 @@ const Calculator = ({
       const newValue = calculate(currentValue, inputValue, operator);
 
       if (isNaN(newValue)) {
-        alert("計算エラーが発生しました");
         return;
       }
 
@@ -112,7 +111,6 @@ const Calculator = ({
       const newValue = calculate(currentValue, inputValue, operator);
 
       if (isNaN(newValue)) {
-        alert("計算エラーが発生しました");
         return;
       }
 
@@ -226,7 +224,6 @@ const Calculator = ({
       finalValue = calculate(currentValue, inputValue, operator!);
       
       if (isNaN(finalValue)) {
-        alert("計算エラーが発生しました");
         return;
       }
       
