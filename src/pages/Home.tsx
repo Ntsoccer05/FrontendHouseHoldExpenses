@@ -156,7 +156,7 @@ const Home = () => {
                             currentDay={currentDay}
                             today={today}
                             onDateClick={handleDateClick}
-                            calendarRef={calendarRef as React.LegacyRef<FullCalendar>}
+                            calendarRef={calendarRef as React.RefObject<FullCalendar>}
                         />
                     </Box>
                 </Box>
