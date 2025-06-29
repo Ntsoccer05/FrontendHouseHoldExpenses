@@ -15,8 +15,17 @@ import Checkbox from "@mui/material/Checkbox";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { financeCalculations } from "../utils/financeCalculations";
-import { Badge, Grid } from "@mui/material";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import TrendingFlatIcon from "@mui/icons-material/TrendingFlat";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import { 
+    calculateComparison, 
+    calculateCategoryComparison, 
+    type CategoryComparison 
+} from "../utils/financeCalculations";
+import { Badge, Grid, Chip, Collapse, List, ListItem, ListItemText, Divider, useMediaQuery } from "@mui/material";
 import {
     formatCurrency,
     formatJPMonth,
@@ -25,13 +34,14 @@ import {
 import { compareDesc, format, parseISO } from "date-fns";
 import { useTransactionContext } from "../context/TransactionContext";
 import DynamicIcon from "./common/DynamicIcon";
-import TableSortLabel from "@mui/material/TableSortLabel"; // 並び替えラベルのインポート
+import TableSortLabel from "@mui/material/TableSortLabel";
 import HeightIcon from "@mui/icons-material/Height";
 import { useAppContext } from "../context/AppContext";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import { CheckBoxItem, Transaction, TransactionType } from "../types";
 import { PopoverContent } from "./PopoverContent";
 
+// 既存のインターフェースと関数（TransactionTableHead, TransactionTableToolbar）は変更なし
 interface TransactionTableHeadProps {
     numSelected?: number;
     order: "asc" | "desc" | undefined;
@@ -72,7 +82,7 @@ function TransactionTableHead(props: TransactionTableHeadProps) {
                 {viewType === "monthly" && (
                     <TableCell
                         padding="checkbox"
-                        sx={{ width: "50px", minWidth: "50px", display: isMobile ? "none" : "masonry"}}
+                        sx={{ width: "50px", minWidth: "50px", display: isMobile ? "none" : "table-cell"}}
                     >
                         <Checkbox
                             color="primary"
@@ -95,7 +105,7 @@ function TransactionTableHead(props: TransactionTableHeadProps) {
                         whiteSpace: "nowrap",
                         width: "auto",
                         minWidth: "0",
-                    }} // 固定幅
+                    }}
                 >
                     {viewType === "monthly" ? "日付" : "月"}
                 </TableCell>
@@ -105,7 +115,7 @@ function TransactionTableHead(props: TransactionTableHeadProps) {
                         whiteSpace: "nowrap",
                         width: "auto",
                         minWidth: "0",
-                    }} // 固定幅
+                    }}
                     ref={popoverRef}
                 >
                     カテゴリ
@@ -123,14 +133,13 @@ function TransactionTableHead(props: TransactionTableHeadProps) {
                     </Badge>
                 </TableCell>
 
-                {/* 金額の並び替えを可能にする */}
                 <TableCell
                     align={"left"}
                     sortDirection={orderBy === "amount" ? order : false}
                     sx={{
                         width: { xs: "100px", sm: "150px", md: "200px" },
                         minWidth: "100px",
-                    }} // 固定幅
+                    }}
                 >
                     <TableSortLabel
                         active={orderBy === "amount"}
@@ -167,7 +176,7 @@ function TransactionTableHead(props: TransactionTableHeadProps) {
                 {viewType === "monthly" && (
                     <TableCell
                         padding="checkbox"
-                        sx={{ width: "50px", minWidth: "50px", display: isMobile ? "masonry" : "none"}}
+                        sx={{ width: "50px", minWidth: "50px", display: isMobile ? "table-cell" : "none"}}
                     >
                         <Checkbox
                             color="primary"
@@ -267,9 +276,25 @@ interface FinancialItemProps {
     title: string;
     value: number;
     color: string;
+    previousValue?: number;
+    changeRate?: number;
+    showComparison?: boolean;
 }
+
 // 収支表示コンポーネント
-function FinancialItem({ title, value, color }: FinancialItemProps) {
+function FinancialItem({ title, value, color, previousValue, changeRate, showComparison = false }: FinancialItemProps) {
+    const getTrendIcon = (rate: number) => {
+        if (rate > 0) return <TrendingUpIcon fontSize="small" sx={{ color: 'success.main' }} />;
+        if (rate < 0) return <TrendingDownIcon fontSize="small" sx={{ color: 'error.main' }} />;
+        return <TrendingFlatIcon fontSize="small" sx={{ color: 'grey.500' }} />;
+    };
+
+    const getTrendColor = (rate: number) => {
+        if (rate > 0) return 'success.main';
+        if (rate < 0) return 'error.main';
+        return 'grey.500';
+    };
+
     return (
         <Grid item xs={4} textAlign={"center"}>
             <Typography variant="subtitle1" component={"div"}>
@@ -286,7 +311,135 @@ function FinancialItem({ title, value, color }: FinancialItemProps) {
             >
                 ￥{formatCurrency(value)}
             </Typography>
+            {showComparison && changeRate !== undefined && (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 0.5 }}>
+                    {getTrendIcon(changeRate)}
+                    <Typography 
+                        variant="caption" 
+                        sx={{ 
+                            color: getTrendColor(changeRate),
+                            ml: 0.25,
+                            fontSize: { xs: "0.7rem", sm: "0.75rem" }
+                        }}
+                    >
+                        {changeRate > 0 ? '+' : ''}{changeRate}%
+                    </Typography>
+                </Box>
+            )}
+            {showComparison && previousValue !== undefined && (
+                <Typography 
+                    variant="caption" 
+                    sx={{ 
+                        color: 'text.secondary',
+                        fontSize: { xs: "0.6rem", sm: "0.7rem" },
+                        display: 'block'
+                    }}
+                >
+                    前期: ￥{formatCurrency(previousValue)}
+                </Typography>
+            )}
         </Grid>
+    );
+}
+
+// カテゴリ別比較表示コンポーネント
+interface CategoryComparisonProps {
+    comparisons: CategoryComparison[];
+    type: TransactionType;
+    isExpanded: boolean;
+    onToggle: () => void;
+}
+
+function CategoryComparisonSection({ comparisons, type, isExpanded, onToggle }: CategoryComparisonProps) {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+    
+    const getTrendIcon = (rate: number) => {
+        if (rate > 0) return <TrendingUpIcon fontSize="small" sx={{ color: 'success.main' }} />;
+        if (rate < 0) return <TrendingDownIcon fontSize="small" sx={{ color: 'error.main' }} />;
+        return <TrendingFlatIcon fontSize="small" sx={{ color: 'grey.500' }} />;
+    };
+
+    const getTrendColor = (rate: number) => {
+        if (rate > 0) return 'success.main';
+        if (rate < 0) return 'error.main';
+        return 'grey.500';
+    };
+
+    const typeColor = type === 'income' ? theme.palette.incomeColor.main : theme.palette.expenseColor.main;
+    const typeLabel = type === 'income' ? '収入' : '支出';
+
+    return (
+        <Box sx={{ mb: 2 }}>
+            <Box 
+            sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                cursor: 'pointer',
+                p: isMobile ? 0.5 : 1,
+                borderRadius: 1,
+                '&:hover': { bgcolor: 'action.hover' }
+            }}
+            onClick={onToggle}
+            >
+            <Typography 
+                variant={isMobile ? "body1" : "h6"} 
+                sx={{ color: typeColor, flexGrow: 1, fontSize: isMobile ? '0.9rem' : undefined }}
+            >
+                {typeLabel}カテゴリ別比較
+            </Typography>
+            {isExpanded ? <ExpandLessIcon fontSize={isMobile ? "small" : "medium"} /> : <ExpandMoreIcon fontSize={isMobile ? "small" : "medium"} />}
+            </Box>
+            
+            <Collapse in={isExpanded}>
+            <List dense>
+                {comparisons.map((comparison, index) => (
+                <React.Fragment key={comparison.category}>
+                    <ListItem sx={{ py: isMobile ? 0.5 : 1 }}>
+                    <ListItemText
+                        primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography 
+                                variant="body2" 
+                                sx={{ fontWeight: 'medium', fontSize: isMobile ? '0.85rem' : '1rem' }}
+                            >
+                            {comparison.category}
+                            </Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {getTrendIcon(comparison.changeRate)}
+                            <Typography 
+                                variant="caption"
+                                sx={{ color: getTrendColor(comparison.changeRate), fontSize: isMobile ? '0.75rem' : '1rem' }}
+                            >
+                                {comparison.changeRate > 0 ? '+' : ''}{comparison.changeRate}%
+                            </Typography>
+                            </Box>
+                        </Box>
+                        }
+                        secondary={
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                            <Typography 
+                            variant="caption" 
+                            sx={{ color: typeColor, fontSize: isMobile ? '0.75rem' : '1rem' }}
+                            >
+                            今期: ￥{formatCurrency(comparison.current)}
+                            </Typography>
+                            <Typography 
+                            variant="caption" 
+                            sx={{ color: 'text.secondary', fontSize: isMobile ? '0.75rem' : '1rem' }}
+                            >
+                            前期: ￥{formatCurrency(comparison.previous)}
+                            </Typography>
+                        </Box>
+                        }
+                    />
+                    </ListItem>
+                    {index < comparisons.length - 1 && <Divider />}
+                </React.Fragment>
+                ))}
+            </List>
+            </Collapse>
+        </Box>
     );
 }
 
@@ -304,29 +457,41 @@ interface Summary {
     content: string;
 }
 
-// 本体
 export default function TransactionTable({ viewType }: TransactionTableProps) {
-    const { onDeleteTransaction, monthlyTransactions, yearlyTransactions } = useTransactionContext();
+    const { 
+        onDeleteTransaction, 
+        monthlyTransactions, 
+        yearlyTransactions,
+        preMonthlyTransactions,
+        preYearlyTransactions
+    } = useTransactionContext();
     const { currentYear, currentMonth, isMobile } = useAppContext();
 
     const theme = useTheme();
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [page, setPage] = React.useState(0);
     const [rowsPerPage, setRowsPerPage] = React.useState(5);
+    const [showComparison, setShowComparison] = React.useState(false);
+    
+    // カテゴリ別比較の展開状態
+    const [incomeExpanded, setIncomeExpanded] = React.useState(false);
+    const [expenseExpanded, setExpenseExpanded] = React.useState(false);
 
     // 並び替えのための状態
     const [order, setOrder] = React.useState<"asc" | "desc" | undefined>();
-    const [orderBy, setOrderBy] = React.useState<string>("date"); // 初期状態は日付でのソート
+    const [orderBy, setOrderBy] = React.useState<string>("date");
 
-    const [checkBoxItems, setCheckBoxItems] = React.useState<CheckBoxItem[]>(
-        []
-    );
-    const [initialCheckBoxItems, setInitialCheckBoxItems] = React.useState<
-        CheckBoxItem[]
-    >([]);
+    const [checkBoxItems, setCheckBoxItems] = React.useState<CheckBoxItem[]>([]);
+    const [initialCheckBoxItems, setInitialCheckBoxItems] = React.useState<CheckBoxItem[]>([]);
     const [anchorEl, setAnchorEl] = React.useState(null);
 
     const hasInitialized = React.useRef(false);
+
+    // アニメーション用の設定
+    const animationConfig = {
+        timeout: 300, // アニメーション時間を300msに設定
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)', // Material-UIの標準イージング
+    };
 
     const handleRequestSort = (
         event: React.MouseEvent<unknown>,
@@ -551,6 +716,7 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
             hasInitialized.current = true; // 処理を一度だけ走らせるためのフラグ
         }
     }, [uniqueItems]);
+
     React.useEffect(() => {
         hasInitialized.current = false; // viewTypeが変わったらフラグをリセット
     }, [currentYear, currentMonth, viewType]);
@@ -559,13 +725,45 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
         setSelected([]);
     }, [viewType]);
 
-    const { income, expense, balance } = financeCalculations(
-        viewType === "monthly" ? monthlyTransactions : yearlyTransactions
-    );
+    // 比較データの計算
+    const comparisonData = React.useMemo(() => {
+        const currentTransactions = viewType === "monthly" ? monthlyTransactions : yearlyTransactions;
+        const previousTransactions = viewType === "monthly" ? preMonthlyTransactions : preYearlyTransactions;
+        
+        return calculateComparison(currentTransactions, previousTransactions);
+    }, [viewType, monthlyTransactions, yearlyTransactions, preMonthlyTransactions, preYearlyTransactions]);
+
+    // カテゴリ別比較データの計算
+    const categoryComparisons = React.useMemo(() => {
+        const currentTransactions = viewType === "monthly" ? monthlyTransactions : yearlyTransactions;
+        const previousTransactions = viewType === "monthly" ? preMonthlyTransactions : preYearlyTransactions;
+        
+        return {
+            income: calculateCategoryComparison(currentTransactions, previousTransactions, 'income'),
+            expense: calculateCategoryComparison(currentTransactions, previousTransactions, 'expense')
+        };
+    }, [viewType, monthlyTransactions, yearlyTransactions, preMonthlyTransactions, preYearlyTransactions]);
+
+    const { income, expense, balance } = comparisonData.current;
 
     return (
         <Box sx={{ width: "100%" }}>
             <Paper sx={{ width: "100%", mb: 2 }}>
+                {/* 比較表示切り替えボタン */}
+                <Box sx={{ 
+                    p: 1, 
+                    borderBottom: "1px solid rgba(224, 224, 224, 1)",
+                    transition: 'all 0.2s ease-in-out' // 背景色の変化をアニメーション
+                }}>
+                    <Chip
+                        label={showComparison ? "カテゴリ別比較表示中" : "カテゴリ別比較表示"}
+                        onClick={() => setShowComparison(!showComparison)}
+                        color={showComparison ? "primary" : "default"}
+                        variant={showComparison ? "filled" : "outlined"}
+                        size="small"
+                    />
+                </Box>
+
                 {/* 収支表示エリア */}
                 <Grid
                     container
@@ -578,20 +776,93 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
                         title={"収入"}
                         value={income}
                         color={theme.palette.incomeColor.main}
+                        previousValue={comparisonData.previous.income}
+                        changeRate={comparisonData.changeRates.income}
+                        showComparison={showComparison}
                     />
 
                     <FinancialItem
                         title={"支出"}
                         value={expense}
                         color={theme.palette.expenseColor.main}
+                        previousValue={comparisonData.previous.expense}
+                        changeRate={comparisonData.changeRates.expense}
+                        showComparison={showComparison}
                     />
 
                     <FinancialItem
                         title={"残高"}
                         value={balance}
                         color={theme.palette.balanceColor.main}
+                        previousValue={comparisonData.previous.balance}
+                        changeRate={comparisonData.changeRates.balance}
+                        showComparison={showComparison}
                     />
                 </Grid>
+
+                {/* カテゴリ別比較表示エリア */}
+                {showComparison && (
+                    <Collapse 
+                        in={showComparison} 
+                        timeout={animationConfig.timeout}
+                        easing={animationConfig.easing}
+                        unmountOnExit
+                    >
+                        <Box sx={{ 
+                            p: 2, 
+                            borderBottom: "1px solid rgba(224, 224, 224, 1)",
+                            background: `linear-gradient(135deg, 
+                                ${alpha(theme.palette.primary.main, 0.01)} 0%, 
+                                ${alpha(theme.palette.secondary.main, 0.01)} 100%)`,
+                            backdropFilter: 'blur(1px)',
+                            // エントリーアニメーション
+                            animation: showComparison ? 'slideInFromTop 0.3s ease-out' : 'none',
+                            '@keyframes slideInFromTop': {
+                                '0%': {
+                                    opacity: 0,
+                                    transform: 'translateY(-10px)',
+                                },
+                                '100%': {
+                                    opacity: 1,
+                                    transform: 'translateY(0)',
+                                }
+                            }
+                        }}>
+                            {categoryComparisons.income.length > 0 && (
+                                <Box sx={{
+                                    mb: categoryComparisons.expense.length > 0 ? 2 : 0,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                        transform: 'translateX(2px)',
+                                    }
+                                }}>
+                                    <CategoryComparisonSection
+                                        comparisons={categoryComparisons.income}
+                                        type="income"
+                                        isExpanded={incomeExpanded}
+                                        onToggle={() => setIncomeExpanded(!incomeExpanded)}
+                                    />
+                                </Box>
+                            )}
+                            
+                            {categoryComparisons.expense.length > 0 && (
+                                <Box sx={{
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                        transform: 'translateX(2px)',
+                                    }
+                                }}>
+                                    <CategoryComparisonSection
+                                        comparisons={categoryComparisons.expense}
+                                        type="expense"
+                                        isExpanded={expenseExpanded}
+                                        onToggle={() => setExpenseExpanded(!expenseExpanded)}
+                                    />
+                                </Box>
+                            )}
+                        </Box>
+                    </Collapse>
+                )}
 
                 <PopoverContent
                     initialItems={initialCheckBoxItems}
@@ -605,139 +876,127 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
                     }}
                     anchorEl={anchorEl}
                 />
-
-                {/* ツールバー */}
                 <TransactionTableToolbar
                     numSelected={selected.length}
                     viewType={viewType}
                     onDelete={handleDelete}
                 />
-
-                {/* 取引一覧*/}
                 <TableContainer>
                     <Table
-                        sx={{ minWidth: isMobile ? "none" : 750, whiteSpace: "nowrap" }}
+                        sx={{ minWidth: 750 }}
                         aria-labelledby="tableTitle"
                         size={"medium"}
                     >
-                        {/* テーブルヘッド */}
-                        {viewType === "monthly" ? (
-                            <TransactionTableHead
-                                numSelected={selected.length}
-                                onSelectAllClick={handleSelectAllClick}
-                                rowCount={monthlyTransactions.length}
-                                order={order}
-                                orderBy={orderBy}
-                                onRequestSort={handleRequestSort}
-                                viewType={viewType}
-                                checkedItems={checkedItems}
-                                setAnchorEl={setAnchorEl}
-                            />
-                        ) : (
-                            <TransactionTableHead
-                                rowCount={monthlyTransactions.length}
-                                order={order}
-                                orderBy={orderBy}
-                                onRequestSort={handleRequestSort}
-                                viewType={viewType}
-                                checkedItems={checkedItems}
-                                setAnchorEl={setAnchorEl}
-                            />
-                        )}
-                        {/* 取引内容 */}
+                        <TransactionTableHead
+                            numSelected={selected.length}
+                            order={order}
+                            orderBy={orderBy}
+                            onSelectAllClick={handleSelectAllClick}
+                            onRequestSort={handleRequestSort}
+                            rowCount={
+                                viewType === "monthly"
+                                    ? monthlySortedTransactions.filter((transaction) =>
+                                          checkedItems.includes(transaction.category)
+                                      ).length
+                                    : yearlySortedTransactions.filter((transaction) =>
+                                          checkedItems.includes(transaction.category)
+                                      ).length
+                            }
+                            viewType={viewType}
+                            checkedItems={checkedItems}
+                            setAnchorEl={setAnchorEl}
+                        />
                         <TableBody>
-                            {visibleRows.map((transaction, index) => {
-                                const isItemSelected = isSelected(
-                                    transaction.id
-                                );
+                            {visibleRows.map((row, index) => {
+                                const isItemSelected = isSelected(row.id);
+                                const labelId = `enhanced-table-checkbox-${index}`;
 
                                 return (
-                                    checkedItems.includes(
-                                        transaction.category
-                                    ) && (
-                                        <TableRow
-                                            hover={
-                                                viewType === "monthly" || false
-                                            }
-                                            onClick={(event) =>
-                                                viewType === "monthly" &&
-                                                handleClick(
-                                                    event,
-                                                    transaction.id
-                                                )
-                                            }
-                                            role="checkbox"
-                                            aria-checked={
-                                                viewType === "monthly" &&
-                                                isItemSelected
-                                            }
-                                            tabIndex={-1}
-                                            key={transaction.id}
-                                            selected={
-                                                viewType === "monthly" &&
-                                                isItemSelected
-                                            }
-                                            sx={{
-                                                cursor:
-                                                    viewType === "monthly"
-                                                        ? "pointer"
-                                                        : "normal",
-                                            }}
-                                        >
-                                            {viewType === "monthly" && (
-                                                <TableCell padding="checkbox" sx={{display: isMobile ? "none" : "masonry",}}>
-                                                    <Checkbox
-                                                        color="primary"
-                                                        checked={isItemSelected}
-                                                    />
-                                                </TableCell>
-                                            )}
+                                    <TableRow
+                                        hover
+                                        onClick={
+                                            viewType === "monthly"
+                                                ? (event) => handleClick(event, row.id)
+                                                : undefined
+                                        }
+                                        role="checkbox"
+                                        aria-checked={isItemSelected}
+                                        tabIndex={-1}
+                                        key={row.id}
+                                        selected={isItemSelected}
+                                        sx={{ cursor: "pointer" }}
+                                    >
+                                        {viewType === "monthly" && (
                                             <TableCell
-                                                component="th"
-                                                scope="row"
-                                                padding="none"
-                                                sx={{
-                                                    paddingLeft:
-                                                        isMobile || viewType === "yearly"
-                                                            ? "12px"
-                                                            : "",
-                                                }}
+                                                padding="checkbox"
+                                                sx={{ display: isMobile ? "none" : "table-cell" }}
                                             >
-                                                {transaction.date}
+                                                <Checkbox
+                                                    color="primary"
+                                                    checked={isItemSelected}
+                                                    inputProps={{
+                                                        "aria-labelledby": labelId,
+                                                    }}
+                                                />
                                             </TableCell>
-                                            <TableCell
-                                                align="left"
+                                        )}
+                                        <TableCell
+                                            component="th"
+                                            id={labelId}
+                                            scope="row"
+                                            padding="none"
+                                            sx={{ pl: 1 }}
+                                        >
+                                            {viewType === "monthly"
+                                                ? format(
+                                                      parseISO(row.date as string),
+                                                      "M月d日"
+                                                  )
+                                                : row.date}
+                                        </TableCell>
+                                        <TableCell align="left" sx={{ minWidth: 120 }}>
+                                            <Box
                                                 sx={{
                                                     display: "flex",
                                                     alignItems: "center",
+                                                    gap: 1,
                                                 }}
                                             >
-                                                {transaction.icon && (
-                                                    <DynamicIcon
-                                                        iconName={
-                                                            transaction.icon
-                                                        }
-                                                        fontSize="medium"
-                                                    />
-                                                )}
-                                                {transaction.category}
+                                                <DynamicIcon iconName={row.icon} />
+                                                {row.category}
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell
+                                            align="left"
+                                            sx={{
+                                                color:
+                                                    row.type === "income"
+                                                        ? theme.palette.incomeColor.main
+                                                        : theme.palette.expenseColor.main,
+                                                fontWeight: "fontWeightBold",
+                                            }}
+                                        >
+                                            {row.type === "expense" && "−"}￥
+                                            {formatCurrency(row.amount)}
+                                        </TableCell>
+                                        <TableCell align="left">
+                                            {viewType === "monthly" && row.content}
+                                        </TableCell>
+                                        {viewType === "monthly" && (
+                                            <TableCell
+                                                padding="checkbox"
+                                                sx={{ display: isMobile ? "table-cell" : "none" }}
+                                            >
+                                                <Checkbox
+                                                    color="primary"
+                                                    checked={isItemSelected}
+                                                    inputProps={{
+                                                        "aria-labelledby": labelId,
+                                                    }}
+                                                />
                                             </TableCell>
-                                            <TableCell align="left" sx={{fontWeight: 'bold', color: transaction.type === 'expense' ? theme.palette.expenseColor.main : theme.palette.incomeColor.main}}>
-                                                {`￥${formatCurrency(transaction.amount)}`}
-                                            </TableCell>
-                                            <TableCell align="left">
-                                                {transaction.content}
-                                            </TableCell>
-                                            {viewType === "monthly" && (
-                                                <TableCell padding="checkbox" sx={{display: isMobile ? "masonry" : "none"}}>
-                                                    <Checkbox
-                                                        color="primary"
-                                                        checked={isItemSelected}
-                                                    />
-                                                </TableCell>
-                                            )}
-                                        </TableRow>
-                                    )
+                                        )}
+                                    </TableRow>
                                 );
                             })}
                             {emptyRows > 0 && (
@@ -746,24 +1005,22 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
                                         height: 53 * emptyRows,
                                     }}
                                 >
-                                    <TableCell colSpan={6} />
+                                    <TableCell colSpan={viewType === "monthly" ? 6 : 4} />
                                 </TableRow>
                             )}
                         </TableBody>
                     </Table>
                 </TableContainer>
-
-                {/* テーブル下部 */}
                 <TablePagination
                     rowsPerPageOptions={[5, 10, 25]}
                     component="div"
                     count={
                         viewType === "monthly"
-                            ? monthlyTransactions.filter((transaction) =>
-                                checkedItems.includes(transaction.category)
+                            ? monthlySortedTransactions.filter((transaction) =>
+                                  checkedItems.includes(transaction.category)
                               ).length
-                            : yearlyCategoryTransactions.filter((transaction) =>
-                                checkedItems.includes(transaction.category)
+                            : yearlySortedTransactions.filter((transaction) =>
+                                  checkedItems.includes(transaction.category)
                               ).length
                     }
                     rowsPerPage={rowsPerPage}

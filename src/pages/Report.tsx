@@ -1,8 +1,14 @@
 import {
+    Box,
+    Collapse,
+    Fade,
+    FormControlLabel,
     Grid,
     Paper,
+    Switch,
     ToggleButton,
     ToggleButtonGroup,
+    Typography,
 } from "@mui/material";
 import React from "react";
 import MonthSelector from "../components/MonthSelector";
@@ -13,6 +19,9 @@ import BarChart from "../components/BarChart";
 import YearSelector from "../components/YearSelector";
 import { Helmet } from "react-helmet-async";
 import { ogIMG } from "../config/ogImg";
+import { ComparisonSummary } from "../components/ComparitionSummary/ComparitionSummary";
+import { Analytics } from "@mui/icons-material";
+import { useAppContext } from "../context/AppContext";
 
 const Report = () => {
     const commonPaperStyle = {
@@ -27,6 +36,11 @@ const Report = () => {
         "monthly",
     );
 
+    const { isMobile } = useAppContext();
+
+    // 比較分析の表示・非表示を切り替える状態
+    const [showComparison, setShowComparison] = React.useState<boolean>(true);
+
     const handleViewTypeChange = (
         event: React.MouseEvent<HTMLElement>,
         newViewType: "monthly" | "yearly" | null,
@@ -34,6 +48,10 @@ const Report = () => {
         if (newViewType !== null) {
             setViewType(newViewType);
         }
+    };
+
+    const handleComparisonToggle = () => {
+        setShowComparison((prevShowComparison) => !prevShowComparison);
     };
 
     return (
@@ -74,6 +92,58 @@ const Report = () => {
                 <Grid item xs={12}>
                     {/* 日付選択エリア */}
                     {viewType === "monthly" ? <MonthSelector /> : <YearSelector />}
+                </Grid>
+
+                {/* 比較分析表示切り替えスイッチ */}
+                <Grid item xs={12}>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={showComparison}
+                                onChange={handleComparisonToggle}
+                                color="primary"
+                                size="medium"
+                            />
+                        }
+                        label={
+                            <Box display="flex" alignItems="center" gap={0.5}>
+                                <Analytics fontSize="medium" color={showComparison ? "primary" : "disabled"} />
+                                <Typography variant="body1" color={showComparison ? "primary" : "text.secondary"}>
+                                    {viewType === "monthly" ? "前月比較" : "前年比較"}
+                                </Typography>
+                            </Box>
+                        }
+                        sx={{
+                            m: 0,
+                            '& .MuiFormControlLabel-label': {
+                                ml: 1,
+                            },
+                        }}
+                    />
+                </Grid>
+
+                {/* 比較サマリーカード（条件付き表示） */}
+                <Grid item xs={12}>
+                    <Collapse 
+                        in={showComparison} 
+                        timeout={400}
+                        easing={{
+                            enter: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                            exit: 'cubic-bezier(0.4, 0, 0.6, 1)'
+                        }}
+                    >
+                        <Fade 
+                            in={showComparison} 
+                            timeout={{ enter: 600, exit: 300 }}
+                            style={{
+                                transitionDelay: showComparison ? '200ms' : '0ms'
+                            }}
+                        >
+                            <div>
+                                <ComparisonSummary viewType={viewType} isMobile={isMobile} />
+                            </div>
+                        </Fade>
+                    </Collapse>
                 </Grid>
 
                 <Grid item xs={12} md={4}>

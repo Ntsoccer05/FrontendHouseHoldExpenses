@@ -68,8 +68,13 @@ td.fc-day-sun {
     pointer-events: none;
 }
 
+.fc-daygrid-day{
+    cursor: pointer !important;
+}
+
 .non-current-month {
     background-color: #8080802e !important;
+    cursor: default !important;
 }
 
 .MuiPickersArrowSwitcher-root {
