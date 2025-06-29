@@ -25,6 +25,8 @@ interface TransactionContext {
     monthlyTransactions: Transaction[];
     getYearlyTransactions: (currentYear: string) => Promise<any>;
     yearlyTransactions: Transaction[];
+    preMonthlyTransactions: Transaction[];
+    preYearlyTransactions: Transaction[];
 }
 
 // コンテキストの初期化
@@ -53,6 +55,16 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
         []
     );
 
+    // 前月家計簿内容
+    const [preMonthlyTransactions, setPreMonthlyTransactions] = useState<
+        Transaction[]
+    >([]);
+
+    // 前年家計簿内容
+    const [preYearlyTransactions, setPreYearlyTransactions] = useState<Transaction[]>(
+        []
+    );
+
     // 共通アイコン取得処理をメモ化
     const addCategoryIcon = useMemo(() => {
         return (transaction: TransactionData) => {
@@ -73,6 +85,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 params: { currentMonth, user_id: loginUser?.id },
             });
             setMonthlyTransactions(response.data.monthlyTransactionData);
+            setPreMonthlyTransactions(response.data.preMonthlyTransactionData);
             return response.data.monthlyTransactionData;
         } catch (err) {
             console.error("Error fetching monthly transactions:", err);
@@ -87,6 +100,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 params: { currentYear, user_id: loginUser?.id },
             });
             setYearlyTransactions(response.data.yearlyTransactionData);
+            setPreYearlyTransactions(response.data.preYearlyTransactionData);
             return response.data.yearlyTransactionData;
         } catch (err) {
             console.error("Error fetching yearly transactions:", err);
@@ -189,6 +203,8 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 monthlyTransactions,
                 getYearlyTransactions,
                 yearlyTransactions,
+                preMonthlyTransactions,
+                preYearlyTransactions,
             }}
         >
             {children}

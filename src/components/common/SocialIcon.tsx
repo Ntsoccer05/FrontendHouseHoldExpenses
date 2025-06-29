@@ -1,10 +1,3 @@
-import { Button } from "@mui/material";
-
-type GoogleIconProps = {
-    socialBtnTxt: string;
-    googleLogin: () => Promise<void>;
-};
-
 export const SocialIcon = {
     google: () => (
         <svg

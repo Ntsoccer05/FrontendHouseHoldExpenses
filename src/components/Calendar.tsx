@@ -57,7 +57,8 @@ const Calendar = memo(
         const { setCurrentMonth, currentMonth, isMobile } = useAppContext();
         const theme = useTheme();
 
-        const swipeStart = useRef({ x: 0, y: 0 });
+        const swipeWrapperRef = useRef<HTMLDivElement>(null);
+        const [isSwiping, setIsSwiping] = useState(false);
 
         // 状態をまとめて管理
         const [calendarState, setCalendarState] = useState({
@@ -176,46 +177,72 @@ const Calendar = memo(
             [calendarRef]
         );
 
+        const animateCalendarSwipe = (direction: "prev" | "next") => {
+            if (isSwiping) return;
+            const wrapper = swipeWrapperRef.current?.children[0]?.children[1] as HTMLElement;
+            if (!wrapper) return;
+            setIsSwiping(true);
+            wrapper.style.transition = "transform 0.3s ease-in-out";
+            wrapper.style.transform = direction === "next" ? "translateX(-100%)" : "translateX(100%)";
+
+            setTimeout(() => {
+                if (calendarRef.current) {
+                const api = calendarRef.current.getApi();
+                direction === "next" ? api.next() : api.prev();
+                }
+
+                wrapper.style.transition = "none";
+                wrapper.style.transform = "translateX(0)";
+                setIsSwiping(false);
+            }, 200);
+        };
+
         useEffect(() => {
-            const timeout = setTimeout(() => {
-                const calendarElement = (calendarRef.current as any)?.elRef?.current as HTMLElement;
-                if (!calendarElement) return;
+            const calendarElement = (calendarRef.current as any)?.elRef?.current as HTMLElement;
+            if (!calendarElement) return;
 
-                const thresholdX = 50;
-                const thresholdY = 30;
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchEndX = 0;
+            let touchEndY = 0;
 
-                const handleTouchStart = (e: TouchEvent) => {
+            const thresholdX = 50;
+            const thresholdY = 30;
+
+            const handleTouchStart = (e: TouchEvent) => {
                 const touch = e.touches[0];
-                swipeStart.current = { x: touch.clientX, y: touch.clientY };
-                };
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+            };
 
-                const handleTouchEnd = (e: TouchEvent) => {
-                const touch = e.changedTouches[0];
-                const diffX = touch.clientX - swipeStart.current.x;
-                const diffY = touch.clientY - swipeStart.current.y;
+            const handleTouchMove = (e: TouchEvent) => {
+                const touch = e.touches[0];
+                touchEndX = touch.clientX;
+                touchEndY = touch.clientY;
+            };
+
+            const handleTouchEnd = () => {
+                const diffX = touchEndX - touchStartX;
+                const diffY = touchEndY - touchStartY;
 
                 if (Math.abs(diffY) > thresholdY || Math.abs(diffX) < thresholdX) return;
 
-                const api = calendarRef.current?.getApi();
-                if (!api) return;
-
                 if (diffX > 0) {
-                    api.prev();
+                animateCalendarSwipe("prev");
                 } else {
-                    api.next();
+                animateCalendarSwipe("next");
                 }
-                };
+            };
 
-                calendarElement.addEventListener("touchstart", handleTouchStart, { passive: true });
-                calendarElement.addEventListener("touchend", handleTouchEnd, { passive: true });
+            calendarElement.addEventListener("touchstart", handleTouchStart, { passive: true });
+            calendarElement.addEventListener("touchmove", handleTouchMove, { passive: true });
+            calendarElement.addEventListener("touchend", handleTouchEnd, { passive: true });
 
-                return () => {
+            return () => {
                 calendarElement.removeEventListener("touchstart", handleTouchStart);
+                calendarElement.removeEventListener("touchmove", handleTouchMove);
                 calendarElement.removeEventListener("touchend", handleTouchEnd);
-                };
-            }, 100); // DOMが確実にレンダリングされるタイミングを保証
-
-            return () => clearTimeout(timeout);
+            };
         }, [calendarRef]);
 
         // イベントレンダリング関数
@@ -247,6 +274,7 @@ const Calendar = memo(
 
         return (
             <Box
+                ref={swipeWrapperRef}
                 sx={{
                     "& .fc-header-toolbar": {
                     paddingLeft: isMobile ? "16px" : "auto",
