@@ -39,7 +39,7 @@ const Report = () => {
     const { isMobile } = useAppContext();
 
     // 比較分析の表示・非表示を切り替える状態
-    const [showComparison, setShowComparison] = React.useState<boolean>(true);
+    const [showComparison, setShowComparison] = React.useState<boolean>(false);
 
     const handleViewTypeChange = (
         event: React.MouseEvent<HTMLElement>,
