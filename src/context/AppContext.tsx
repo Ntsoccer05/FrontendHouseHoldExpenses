@@ -11,11 +11,22 @@ import { useMediaQuery, useTheme } from "@mui/material";
 import {
     BaseUserCategory,
     CategoryItem,
+    SnackBarState,
     Transaction,
 } from "../types/index";
 import apiClient from "../utils/axios";
 import { useAuthContext } from "./AuthContext";
 import { getSessionStorage, setSessionStorage } from "../utils/manageSessionStorage";
+
+const defaultState: SnackBarState = {
+  open: false,
+  vertical: "top",
+  horizontal: "center",
+  title: "",
+  bodyText: "",
+  backgroundColor: "#1976d2",
+  autoHideDuration: 3000,
+};
 
 // コンテキストの型定義
 interface AppContextType {
@@ -34,6 +45,9 @@ interface AppContextType {
     getExpenseCategory: () => Promise<void>;
     IncomeCategories: CategoryItem[] | undefined;
     ExpenseCategories: CategoryItem[] | undefined;
+    snackBarState: SnackBarState;
+    setSnackBarState: React.Dispatch<React.SetStateAction<SnackBarState>>;
+    showSnackBar: (state: Partial<SnackBarState>) => void
 }
 
 // コンテキスト作成
@@ -58,6 +72,13 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     // 👇 useAuthを使ってLoginUser取得
     const [IncomeCategories, setIncomeCategories] = useState<CategoryItem[]>([]);
     const [ExpenseCategories, setExpenseCategories] = useState<CategoryItem[]>([]);
+
+    const [snackBarState, setSnackBarState] = useState<SnackBarState>(defaultState);
+
+    // 表示関数
+    const showSnackBar = (state: Partial<SnackBarState>) => {
+        setSnackBarState((prev) => ({ ...prev, ...state, open: true }));
+    };
 
     // 収入カテゴリー取得処理
     const getIncomeCategory = useCallback(async () => {
@@ -135,6 +156,9 @@ export const AppProvider = ({ children }: AppProviderProps) => {
             ExpenseCategories,
             getIncomeCategory,
             getExpenseCategory,
+            snackBarState,
+            setSnackBarState,
+            showSnackBar
         }),
         [
             transactions,
@@ -145,6 +169,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
             loginFlg,
             IncomeCategories,
             ExpenseCategories,
+            snackBarState,
             getIncomeCategory,
             getExpenseCategory,
         ]
