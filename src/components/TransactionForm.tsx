@@ -55,7 +55,7 @@ const TransactionForm = memo(
         setSelectedTransaction,
         setIsDialogOpen,
     }: TransactionFormProps) => {
-        const { isMobile, IncomeCategories, ExpenseCategories } =
+        const { isMobile, IncomeCategories, ExpenseCategories, showSnackBar } =
             useAppContext();
         const { onSaveTransaction, onDeleteTransaction, onUpdateTransaction } =
             useTransactionContext();
@@ -73,6 +73,8 @@ const TransactionForm = memo(
 
         // 削除中ローディング
         const [isDeleting, setIsDeleting] = useState(false);
+        // コピー中ローディング
+        const [isCopying, setIsCopying] = useState(false);
 
         const defaultCategory = ExpenseCategories?.[0]?.label ?? "";
 
@@ -163,6 +165,11 @@ const TransactionForm = memo(
                 await onUpdateTransaction(data, selectedTransaction.id)
                     .then(() => {
                         setSelectedTransaction(null);
+                        showSnackBar({
+                            title: "更新完了",
+                            bodyText: "家計簿が更新されました。",
+                            backgroundColor: "#00695c"
+                        });
                         if (isMobile) {
                             setIsDialogOpen(false);
                         }
@@ -172,7 +179,13 @@ const TransactionForm = memo(
                     });
             } else {
                 await onSaveTransaction(data)
-                    .then(() => {})
+                    .then(() => {
+                        showSnackBar({
+                            title: "保存完了",
+                            bodyText: "家計簿が登録されました。",
+                            backgroundColor: "#2e7d32"
+                        });
+                    })
                     .catch((error) => {
                         console.error(error);
                     });
@@ -230,10 +243,41 @@ const TransactionForm = memo(
                         setIsDialogOpen(false);
                     }
                     setSelectedTransaction(null);
+                    showSnackBar({
+                        title: "削除完了",
+                        bodyText: "家計簿が削除されました。",
+                        backgroundColor: "#8d4e85"
+                    });
                 } catch (error) {
                     console.error(error);
                 } finally {
                     setIsDeleting(false);
+                }
+            }
+        };
+
+        //コピー処理
+        const handleCopy = async () => {
+            if (selectedTransaction) {
+                setIsCopying(true);
+                try {
+                    // 現在のフォームの値を取得
+                    const formData = watch();
+                    // TransactionData型に合わせてcontentをstring型に変換
+                    const currentFormData = {
+                        ...formData,
+                        content: formData.content || "", // nullの場合は空文字列に変換
+                    };
+                    await onSaveTransaction(currentFormData);
+                    showSnackBar({
+                        title: "コピー完了",
+                        bodyText: "家計簿がコピーされました。",
+                        backgroundColor: "#455a64"
+                    });
+                } catch (error) {
+                    console.error(error);
+                } finally {
+                    setIsCopying(false);
                 }
             }
         };
@@ -555,30 +599,56 @@ const TransactionForm = memo(
                             }
                         </Button>
                         {selectedTransaction && (
-                            <Button
-                                onClick={handleDelete}
-                                variant="outlined"
-                                color={"secondary"}
-                                fullWidth
-                                startIcon={
-                                    isDeleting && (
-                                        <CircularProgress color="inherit" size={20} />
-                                    )
-                                }
-                                disabled={isSubmitting || isDeleting}
-                                sx={{
-                                    bgcolor: (theme) =>
-                                        (isSubmitting || isDeleting)
-                                            ? theme.palette.action.disabledBackground
-                                            : undefined,
-                                    color: (theme) =>
-                                        (isSubmitting || isDeleting)
-                                            ? theme.palette.action.disabled
-                                            : undefined,
-                                }}
-                            >
-                                {isDeleting ? "削除中…" : "削除"}
-                            </Button>
+                            <>
+                                <Button
+                                    onClick={handleDelete}
+                                    variant="outlined"
+                                    color={"secondary"}
+                                    fullWidth
+                                    startIcon={
+                                        isDeleting && (
+                                            <CircularProgress color="inherit" size={20} />
+                                        )
+                                    }
+                                    disabled={isSubmitting || isDeleting}
+                                    sx={{
+                                        bgcolor: (theme) =>
+                                            (isSubmitting || isDeleting)
+                                                ? theme.palette.action.disabledBackground
+                                                : undefined,
+                                        color: (theme) =>
+                                            (isSubmitting || isDeleting)
+                                                ? theme.palette.action.disabled
+                                                : undefined,
+                                    }}
+                                >
+                                    {isDeleting ? "削除中…" : "削除"}
+                                </Button>
+                                 <Button
+                                    onClick={handleCopy}
+                                    variant="outlined"
+                                    color="primary"
+                                    fullWidth
+                                    startIcon={
+                                        isCopying && (
+                                            <CircularProgress color="inherit" size={20} />
+                                        )
+                                    }
+                                    disabled={isSubmitting || isDeleting || isCopying || selectedTransaction.date === watch("date")}
+                                    sx={{
+                                        bgcolor: (theme) =>
+                                            (isSubmitting || isDeleting || isCopying)
+                                                ? theme.palette.action.disabledBackground
+                                                : undefined,
+                                        color: (theme) =>
+                                            (isSubmitting || isDeleting || isCopying)
+                                                ? theme.palette.action.disabled
+                                                : undefined,
+                                    }}
+                                >
+                                    {isCopying ? "別日にコピー中…" : "別日にコピー"}
+                                </Button>
+                            </>
                         )}
                     </Stack>
                 </Box>
