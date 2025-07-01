@@ -15,13 +15,14 @@ import apiClient from "../../utils/axios";
 import { useAuthContext } from "../../context/AuthContext";
 import { getSessionStorage, setSessionStorage } from "../../utils/manageSessionStorage";
 import { Alert, AlertTitle } from "@mui/material";
+import SnackBar from "../common/SnackBar";
 
 const drawerWidth = 240;
 
 export default function AppLayout() {
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [isAlert, setIsAlert] = React.useState(false);
-    const { setTransactions, setIsLoading } = useAppContext();
+    const { setTransactions, setIsLoading, snackBarState, setSnackBarState } = useAppContext();
     const { loginUser, isAuthenticated } = useAuthContext();
     const navigate = useNavigate();
     const headerIMG = import.meta.env.VITE_APP_HEADER_IMG_URL || "/src/assets/logo/カケポン.png"
@@ -190,6 +191,10 @@ export default function AppLayout() {
                     <Outlet />
                 </Box>
             </Box>
+            <SnackBar
+                snackBarState={snackBarState}
+                setSnackBarState={setSnackBarState}
+            />
         </>
     );
 }

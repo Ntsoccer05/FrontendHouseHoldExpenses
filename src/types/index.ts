@@ -95,3 +95,13 @@ export interface CheckBoxItem {
     disabled?: boolean;
     onStateChange: (checked?: boolean, key?: string) => void;
 }
+
+export interface SnackBarState {
+  open: boolean;
+  vertical: "top" | "bottom";
+  horizontal: "left" | "center" | "right";
+  title: string;
+  bodyText: string;
+  backgroundColor: string;
+  autoHideDuration: number;
+}
