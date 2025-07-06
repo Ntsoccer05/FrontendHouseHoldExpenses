@@ -6,12 +6,12 @@ function Login() {
   return (
     <>
       <Helmet>
-        <title>家計簿アプリに簡単ログイン｜Googleで無料ではじめる「カケポン」</title>
-        <meta name="description" content="【完全無料】簡単ログイン！カレンダー形式で支出・収入を簡単に記録・分析できる家計簿アプリ「カケポン」。主婦・社会人・カップル・学生・一人暮らしの節約に人気！" />
-        <meta property="og:title" content="簡単ログイン｜完全無料カレンダー家計簿アプリ「カケポン」" />
+        <title>らくらく・シンプル家計簿カケポンに簡単ログイン｜カレンダーで収支をラクに記録</title>
+        <meta name="description" content="カケポンは完全無料のカレンダー家計簿アプリ。簡単ログインですぐ使える！支出・収入をサクッと記録して節約習慣をスタートしよう。"/>
+        <meta property="og:title" content="無料のらくらく・シンプル家計簿アプリ『カケポン』に簡単ログイン" />
         <meta
           property="og:description"
-          content="節約を始めたい方に最適。『カケポン』なら簡単にログイン、収支をカレンダーで管理。完全無料で家計を見える化できます。"
+          content="カケポンは誰でも簡単に使える無料家計簿アプリ。カレンダー形式で収支をラクに記録・分析。ログインして今すぐ節約をはじめよう！"
         />
         <meta property="og:url" content="https://kake-pon.com/login" />
         <meta property="og:type" content="website" />
