@@ -114,7 +114,6 @@ const TransactionForm = memo(
         const incomeExpenseToggle = (type: IncomeExpense) => {
             // formのvalueに値をセット
             setValue("type", type);
-            setValue("category", "");
         };
 
         //カレンダー上の選択した日付を取得してセット
@@ -154,14 +153,25 @@ const TransactionForm = memo(
                 currentType === "expense"
                     ? ExpenseCategories
                     : IncomeCategories;
-            setCategories((prevCategory)=>prevCategory = newCategories);
-            reset({
-                type: currentType,
-                date: currentDay,
-                amount: 0,
-                category: newCategories?.[0]?.label,
-                content: "",
-            });
+            setCategories(newCategories);
+            // 選択されたトランザクションがある場合の処理
+
+            if (selectedTransaction && selectedTransaction.type === currentType) {
+                setValue("type", selectedTransaction.type);
+                setValue("date", selectedTransaction.date);
+                setValue("amount", selectedTransaction.amount);
+                setValue("content", selectedTransaction.content);
+                setValue("category", selectedTransaction.category);
+            } else {
+                // 新規入力の場合は常にデフォルト値を設定
+                reset({
+                    type: currentType,
+                    date: currentDay,
+                    amount: 0,
+                    category: newCategories?.[0]?.label || "",
+                    content: "",
+                });
+            }
         }, [currentType]);
 
         // 送信処理
@@ -213,9 +223,13 @@ const TransactionForm = memo(
                     (category) =>
                         category.label === selectedTransaction.category
                 );
+                const newCategories =
+                currentType === "expense"
+                    ? ExpenseCategories
+                    : IncomeCategories;
                 setValue(
                     "category",
-                    categoryExists ? selectedTransaction.category : ""
+                    categoryExists ? selectedTransaction.category : newCategories?.[0]?.label || ""
                 );
             }
         }, [selectedTransaction, categories]);
