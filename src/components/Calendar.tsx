@@ -59,6 +59,8 @@ const Calendar = memo(
 
         const swipeWrapperRef = useRef<HTMLDivElement>(null);
         const [isSwiping, setIsSwiping] = useState(false);
+        const touchStartRef = useRef({ x: 0, y: 0 });
+        const touchEndRef = useRef({ x: 0, y: 0 });
 
         // 状態をまとめて管理
         const [calendarState, setCalendarState] = useState({
@@ -177,63 +179,86 @@ const Calendar = memo(
             [calendarRef]
         );
 
-        const animateCalendarSwipe = (direction: "prev" | "next") => {
+        const animateCalendarSwipe = useCallback((direction: "prev" | "next") => {
             if (isSwiping) return;
-            const wrapper = swipeWrapperRef.current?.children[0]?.children[1] as HTMLElement;
-            if (!wrapper) return;
+            
+            const wrapper = swipeWrapperRef.current?.querySelector('.fc-daygrid-body') as HTMLElement;
+            if (!wrapper || !calendarRef.current) return;
+            
             setIsSwiping(true);
+            
+            // アニメーション開始
             wrapper.style.transition = "transform 0.3s ease-in-out";
             wrapper.style.transform = direction === "next" ? "translateX(-100%)" : "translateX(100%)";
-
+            
+            // カレンダーAPI呼び出しを少し遅らせる
             setTimeout(() => {
                 if (calendarRef.current) {
-                const api = calendarRef.current.getApi();
-                direction === "next" ? api.next() : api.prev();
+                    const api = calendarRef.current.getApi();
+                    direction === "next" ? api.next() : api.prev();
                 }
+            }, 150);
 
-                wrapper.style.transition = "none";
-                wrapper.style.transform = "translateX(0)";
+            // アニメーション完了後のリセット
+            setTimeout(() => {
+                if (wrapper) {
+                    wrapper.style.transition = "none";
+                    wrapper.style.transform = "translateX(0)";
+                }
                 setIsSwiping(false);
-            }, 200);
-        };
+            }, 300);
+        }, [calendarRef, isSwiping]);
 
         useEffect(() => {
-            const calendarElement = (calendarRef.current as any)?.elRef?.current as HTMLElement;
+            const calendarElement = calendarRef.current?.elRef?.current as HTMLElement;
             if (!calendarElement) return;
 
-            let touchStartX = 0;
-            let touchStartY = 0;
-            let touchEndX = 0;
-            let touchEndY = 0;
-
-            const thresholdX = 50;
-            const thresholdY = 30;
+            const thresholdX = 80; // 閾値を少し上げる
+            const thresholdY = 50; // 縦スワイプの許容範囲を広げる
 
             const handleTouchStart = (e: TouchEvent) => {
+                if (isSwiping) return;
+                
                 const touch = e.touches[0];
-                touchStartX = touch.clientX;
-                touchStartY = touch.clientY;
+                touchStartRef.current = {
+                    x: touch.clientX,
+                    y: touch.clientY
+                };
             };
 
             const handleTouchMove = (e: TouchEvent) => {
+                if (isSwiping) return;
+                
                 const touch = e.touches[0];
-                touchEndX = touch.clientX;
-                touchEndY = touch.clientY;
+                touchEndRef.current = {
+                    x: touch.clientX,
+                    y: touch.clientY
+                };
             };
 
             const handleTouchEnd = () => {
-                const diffX = touchEndX - touchStartX;
-                const diffY = touchEndY - touchStartY;
+                if (isSwiping) return;
+                
+                const diffX = touchEndRef.current.x - touchStartRef.current.x;
+                const diffY = touchEndRef.current.y - touchStartRef.current.y;
 
-                if (Math.abs(diffY) > thresholdY || Math.abs(diffX) < thresholdX) return;
+                // 縦方向の動きが大きすぎる場合は無視
+                if (Math.abs(diffY) > thresholdY) return;
+                
+                // 横方向の動きが閾値未満の場合は無視
+                if (Math.abs(diffX) < thresholdX) return;
 
-                if (diffX > 0) {
-                animateCalendarSwipe("prev");
-                } else {
-                animateCalendarSwipe("next");
-                }
+                // デバウンス処理
+                setTimeout(() => {
+                    if (diffX > 0) {
+                        animateCalendarSwipe("prev");
+                    } else {
+                        animateCalendarSwipe("next");
+                    }
+                }, 50);
             };
 
+            // パッシブリスナーで登録
             calendarElement.addEventListener("touchstart", handleTouchStart, { passive: true });
             calendarElement.addEventListener("touchmove", handleTouchMove, { passive: true });
             calendarElement.addEventListener("touchend", handleTouchEnd, { passive: true });
@@ -243,7 +268,7 @@ const Calendar = memo(
                 calendarElement.removeEventListener("touchmove", handleTouchMove);
                 calendarElement.removeEventListener("touchend", handleTouchEnd);
             };
-        }, [calendarRef]);
+        }, [calendarRef, animateCalendarSwipe, isSwiping]);
 
         // イベントレンダリング関数
         const renderEventContent = useCallback(
