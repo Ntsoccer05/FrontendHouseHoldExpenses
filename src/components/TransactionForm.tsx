@@ -4,7 +4,10 @@ import {
     ButtonGroup,
     CircularProgress,
     Dialog,
+    DialogActions,
     DialogContent,
+    DialogContentText,
+    DialogTitle,
     FormControl,
     FormHelperText,
     IconButton,
@@ -29,7 +32,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalculator } from "@fortawesome/free-solid-svg-icons";
 import Caluculator from "./Caluculator/Caluculator";
 import DraggablePaper from "./Dialog/DraggablePaper";
-import { toHalfWidth } from "../utils/formatting";
+import { formatJPDay, toHalfWidth } from "../utils/formatting";
 interface TransactionFormProps {
     onCloseForm: () => void;
     isEntryDrawerOpen: boolean;
@@ -75,6 +78,8 @@ const TransactionForm = memo(
         const [isDeleting, setIsDeleting] = useState(false);
         // コピー中ローディング
         const [isCopying, setIsCopying] = useState(false);
+        // 削除確認ダイアログの状態
+        const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
         const defaultCategory = ExpenseCategories?.[0]?.label ?? "";
 
@@ -233,10 +238,21 @@ const TransactionForm = memo(
             }
         }, [selectedTransaction]);
 
+        // 削除確認ダイアログを開く
+        const handleDeleteClick = () => {
+            setIsDeleteDialogOpen(true);
+        };
+
+        // 削除確認ダイアログを閉じる
+        const handleDeleteDialogClose = () => {
+            setIsDeleteDialogOpen(false);
+        };
+
         //削除処理
         const handleDelete = async () => {
             if (selectedTransaction) {
                 setIsDeleting(true);
+                setIsDeleteDialogOpen(false); // ダイアログを閉じる
                 try {
                     await onDeleteTransaction(selectedTransaction.id);
                     if (isMobile) {
@@ -601,7 +617,7 @@ const TransactionForm = memo(
                         {selectedTransaction && (
                             <>
                                 <Button
-                                    onClick={handleDelete}
+                                    onClick={handleDeleteClick}
                                     variant="outlined"
                                     color={"secondary"}
                                     fullWidth
@@ -652,6 +668,54 @@ const TransactionForm = memo(
                         )}
                     </Stack>
                 </Box>
+
+                {/* 削除確認ダイアログ */}
+                <Dialog
+                    open={isDeleteDialogOpen}
+                    onClose={handleDeleteDialogClose}
+                    aria-labelledby="delete-dialog-title"
+                    aria-describedby="delete-dialog-description"
+                >
+                    <DialogTitle id="delete-dialog-title">
+                        削除確認
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="delete-dialog-description">
+                            この入力内容を削除してもよろしいですか？
+                        </DialogContentText>
+                        {selectedTransaction && (
+                            <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    <strong>日付:</strong> {formatJPDay(selectedTransaction.date)}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    <strong>カテゴリ:</strong> {selectedTransaction.category}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    <strong>金額:</strong> {selectedTransaction.amount.toLocaleString()}円
+                                </Typography>
+                                {selectedTransaction.content && (
+                                    <Typography variant="body2" color="text.secondary">
+                                        <strong>内容:</strong> {selectedTransaction.content}
+                                    </Typography>
+                                )}
+                            </Box>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleDeleteDialogClose} color="inherit">
+                            キャンセル
+                        </Button>
+                        <Button 
+                            onClick={handleDelete} 
+                            color="error" 
+                            variant="contained"
+                            autoFocus
+                        >
+                            削除
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </>
         );
         return (

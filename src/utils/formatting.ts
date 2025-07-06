@@ -7,6 +7,32 @@ export function formatMonth(date: Date): string {
 export function formatJPMonth(date: Date): string {
     return format(date, "yyyy年MM月");
 }
+/**
+ * 日付文字列を日本語形式（yyyy年mm月dd日）に変換
+ * @param dateString - YYYY-MM-DD形式の日付文字列
+ * @returns yyyy年mm月dd日形式の文字列
+ */
+export const formatJPDay = (dateString: string): string => {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    
+    // 無効な日付をチェック
+    if (isNaN(date.getTime())) {
+      return dateString; // 無効な場合は元の文字列を返す
+    }
+    
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // 0ベースなので+1
+    const day = date.getDate();
+    
+    return `${year}年${month.toString().padStart(2, '0')}月${day.toString().padStart(2, '0')}日`;
+  } catch (error) {
+    console.error('formatJPDay error:', error);
+    return dateString; // エラーの場合は元の文字列を返す
+  }
+};
 export function formatYear(date: Date): string {
     return format(date, "yyyy");
 }
