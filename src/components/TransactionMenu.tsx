@@ -201,8 +201,8 @@ const TransactionMenu = memo(
         // 別日にコピー（日付選択ダイアログを表示）
         const handleCopyToOtherDay = useCallback((transaction: Transaction) => {
             setDatePickerDialog({ open: true, transaction });
-            setSelectedDate(today);
-        }, [today]);
+            setSelectedDate(currentDay);
+        }, [currentDay]);
 
         // 日付選択ダイアログでのコピー実行
         const handleExecuteCopyToDate = useCallback(async () => {
