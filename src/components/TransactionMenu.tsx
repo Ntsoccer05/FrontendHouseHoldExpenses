@@ -355,7 +355,7 @@ const TransactionMenu = memo(
                         {/* 操作ヒント */}
                         <Box sx={{ p: 1, bgcolor: 'info.main', color: 'info.contrastText', borderRadius: 1 }}>
                             <Typography variant="caption">
-                                💡 入力内容を長押し{!isMobile && "または右クリック"}でメニューを表示
+                                💡 記録済みの内容を長押し{!isMobile && "または右クリック"}でメニューを表示
                             </Typography>
                         </Box>
 
