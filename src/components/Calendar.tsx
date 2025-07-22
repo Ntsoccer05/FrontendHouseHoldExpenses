@@ -44,6 +44,7 @@ interface CalendarProps {
     onDateClick: (dateInfo: DateClickArg) => void;
     calendarRef: React.RefObject<FullCalendar>;
 }
+
 const Calendar = memo(
     ({
         setCurrentDay,
@@ -59,8 +60,13 @@ const Calendar = memo(
 
         const swipeWrapperRef = useRef<HTMLDivElement>(null);
         const [isSwiping, setIsSwiping] = useState(false);
+        const [isLoading, setIsLoading] = useState(false);
+        const [currentMonthData, setCurrentMonthData] = useState<string>('');
         const touchStartRef = useRef({ x: 0, y: 0 });
         const touchEndRef = useRef({ x: 0, y: 0 });
+        const mouseStartRef = useRef({ x: 0, y: 0 });
+        const mouseEndRef = useRef({ x: 0, y: 0 });
+        const [isMouseDown, setIsMouseDown] = useState(false);
 
         // 状態をまとめて管理
         const [calendarState, setCalendarState] = useState({
@@ -72,21 +78,39 @@ const Calendar = memo(
         const fetchMonthlyTransactions = useCallback(
             async (date: Date) => {
                 const formattedDate = format(date, "yyyyMM");
-                await getMonthlyTransactions(formattedDate);
+                
+                // 既に同じ月のデータを読み込み中または読み込み済みの場合はスキップ
+                if (currentMonthData === formattedDate) return;
+                
+                setIsLoading(true);
+                setCurrentMonthData(formattedDate);
+                
+                try {
+                    await getMonthlyTransactions(formattedDate);
+                } catch (error) {
+                    console.error('Failed to fetch monthly transactions:', error);
+                } finally {
+                    // データ読み込み完了後に少し遅延を入れてローディングを解除
+                    setTimeout(() => {
+                        setIsLoading(false);
+                    }, 50); // 遅延を短く
+                }
             },
-            [getMonthlyTransactions]
+            [getMonthlyTransactions, currentMonthData]
         );
 
-        // `currentMonth`が変わったときだけデータ取得
+        // 初期表示時の処理を改善
         useEffect(() => {
-            fetchMonthlyTransactions(currentMonth);
+            if (currentMonth) {
+                fetchMonthlyTransactions(currentMonth);
+            }
         }, [currentMonth, fetchMonthlyTransactions]);
 
-        // 各日付の収支をメモ化
-        const dailyBalances = useMemo(
-            () => calculateDailyBalances(monthlyTransactions),
-            [monthlyTransactions]
-        );
+        // 各日付の収支をメモ化（ローディング中は空の配列を返す）
+        const dailyBalances = useMemo(() => {
+            if (isLoading) return {};
+            return calculateDailyBalances(monthlyTransactions);
+        }, [monthlyTransactions, isLoading]);
 
         // FullCalendar用イベントをメモ化
         const calendarEvents = useMemo(
@@ -142,22 +166,29 @@ const Calendar = memo(
         // 日付変更時の処理を最適化
         const handleDateSet = useCallback(
             (datesetInfo: DatesSetArg) => {
-                const currentMonth = datesetInfo.view.currentStart;
-                setCurrentMonth(currentMonth);
+                const newMonth = datesetInfo.view.currentStart;
+                const newFormattedDate = format(newMonth, "yyyyMM");
+                
+                // 現在表示中の月と異なる場合のみ更新
+                if (currentMonthData !== newFormattedDate) {
+                    setCurrentMonth(newMonth);
+                }
+                
                 const thisHolidays = holiday_jp.between(
-                    startOfMonth(subMonths(currentMonth, 1)),
-                    endOfMonth(addMonths(currentMonth, 1))
+                    startOfMonth(subMonths(newMonth, 1)),
+                    endOfMonth(addMonths(newMonth, 1))
                 );
 
                 setCalendarState((prevState) => ({
                     ...prevState,
                     holidays: thisHolidays,
                 }));
-                if (isSameMonth(new Date(), currentMonth)) {
+                
+                if (isSameMonth(new Date(), newMonth)) {
                     setCurrentDay(today);
                 }
             },
-            [setCurrentMonth, setCurrentDay, today]
+            [setCurrentMonth, setCurrentDay, today, currentMonthData]
         );
 
         // 日セルのクラス名を最適化
@@ -180,7 +211,7 @@ const Calendar = memo(
         );
 
         const animateCalendarSwipe = useCallback((direction: "prev" | "next") => {
-            if (isSwiping) return;
+            if (isSwiping || isLoading) return;
             
             const wrapper = swipeWrapperRef.current?.querySelector('.fc-daygrid-body') as HTMLElement;
             if (!wrapper || !calendarRef.current) return;
@@ -207,17 +238,18 @@ const Calendar = memo(
                 }
                 setIsSwiping(false);
             }, 300);
-        }, [calendarRef, isSwiping]);
+        }, [calendarRef, isSwiping, isLoading]);
 
+        // タッチイベントの処理
         useEffect(() => {
             const calendarElement = calendarRef.current?.elRef?.current as HTMLElement;
             if (!calendarElement) return;
 
-            const thresholdX = 80; // 閾値を少し上げる
-            const thresholdY = 50; // 縦スワイプの許容範囲を広げる
+            const thresholdX = 80;
+            const thresholdY = 50;
 
             const handleTouchStart = (e: TouchEvent) => {
-                if (isSwiping) return;
+                if (isSwiping || isLoading) return;
                 
                 const touch = e.touches[0];
                 touchStartRef.current = {
@@ -227,7 +259,7 @@ const Calendar = memo(
             };
 
             const handleTouchMove = (e: TouchEvent) => {
-                if (isSwiping) return;
+                if (isSwiping || isLoading) return;
                 
                 const touch = e.touches[0];
                 touchEndRef.current = {
@@ -237,18 +269,14 @@ const Calendar = memo(
             };
 
             const handleTouchEnd = () => {
-                if (isSwiping) return;
+                if (isSwiping || isLoading) return;
                 
                 const diffX = touchEndRef.current.x - touchStartRef.current.x;
                 const diffY = touchEndRef.current.y - touchStartRef.current.y;
 
-                // 縦方向の動きが大きすぎる場合は無視
                 if (Math.abs(diffY) > thresholdY) return;
-                
-                // 横方向の動きが閾値未満の場合は無視
                 if (Math.abs(diffX) < thresholdX) return;
 
-                // デバウンス処理
                 setTimeout(() => {
                     if (diffX > 0) {
                         animateCalendarSwipe("prev");
@@ -258,17 +286,71 @@ const Calendar = memo(
                 }, 50);
             };
 
+            // マウスイベントの処理（PC用）
+            const handleMouseDown = (e: MouseEvent) => {
+                if (isSwiping || isLoading) return;
+                
+                setIsMouseDown(true);
+                mouseStartRef.current = {
+                    x: e.clientX,
+                    y: e.clientY
+                };
+            };
+
+            const handleMouseMove = (e: MouseEvent) => {
+                if (!isMouseDown || isSwiping || isLoading) return;
+                
+                mouseEndRef.current = {
+                    x: e.clientX,
+                    y: e.clientY
+                };
+            };
+
+            const handleMouseUp = () => {
+                if (!isMouseDown || isSwiping || isLoading) return;
+                
+                setIsMouseDown(false);
+                
+                const diffX = mouseEndRef.current.x - mouseStartRef.current.x;
+                const diffY = mouseEndRef.current.y - mouseStartRef.current.y;
+
+                if (Math.abs(diffY) > thresholdY) return;
+                if (Math.abs(diffX) < thresholdX) return;
+
+                setTimeout(() => {
+                    if (diffX > 0) {
+                        animateCalendarSwipe("prev");
+                    } else {
+                        animateCalendarSwipe("next");
+                    }
+                }, 50);
+            };
+
+            const handleMouseLeave = () => {
+                setIsMouseDown(false);
+            };
+
             // パッシブリスナーで登録
             calendarElement.addEventListener("touchstart", handleTouchStart, { passive: true });
             calendarElement.addEventListener("touchmove", handleTouchMove, { passive: true });
             calendarElement.addEventListener("touchend", handleTouchEnd, { passive: true });
+            
+            // マウスイベント
+            calendarElement.addEventListener("mousedown", handleMouseDown);
+            calendarElement.addEventListener("mousemove", handleMouseMove);
+            calendarElement.addEventListener("mouseup", handleMouseUp);
+            calendarElement.addEventListener("mouseleave", handleMouseLeave);
 
             return () => {
                 calendarElement.removeEventListener("touchstart", handleTouchStart);
                 calendarElement.removeEventListener("touchmove", handleTouchMove);
                 calendarElement.removeEventListener("touchend", handleTouchEnd);
+                calendarElement.removeEventListener("mousedown", handleMouseDown);
+                calendarElement.removeEventListener("mousemove", handleMouseMove);
+                calendarElement.removeEventListener("mouseup", handleMouseUp);
+                calendarElement.removeEventListener("mouseleave", handleMouseLeave);
             };
-        }, [calendarRef, animateCalendarSwipe, isSwiping]);
+        }, [calendarRef, animateCalendarSwipe, isSwiping, isLoading, isMouseDown]);
 
         // イベントレンダリング関数
         const renderEventContent = useCallback(
@@ -294,7 +376,7 @@ const Calendar = memo(
                     </div>
                 </div>
             ),
-            []
+            [isMobile]
         );
 
         return (
@@ -302,8 +384,16 @@ const Calendar = memo(
                 ref={swipeWrapperRef}
                 sx={{
                     "& .fc-header-toolbar": {
-                    paddingLeft: isMobile ? "16px" : "auto",
-                    paddingRight: isMobile ? "16px" : "auto",
+                        paddingLeft: isMobile ? "16px" : "auto",
+                        paddingRight: isMobile ? "16px" : "auto",
+                    },
+                    // ローディング中のスタイル
+                    opacity: isLoading ? 0.7 : 1,
+                    transition: "opacity 0.2s ease-in-out",
+                    // PCでのドラッグ防止
+                    userSelect: "none",
+                    "& *": {
+                        userSelect: "none",
                     },
                 }}
             >
