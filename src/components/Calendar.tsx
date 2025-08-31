@@ -83,6 +83,7 @@ const Calendar = memo(
         // 月の週数を計算する関数
         const calculateWeeksInMonth = useCallback((date: Date): number => {
             const firstDay = startOfMonth(date);
+            const lastDay = endOfMonth(date);
             const firstDayOfWeek = getDay(firstDay); // 0 = Sunday, 1 = Monday, ...
             const daysInMonth = getDaysInMonth(date);
             
@@ -96,7 +97,7 @@ const Calendar = memo(
             return 1 + additionalWeeks; // 最初の週 + 追加の週
         }, []);
 
-        // カレンダーの高さを動的に設定する関数
+        // カレンダーの高さを動的に設定する関数（改善版）
         const adjustCalendarHeight = useCallback(() => {
             if (!calendarRef.current || !currentMonth) return;
             
@@ -105,9 +106,9 @@ const Calendar = memo(
             const viewHarnessElement = calendarElement?.querySelector('.fc-view-harness') as HTMLElement;
             
             if (viewHarnessElement) {
-                // 基本高さ + 週数に応じた調整
-                const baseHeight = isMobile ? 360 : 480;
-                const weekHeight = isMobile ? 96 : 106;
+                // より余裕のある高さ設定で8月31日も確実に表示
+                const baseHeight = isMobile ? 400 : 540;
+                const weekHeight = isMobile ? 105 : 115;
                 const calculatedHeight = baseHeight + (weeks * weekHeight);
                 
                 viewHarnessElement.style.height = `${calculatedHeight}px`;
@@ -328,7 +329,7 @@ const Calendar = memo(
 
             const thresholdX = 80;
             const thresholdY = 50;
-            const minMoveDistance = 1; // 最小移動距離
+            const minMoveDistance = 5; // 最小移動距離
             const quickDragThreshold = 200; // 200msでの素早いドラッグ判定
 
             const handleTouchStart = (e: TouchEvent) => {
@@ -358,8 +359,8 @@ const Calendar = memo(
                 const diffX = Math.abs(touchEndRef.current.x - touchStartRef.current.x);
                 const diffY = Math.abs(touchEndRef.current.y - touchStartRef.current.y);
                 
-                // 水平方向のスワイプが確実な場合のみ、画面スクロールを防ぐ
-                if (diffX > thresholdX && diffY < thresholdY) {
+                // 水平方向の動きが主要な場合のみスクロールを防ぐ
+                if (diffX > diffY && diffX > 10) {
                     e.preventDefault();
                 }
             };
