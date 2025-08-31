@@ -37,14 +37,31 @@ td.fc-day-sun {
     overflow: hidden hidden !important;
 }
 
-.fc-view-harness.fc-view-harness-active {
-    display: flex;
-    height: 528px !important;
+;
 }
+
+/* PC版での調整 */
 @media screen and (min-width: 768px) {
     .fc-view-harness.fc-view-harness-active {
         display: block;
-        height: 636.481px !important;
+        min-height: 500px;
+        height: auto !important;
+    }
+}
+
+/* モバイル版での最適化 */
+@media screen and (max-width: 600px) {
+    .fc .fc-scrollgrid table {
+        height: 100% !important;
+    }
+    
+    .fc-view-harness.fc-view-harness-active {
+        min-height: 350px;
+    }
+    
+    /* モバイルでの日付セル最小高さ確保 */
+    .fc .fc-daygrid-day-frame {
+        min-height: 85px;
     }
 }
 
@@ -82,9 +99,21 @@ td.fc-day-sun {
     opacity: 1 !important;
 }
 
-,
-@media screen and (max-width: 600px) {
-    .fc .fc-scrollgrid table {
-        height: 100% !important;
+/* フォールバック: JavaScriptが動作しない場合のデフォルト高さ */
+@supports not (selector(:has(*))) {
+    .fc-view-harness.fc-view-harness-active {
+        height: 528px !important; /* デフォルト5週間分 */
+    }
+    
+    @media screen and (min-width: 768px) {
+        .fc-view-harness.fc-view-harness-active {
+            height: 636px !important;
+        }
+    }
+    
+    @media screen and (max-width: 600px) {
+        .fc-view-harness.fc-view-harness-active {
+            height: 468px !important;
+        }
     }
 }
