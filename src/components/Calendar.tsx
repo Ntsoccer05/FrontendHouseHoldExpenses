@@ -18,6 +18,8 @@ import {
     format,
     subMonths,
     addMonths,
+    getDaysInMonth,
+    getDay,
 } from "date-fns";
 import { useAppContext } from "../context/AppContext";
 import * as holiday_jp from "@holiday-jp/holiday_jp";
@@ -78,6 +80,40 @@ const Calendar = memo(
             holidayEvents: [] as HolidayEvent[],
         });
 
+        // 月の週数を計算する関数
+        const calculateWeeksInMonth = useCallback((date: Date): number => {
+            const firstDay = startOfMonth(date);
+            const firstDayOfWeek = getDay(firstDay); // 0 = Sunday, 1 = Monday, ...
+            const daysInMonth = getDaysInMonth(date);
+            
+            // 最初の週で使用される日数
+            const daysInFirstWeek = 7 - firstDayOfWeek;
+            // 残りの日数
+            const remainingDays = daysInMonth - daysInFirstWeek;
+            // 追加で必要な週数
+            const additionalWeeks = Math.ceil(remainingDays / 7);
+            
+            return 1 + additionalWeeks; // 最初の週 + 追加の週
+        }, []);
+
+        // カレンダーの高さを動的に設定する関数
+        const adjustCalendarHeight = useCallback(() => {
+            if (!calendarRef.current || !currentMonth) return;
+            
+            const weeks = calculateWeeksInMonth(currentMonth);
+            const calendarElement = calendarRef.current.elRef.current as HTMLElement;
+            const viewHarnessElement = calendarElement?.querySelector('.fc-view-harness') as HTMLElement;
+            
+            if (viewHarnessElement) {
+                // 基本高さ + 週数に応じた調整
+                const baseHeight = isMobile ? 360 : 480;
+                const weekHeight = isMobile ? 96 : 106;
+                const calculatedHeight = baseHeight + (weeks * weekHeight);
+                
+                viewHarnessElement.style.height = `${calculatedHeight}px`;
+            }
+        }, [calendarRef, currentMonth, isMobile, calculateWeeksInMonth]);
+
         // 非同期処理でデータを取得
         const fetchMonthlyTransactions = useCallback(
             async (date: Date) => {
@@ -97,10 +133,12 @@ const Calendar = memo(
                     // データ読み込み完了後に少し遅延を入れてローディングを解除
                     setTimeout(() => {
                         setIsLoading(false);
-                    }, 50); // 遅延を短く
+                        // 高さ調整を実行
+                        setTimeout(adjustCalendarHeight, 100);
+                    }, 50);
                 }
             },
-            [getMonthlyTransactions, currentMonthData]
+            [getMonthlyTransactions, currentMonthData, adjustCalendarHeight]
         );
 
         // 初期表示時の処理を改善
@@ -109,6 +147,16 @@ const Calendar = memo(
                 fetchMonthlyTransactions(currentMonth);
             }
         }, [currentMonth, fetchMonthlyTransactions]);
+
+        // 画面サイズ変更時にも高さを調整
+        useEffect(() => {
+            const handleResize = () => {
+                setTimeout(adjustCalendarHeight, 100);
+            };
+            
+            window.addEventListener('resize', handleResize);
+            return () => window.removeEventListener('resize', handleResize);
+        }, [adjustCalendarHeight]);
 
         // 各日付の収支をメモ化（ローディング中は空の配列を返す）
         const dailyBalances = useMemo(() => {
@@ -191,8 +239,11 @@ const Calendar = memo(
                 if (isSameMonth(new Date(), newMonth)) {
                     setCurrentDay(today);
                 }
+                
+                // 月変更後に高さを調整
+                setTimeout(adjustCalendarHeight, 200);
             },
-            [setCurrentMonth, setCurrentDay, today, currentMonthData]
+            [setCurrentMonth, setCurrentDay, today, currentMonthData, adjustCalendarHeight]
         );
 
         // 日セルのクラス名を最適化
@@ -241,8 +292,10 @@ const Calendar = memo(
                     wrapper.style.transform = "translateX(0)";
                 }
                 setIsSwiping(false);
+                // アニメーション完了後に高さを再調整
+                setTimeout(adjustCalendarHeight, 100);
             }, 300);
-        }, [calendarRef, isSwiping, isLoading]);
+        }, [calendarRef, isSwiping, isLoading, adjustCalendarHeight]);
 
         // 日付クリックイベントをラップして、スワイプを無効化
         const handleDateClick = useCallback((dateInfo: DateClickArg) => {
@@ -268,31 +321,23 @@ const Calendar = memo(
             );
         };
 
-        // タッチイベントの処理
+        // タッチイベントの処理（Notionスタイル）
         useEffect(() => {
             const calendarElement = calendarRef.current?.elRef?.current as HTMLElement;
             if (!calendarElement) return;
 
             const thresholdX = 80;
             const thresholdY = 50;
+            const minMoveDistance = 1; // 最小移動距離
+            const quickDragThreshold = 200; // 200msでの素早いドラッグ判定
 
             const handleTouchStart = (e: TouchEvent) => {
                 if (isSwiping || isLoading || isDateClickingRef.current) return;
                 
-                const target = e.target as Element;
                 const touch = e.touches[0];
                 
                 swipeStartTimeRef.current = Date.now();
                 hasMovedRef.current = false;
-                
-                // 日付セル内の要素の場合、短時間のタッチのみスワイプを許可
-                if (isDateCellElement(target)) {
-                    touchStartRef.current = {
-                        x: touch.clientX,
-                        y: touch.clientY
-                    };
-                    return;
-                }
                 
                 touchStartRef.current = {
                     x: touch.clientX,
@@ -309,23 +354,43 @@ const Calendar = memo(
                     x: touch.clientX,
                     y: touch.clientY
                 };
+                
+                const diffX = Math.abs(touchEndRef.current.x - touchStartRef.current.x);
+                const diffY = Math.abs(touchEndRef.current.y - touchStartRef.current.y);
+                
+                // 水平方向のスワイプが確実な場合のみ、画面スクロールを防ぐ
+                if (diffX > thresholdX && diffY < thresholdY) {
+                    e.preventDefault();
+                }
             };
 
             const handleTouchEnd = () => {
                 if (isSwiping || isLoading || isDateClickingRef.current) return;
                 
                 const touchDuration = Date.now() - swipeStartTimeRef.current;
-                
-                // タッチ時間が短すぎる場合（クリック操作）はスワイプしない
-                if (touchDuration < 100 || !hasMovedRef.current) return;
-                
                 const diffX = touchEndRef.current.x - touchStartRef.current.x;
                 const diffY = touchEndRef.current.y - touchStartRef.current.y;
+                const moveDistance = Math.sqrt(diffX * diffX + diffY * diffY);
+                
+                // Notionスタイルの判定：
+                // 1. 200ms以内でも十分な移動距離があればドラッグ
+                // 2. 200ms以上で移動があればドラッグ
+                // 3. 水平方向のスワイプが主要な動きであること
+                const isQuickDrag = touchDuration <= quickDragThreshold && 
+                    moveDistance >= minMoveDistance && 
+                    Math.abs(diffX) >= thresholdX && 
+                    Math.abs(diffY) < thresholdY;
+                    
+                const isSlowDrag = touchDuration > quickDragThreshold && 
+                    hasMovedRef.current && 
+                    Math.abs(diffX) >= thresholdX && 
+                    Math.abs(diffY) < thresholdY;
+                
+                const isDragGesture = isQuickDrag || isSlowDrag;
+                
+                if (!isDragGesture) return;
 
-                if (Math.abs(diffY) > thresholdY) return;
-                if (Math.abs(diffX) < thresholdX) return;
-
-                // スワイプ実行前に少し待機してクリックイベントとの競合を避ける
+                // スワイプ実行
                 setTimeout(() => {
                     if (!isDateClickingRef.current) {
                         if (diffX > 0) {
@@ -334,27 +399,15 @@ const Calendar = memo(
                             animateCalendarSwipe("next");
                         }
                     }
-                }, 50);
+                }, 30); // 遅延を短縮
             };
 
-            // マウスイベントの処理（PC用）
+            // マウスイベントの処理（PC用 - Notionスタイル）
             const handleMouseDown = (e: MouseEvent) => {
                 if (isSwiping || isLoading || isDateClickingRef.current) return;
                 
-                const target = e.target as Element;
-                
                 swipeStartTimeRef.current = Date.now();
                 hasMovedRef.current = false;
-                
-                // 日付セル内の要素の場合、短時間のクリックのみスワイプを許可
-                if (isDateCellElement(target)) {
-                    setIsMouseDown(true);
-                    mouseStartRef.current = {
-                        x: e.clientX,
-                        y: e.clientY
-                    };
-                    return;
-                }
                 
                 setIsMouseDown(true);
                 mouseStartRef.current = {
@@ -379,17 +432,26 @@ const Calendar = memo(
                 setIsMouseDown(false);
                 
                 const mouseDuration = Date.now() - swipeStartTimeRef.current;
-                
-                // マウス操作時間が短すぎる場合（クリック操作）はスワイプしない
-                if (mouseDuration < 150 || !hasMovedRef.current) return;
-                
                 const diffX = mouseEndRef.current.x - mouseStartRef.current.x;
                 const diffY = mouseEndRef.current.y - mouseStartRef.current.y;
+                const moveDistance = Math.sqrt(diffX * diffX + diffY * diffY);
+                
+                // Notionスタイルの判定
+                const isQuickDrag = mouseDuration <= quickDragThreshold && 
+                    moveDistance >= minMoveDistance && 
+                    Math.abs(diffX) >= thresholdX && 
+                    Math.abs(diffY) < thresholdY;
+                    
+                const isSlowDrag = mouseDuration > quickDragThreshold && 
+                    hasMovedRef.current && 
+                    Math.abs(diffX) >= thresholdX && 
+                    Math.abs(diffY) < thresholdY;
+                
+                const isDragGesture = isQuickDrag || isSlowDrag;
+                
+                if (!isDragGesture) return;
 
-                if (Math.abs(diffY) > thresholdY) return;
-                if (Math.abs(diffX) < thresholdX) return;
-
-                // スワイプ実行前に少し待機してクリックイベントとの競合を避ける
+                // スワイプ実行
                 setTimeout(() => {
                     if (!isDateClickingRef.current) {
                         if (diffX > 0) {
@@ -398,16 +460,16 @@ const Calendar = memo(
                             animateCalendarSwipe("next");
                         }
                     }
-                }, 50);
+                }, 30);
             };
 
             const handleMouseLeave = () => {
                 setIsMouseDown(false);
             };
 
-            // パッシブリスナーで登録
+            // パッシブリスナーをタッチムーブ以外で登録
             calendarElement.addEventListener("touchstart", handleTouchStart, { passive: true });
-            calendarElement.addEventListener("touchmove", handleTouchMove, { passive: true });
+            calendarElement.addEventListener("touchmove", handleTouchMove, { passive: false }); // preventDefaultのためpassive: false
             calendarElement.addEventListener("touchend", handleTouchEnd, { passive: true });
             
             // マウスイベント
@@ -492,6 +554,10 @@ const Calendar = memo(
                     dateClick={handleDateClick}
                     buttonText={{ today: "今月" }}
                     fixedWeekCount={false}
+                    showNonCurrentDates={true}
+                    dayMaxEvents={false}
+                    height="auto"
+                    aspectRatio={isMobile ? 0.7 : 1.35}
                 />
             </Box>
         );
