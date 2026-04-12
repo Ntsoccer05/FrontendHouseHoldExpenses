@@ -1,165 +1,102 @@
 # CLAUDE.md
 
-このファイルは、このリポジトリでコードを扱う際の Claude Code (claude.ai/code) へのガイダンスを提供します。
-
-## 概要
-
-これは React + TypeScript + Vite で構築された家計管理 Web アプリケーションです。取引追跡、カテゴリ分類、レポート作成、予算分析など、個人財務管理の機能を提供します。
-
-## クイックコマンド
-
-- **開発**: `npm run dev` - Vite 開発サーバーを http://localhost:5173 で起動
-- **ビルド**: `npm run build` - サイトマップを生成し Vite でバンドル (`build/` ディレクトリに出力)
-- **リント**: `npm run lint` - TypeScript/TSX ファイルに ESLint を実行
-- **サイトマップ生成**: `npm run generate:sitemap` - SEO 用サイトマップをビルド
+家計管理 Web アプリケーション（React + TypeScript + Vite）の開発ガイド。
 
 ## テックスタック
 
-- **フロントエンドフレームワーク**: React 18.3.1 + TypeScript 5.6.2
-- **ビルドツール**: Vite 6.0.5 (高速トランスパイル用 SWC を使用)
-- **スタイリング**: Material-UI (MUI) + Emotion
+- **フロントエンド**: React 18.3.1 + TypeScript 5.6.2
+- **ビルド**: Vite 6.0.5（SWC ベース）、出力は `build/` ディレクトリ
+- **UI**: Material-UI (MUI) + Emotion
 - **ルーティング**: React Router 7.1.1
-- **状態管理**: React Context API (Redux は使用していません)
+- **状態管理**: React Context API（AuthContext、AppContext、TransactionContext、CategoryContext）
 - **フォーム**: React Hook Form + Zod バリデーション
-- **データ取得**: Axios + TanStack React Query
-- **UI コンポーネント**: MUI、Font Awesome アイコン、React Modal、React Icons
-- **カレンダー**: FullCalendar
-- **チャート**: Chart.js
-- **ドラッグ&ドロップ**: dnd-kit
+- **API**: Axios + TanStack React Query
+- **その他**: FullCalendar、Chart.js、dnd-kit
 
-## プロジェクトアーキテクチャ
+## クイックコマンド
 
-### コア構造
-
-```
-src/
-├── pages/              # ルートレベルページ (Home、Report、Category など)
-├── components/         # 再利用可能な React コンポーネント
-│   ├── layout/        # アプリレイアウトラッパーコンポーネント
-│   ├── Auth/          # 認証関連コンポーネント
-│   ├── common/        # 共通 UI コンポーネント (SideBar、SnackBar、Loading など)
-│   ├── Caluculator/   # 計算機コンポーネント
-│   └── [features]/    # 機能ごとにグループ化されたコンポーネント
-├── context/           # グローバル状態用 React Context プロバイダー
-│   ├── AuthContext    # ユーザー認証とセッション
-│   ├── AppContext     # トランザクション、カテゴリ、UI 状態などの中央状態
-│   ├── TransactionContext  # トランザクション固有の状態
-│   └── CategoryContext # ユーザー定義のトランザクションカテゴリ
-├── hooks/             # カスタム React フック
-├── utils/             # ユーティリティ関数 (axios 設定、計算、フォーマット)
-├── validations/       # フォームバリデーション用 Zod スキーマ
-├── routes/            # ルーター設定とルートガード
-├── config/            # 設定定数
-├── theme/             # Material-UI テーマのカスタマイズ
-└── types/             # TypeScript 型定義
+```bash
+npm run dev              # 開発サーバー起動
+npm run build            # ビルド（build/ に出力）
+npm run lint             # ESLint 実行
+npm run format           # Prettier でコード整形
+npm run typecheck        # TypeScript 型チェック
+npm run check            # lint + typecheck を一度に実行
 ```
 
-### 状態管理パターン
+## スタートガイド
 
-複数のコンテキストを使用した React Context API:
-- **AuthContext**: ユーザー認証状態とセッションを管理
-- **AppContext**: トランザクション、読み込み状態、カテゴリ、UI (スナックバー) などの中央状態
-- **TransactionContext**: トランザクション固有の操作
-- **CategoryContext**: ユーザー定義の収入/支出カテゴリ
+### 複雑な新機能を追加する場合
 
-各コンテキストプロバイダーはルーターをラップし、状態へのアクセス/変更用フックを公開します。
+1. [`docs/development-workflow.md`](docs/development-workflow.md) を読む（フロー A）
+2. このチャット画面で壁打ち
+3. `docs/ideas/pending/` にアイデアメモを保存
+4. `/prd-writing`, `/functional-design`, `/architecture-design` で永続ドキュメント作成
+5. `/add-feature [機能名]` で実装開始
 
-### 認証フロー
+### シンプルな修正を行う場合
 
-1. **公開ルート** (OnlyPublicRoute): ログイン、登録、パスワードリセット
-2. **保護されたルート** (PrivateRoute): ホーム、レポート、カテゴリ - 有効な認証トークンが必要
-3. **OAuth 統合**: Google と GitHub のコールバックハンドラー
-4. **セッション管理**: トークン永続化にクッキーとセッションストレージを使用
+1. 指示を出す
+2. `/add-feature [機能名]` で実装開始
 
-## キーとなるパターンと規約
-
-### コンポーネント
-- フック付きの関数型コンポーネント (クラスコンポーネントなし)
-- コンポーネントはタイプ別ではなく、機能別に共配置
-- フォームコンポーネントは React Hook Form + Zod でバリデーション
-- すべてのフォームスキーマは `src/validations/` ディレクトリで定義
-
-### スタイリング
-- 一貫性のための Material-UI コンポーネント
-- 必要に応じて Emotion を CSS-in-JS で使用
-- `src/theme/theme.ts` に一元化されたテーマ
-- MUI の `useMediaQuery` とブレークポイントを使用したレスポンシブデザイン
-
-### データ型
-- `src/types/index.ts` で定義されたコア型
-- トランザクション型: "income" または "expense"
-- カテゴリはユニオン型として定義 (ExpenseCategory、IncomeCategory)
-- API レスポンスは通常インターフェイスで型付け (Transaction、LoginUser、BaseUserCategory など)
-
-### API 統合
-- `src/utils/axios.ts` で設定された Axios クライアント
-- ベース URL とインターセプターはここで管理
-- キャッシング と無効化に React Query を使用
-- `src/utils/errorHandling.ts` のエラーハンドリングユーティリティ
-
-### バリデーション
-- `src/validations/` のすべてのフォーム入力を Zod スキーマで検証
-- スキーマカバー: Login、Register、Category、PasswordForget、PasswordReset
-- React Hook Form の `useForm` を `zodResolver` で使用
-
-## 一般的な開発タスク
-
-### 新しいページの追加
-1. `src/pages/` にコンポーネントを作成
-2. `src/routes/router.tsx` にルートを追加
-3. 適切なルートガード (PrivateRoute または OnlyPublicRoute) でラップ
-4. 必要に応じてコンテキストプロバイダーでラップ (ホームの TransactionProvider など)
-
-### 新しいフォームの追加
-1. `src/validations/` に Zod スキーマを作成
-2. React Hook Form + Zod を使用してフォームコンポーネントを作成
-3. axios 呼び出しでフォーム送信を処理
-4. AppContext のスナックバーシステム経由でフィードバックを表示
-
-### 新しいコンポーネントの追加
-1. `src/components/` の適切なサブディレクトリに作成
-2. 一貫性のために MUI コンポーネントを使用
-3. 柔軟性のために props を受け入れる
-4. 必要に応じてフック (useAuthContext、useAppContext) を使用してコンテキストにアクセス
-
-### グローバル状態の使用
-- 認証コンテキスト取得: `const { user } = useAuthContext()`
-- アプリ状態取得: `const { transactions, showSnackBar } = useAppContext()`
-- 通知表示: `showSnackBar({ title: "Success", bodyText: "..." })`
+詳細は [`docs/development-workflow.md`](docs/development-workflow.md) を参照。
 
 ## 重要なファイル
 
-- `src/main.tsx` - アプリケーションエントリーポイント
-- `src/routes/router.tsx` - ルーター設定とルート定義
-- `src/components/layout/AppLayout.tsx` - メインアプリレイアウトラッパー
-- `src/context/AppContext.tsx` - グローバル状態プロバイダー (最も頻繁に使用)
-- `src/utils/axios.ts` - API クライアント設定
-- `src/theme/theme.ts` - Material-UI テーマ設定
-- `vite.config.ts` - Vite 設定 (注: `dist/` ではなく `build/` に出力)
+- `src/main.tsx` - エントリーポイント
+- `src/routes/router.tsx` - ルーティング設定
+- `src/context/AppContext.tsx` - グローバル状態
+- `src/types/index.ts` - 型定義
+- `vite.config.ts` - ビルド設定
 
-## 開発ワークフロー（重要）
+## 行動原則
 
-**新機能を実装する際の標準的なフローを定義しています。複雑度に応じて 2 つのフロー を使い分けることで、効率的かつ高品質な開発を実現します。**
+1. **複雑な機能は必ず壁打ち後に実装**
+   - 要件が曖昧なまま実装しない
+   - [`docs/development-workflow.md`](docs/development-workflow.md) のフロー A に従う
 
-- [`docs/development-workflow.md`](docs/development-workflow.md) - 実装フロー、判定方法、コマンド集、チェックリスト
-- [`docs/ideas/README.md`](docs/ideas/README.md) - アイデア管理、pending/done の分離、ファイル命名ルール
+2. **tasklist.md の全タスク完了まで継続**
+   - 「時間の都合により」などの理由で中断しない
+   - 完了後に振り返りを記録
 
-## TypeScript 設定
+3. **npm run check でビルド確認**
+   - コミット前に必ず実行
+   - lint + typecheck が通ることを確認
 
-- **厳密モード**: 有効 - すべての値は適切に型付けする必要があります
-- **未使用変数**: 未使用のローカル変数とパラメータはエラーになります
-- **ターゲット**: ES2020
-- **JSX モード**: react-jsx (JSX ファイルで React インポートは不要)
+4. **ドキュメント第一**
+   - 実装より `docs/` の正確性を優先
+   - ideas ファイルも含め、壁打ち内容は必ず記録
 
-## ビルド出力
+5. **進捗管理の徹底**
+   - tasklist.md をリアルタイムで更新
+   - Claude が進捗更新の責任を持つ
 
-- **開発**: Vite 開発サーバーがメモリから提供
-- **本番**: `build/` ディレクトリに出力 (vite.config.ts で設定)
-- **サイトマップ**: ビルド中に `sitemap-builder.ts` 経由で自動生成
+## アーキテクチャ概要
 
-## 注意事項
+### ディレクトリ構造
 
-- アプリケーションは絶対インポート (エイリアスパス) と相対インポートの両方を使用しています
-- セッション永続化はクッキーとセッションストレージで処理
-- モバイルレスポンシブはMUI のレスポンシブユーティリティを使用して組み込み
-- ダッシュボード/カレンダービューは FullCalendar を使用してイベント管理
+```
+src/
+├── pages/           # ページコンポーネント
+├── components/      # UI コンポーネント（機能別に共配置）
+├── context/         # React Context（状態管理）
+├── hooks/           # カスタムフック
+├── utils/           # ユーティリティ関数
+├── validations/     # Zod バリデーションスキーマ
+├── routes/          # ルーター設定
+├── types/           # TypeScript 型定義
+├── config/          # 設定定数
+└── theme/           # MUI テーマ
+```
+
+### 状態管理
+
+4 つの独立した Context で状態を管理：
+- **AuthContext**: ユーザー認証・セッション
+- **AppContext**: グローバル UI 状態（トランザクション、カテゴリ、スナックバー）
+- **TransactionContext**: トランザクション操作
+- **CategoryContext**: カテゴリ管理
+
+## 詳細情報
+
+詳細なアーキテクチャ、設計パターン、開発タスク例は [`CLAUDE-full.md`](CLAUDE-full.md) を参照。
