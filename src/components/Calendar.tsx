@@ -55,7 +55,7 @@ const Calendar = memo(
         onDateClick,
         calendarRef,
     }: CalendarProps) => {
-        const { getMonthlyTransactions, monthlyTransactions } =
+        const { getMonthlyTransactions, monthlyTransactions, prefetchMonth } =
             useTransactionContext();
         const { setCurrentMonth, currentMonth, isMobile } = useAppContext();
         const theme = useTheme();
@@ -221,12 +221,20 @@ const Calendar = memo(
             (datesetInfo: DatesSetArg) => {
                 const newMonth = datesetInfo.view.currentStart;
                 const newFormattedDate = format(newMonth, "yyyyMM");
-                
+
                 // 現在表示中の月と異なる場合のみ更新
                 if (currentMonthData !== newFormattedDate) {
                     setCurrentMonth(newMonth);
+                    // 現在月のデータを取得（キャッシュから即座に取得）
+                    getMonthlyTransactions(newFormattedDate);
+
+                    // 前月・次月をプリフェッチ（バックグラウンド）
+                    const prevMonth = format(subMonths(newMonth, 1), "yyyyMM");
+                    const nextMonth = format(addMonths(newMonth, 1), "yyyyMM");
+                    prefetchMonth(prevMonth);
+                    prefetchMonth(nextMonth);
                 }
-                
+
                 const thisHolidays = holiday_jp.between(
                     startOfMonth(subMonths(newMonth, 1)),
                     endOfMonth(addMonths(newMonth, 1))
@@ -236,15 +244,15 @@ const Calendar = memo(
                     ...prevState,
                     holidays: thisHolidays,
                 }));
-                
+
                 if (isSameMonth(new Date(), newMonth)) {
                     setCurrentDay(today);
                 }
-                
+
                 // 月変更後に高さを調整
                 setTimeout(adjustCalendarHeight, 200);
             },
-            [setCurrentMonth, setCurrentDay, today, currentMonthData, adjustCalendarHeight]
+            [setCurrentMonth, setCurrentDay, today, currentMonthData, adjustCalendarHeight, getMonthlyTransactions, prefetchMonth]
         );
 
         // 日セルのクラス名を最適化

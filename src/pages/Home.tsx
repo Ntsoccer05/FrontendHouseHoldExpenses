@@ -260,8 +260,8 @@ const Home = () => {
                     onClick={handleTodayTransactionForm}
                     sx={{
                         position: "fixed",
-                        bottom: isMobile ? 10 : 274,
-                        right: isMobile ? 20 : 344,
+                        bottom: { xs: 10, lg: 24 },
+                        right: { xs: 20, lg: 24 },
                         width: isMobile ? 50 : 64,
                         height: isMobile ? 50 : 64,
                         boxShadow: "0 6px 16px rgba(25, 118, 210, 0.3)",
