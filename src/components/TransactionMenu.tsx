@@ -32,6 +32,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import RestoreIcon from "@mui/icons-material/Restore";
 import { Transaction } from "../types";
 import { formatCurrency, formatJPDay } from "../utils/formatting";
+import { format } from "date-fns";
 import { useAppContext } from "../context/AppContext";
 import { useTransactionContext } from "../context/TransactionContext";
 import DynamicIcon from "./common/DynamicIcon";
@@ -67,7 +68,7 @@ const TransactionMenu = memo(
         onClose,
     }: TransactionMenuProps) => {
         const { isMobile, showSnackBar } = useAppContext();
-        const { onSaveTransaction, onDeleteTransaction } = useTransactionContext();
+        const { onSaveTransaction, onDeleteTransaction, invalidateMonthCache } = useTransactionContext();
         const menuDrawerWidth = 320;
 
         // コンテキストメニュー関連のstate
@@ -177,6 +178,15 @@ const TransactionMenu = memo(
                 };
 
                 await onSaveTransaction(copyData);
+
+                // キャッシュを無効化（コピー元と今日の月）
+                const sourceMonth = format(new Date(transaction.date), "yyyyMM");
+                const todayMonth = format(new Date(today), "yyyyMM");
+                invalidateMonthCache(sourceMonth);
+                if (sourceMonth !== todayMonth) {
+                    invalidateMonthCache(todayMonth);
+                }
+
                 showSnackBar({
                     title: "コピー完了",
                     bodyText: "今日にコピーされました",
@@ -196,7 +206,7 @@ const TransactionMenu = memo(
                     message: ""
                 });
             }
-        }, [today, onSaveTransaction, showSnackBar]);
+        }, [today, onSaveTransaction, showSnackBar, invalidateMonthCache]);
 
         // 別日にコピー（日付選択ダイアログを表示）
         const handleCopyToOtherDay = useCallback((transaction: Transaction) => {
@@ -234,6 +244,15 @@ const TransactionMenu = memo(
                 };
 
                 await onSaveTransaction(copyData);
+
+                // キャッシュを無効化（コピー元とコピー先の月）
+                const sourceMonth = format(new Date(datePickerDialog.transaction.date), "yyyyMM");
+                const destinationMonth = format(new Date(selectedDate), "yyyyMM");
+                invalidateMonthCache(sourceMonth);
+                if (sourceMonth !== destinationMonth) {
+                    invalidateMonthCache(destinationMonth);
+                }
+
                 showSnackBar({
                     title: "コピー完了",
                     bodyText: `${formatJPDay(selectedDate)}にコピーされました`,
@@ -254,7 +273,7 @@ const TransactionMenu = memo(
                     message: ""
                 });
             }
-        }, [datePickerDialog.transaction, selectedDate, onSaveTransaction, showSnackBar]);
+        }, [datePickerDialog.transaction, selectedDate, onSaveTransaction, showSnackBar, invalidateMonthCache]);
 
         // 削除確認ダイアログを表示
         const handleShowDeleteConfirm = useCallback((transaction: Transaction) => {
