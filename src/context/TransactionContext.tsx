@@ -88,36 +88,44 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
 
     // 月間取引データの取得（キャッシュ優先、3ヶ月一括取得）
     const getMonthlyTransactions = useCallback(async (currentMonth: string) => {
-        // キャッシュに存在すれば即座に返す
-        if (monthCacheRef.current.has(currentMonth)) {
-            const cachedData = monthCacheRef.current.get(currentMonth)!;
-            setMonthlyTransactions(cachedData);
-            return cachedData;
-        }
-
-        // キャッシュがなければ API リクエスト（3ヶ月一括取得）
         try {
-            const response = await apiClient.get("/api/monthly-transactions-multi", {
-                params: { currentMonth, user_id: loginUser?.id },
+            // キャッシュに存在すれば即座に返す
+            if (monthCacheRef.current.has(currentMonth)) {
+                const cachedData = monthCacheRef.current.get(currentMonth)!;
+                setMonthlyTransactions(cachedData);
+                return cachedData;
+            }
+
+            // キャッシュがなければ API リクエスト（3ヶ月一括取得）
+            const response = await apiClient.get("/monthly-transactions-multi", {
+                params: { month: currentMonth, user_id: loginUser?.id },
             });
 
-            // 3ヶ月分のデータをキャッシュに保存
-            const prevMonth = response.data.prevMonthData;
-            const currentMonthData = response.data.currentMonthData;
-            const nextMonth = response.data.nextMonthData;
+            // レスポンス構造の確認とデータ抽出
+            const prevMonth = response.data?.prevMonthData || [];
+            const currentMonthData = response.data?.currentMonthData || [];
+            const nextMonth = response.data?.nextMonthData || [];
 
-            const prevMonthKey = format(subMonths(new Date(`${currentMonth}01`), 1), "yyyyMM");
-            const nextMonthKey = format(addMonths(new Date(`${currentMonth}01`), 1), "yyyyMM");
+            // currentMonth を ISO 8601 形式に変換（"202604" → "2026-04-01"）
+            const dateStr = `${currentMonth.slice(0, 4)}-${currentMonth.slice(4)}-01`;
+            const dateObj = new Date(dateStr);
+
+            const prevMonthKey = format(subMonths(dateObj, 1), "yyyyMM");
+            const nextMonthKey = format(addMonths(dateObj, 1), "yyyyMM");
 
             monthCacheRef.current.set(prevMonthKey, prevMonth);
             monthCacheRef.current.set(currentMonth, currentMonthData);
             monthCacheRef.current.set(nextMonthKey, nextMonth);
 
-            setMonthlyTransactions(currentMonthData);
-            setPreMonthlyTransactions(response.data.preMonthlyTransactionData);
+            // state を確実に更新
+            setMonthlyTransactions(Array.isArray(currentMonthData) ? currentMonthData : []);
+            setPreMonthlyTransactions(response.data?.preMonthlyTransactionData || []);
             return currentMonthData;
         } catch (err) {
             console.error("Error fetching monthly transactions:", err);
+            // エラー時は確実に空配列で初期化
+            setMonthlyTransactions([]);
+            setPreMonthlyTransactions([]);
             return [];
         }
     }, [loginUser?.id]);
@@ -129,17 +137,21 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
 
         // バックグラウンドで API リクエスト（エラー時も無視）
         try {
-            const response = await apiClient.get("/api/monthly-transactions-multi", {
-                params: { currentMonth: yearMonth, user_id: loginUser?.id },
+            const response = await apiClient.get("/monthly-transactions-multi", {
+                params: { month: yearMonth, user_id: loginUser?.id },
             });
 
-            // 3ヶ月分のデータをキャッシュに保存
-            const prevMonth = response.data.prevMonthData;
-            const currentMonthData = response.data.currentMonthData;
-            const nextMonth = response.data.nextMonthData;
+            // レスポンス構造の確認とデータ抽出
+            const prevMonth = response.data?.prevMonthData || [];
+            const currentMonthData = response.data?.currentMonthData || [];
+            const nextMonth = response.data?.nextMonthData || [];
 
-            const prevMonthKey = format(subMonths(new Date(`${yearMonth}01`), 1), "yyyyMM");
-            const nextMonthKey = format(addMonths(new Date(`${yearMonth}01`), 1), "yyyyMM");
+            // yearMonth を ISO 8601 形式に変換（"202604" → "2026-04-01"）
+            const dateStr = `${yearMonth.slice(0, 4)}-${yearMonth.slice(4)}-01`;
+            const dateObj = new Date(dateStr);
+
+            const prevMonthKey = format(subMonths(dateObj, 1), "yyyyMM");
+            const nextMonthKey = format(addMonths(dateObj, 1), "yyyyMM");
 
             monthCacheRef.current.set(prevMonthKey, prevMonth);
             monthCacheRef.current.set(yearMonth, currentMonthData);
@@ -147,7 +159,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
 
             // プリフェッチ対象の月が現在月と同じ場合は state を更新
             const currentMonthFormatted = format(currentMonth, "yyyyMM");
-            if (yearMonth === currentMonthFormatted) {
+            if (yearMonth === currentMonthFormatted && Array.isArray(currentMonthData)) {
                 setMonthlyTransactions(currentMonthData);
             }
         } catch (err) {
