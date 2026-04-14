@@ -84,13 +84,22 @@
 - 取得した3ヶ月すべてをキャッシュに保存（prevMonthKey、currentMonth、nextMonthKey）
 - date-fns の `subMonths`、`addMonths` をインポート
 
+**prefetchMonth() の修正**:
+- `/monthly-transaction` から `/api/monthly-transactions-multi` に変更
+- 3ヶ月分のデータをキャッシュに保存
+- **重要な修正**: プリフェッチ対象の月が現在月と同じ場合は `setMonthlyTransactions` で state を更新
+  - これにより、プリフェッチされたデータが画面に表示されるようになった
+  - 月を前後する前にデータが表示される（UX 向上）
+
 **メリット**:
 - 月切替時の API 呼び出しが1回（3ヶ月分まとめて）に削減
 - gzip 圧縮による通信量削減
 - 前月・次月ナビゲーション時のキャッシュヒット率が大幅向上
+- **データが即座に画面に表示される**（prefetchMonth state 更新により）
 - UI ブロッキングなしでスムーズなナビゲーション体験を実現
 
 ### 検証完了
 - [x] TypeScript コンパイルエラーなし
 - [x] ESLint チェック通過
 - [x] npm run dev で起動確認
+- [x] prefetchMonth のデータが画面に表示されることを確認

@@ -129,15 +129,32 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
 
         // バックグラウンドで API リクエスト（エラー時も無視）
         try {
-            const response = await apiClient.get("/monthly-transaction", {
+            const response = await apiClient.get("/api/monthly-transactions-multi", {
                 params: { currentMonth: yearMonth, user_id: loginUser?.id },
             });
-            monthCacheRef.current.set(yearMonth, response.data.monthlyTransactionData);
+
+            // 3ヶ月分のデータをキャッシュに保存
+            const prevMonth = response.data.prevMonthData;
+            const currentMonthData = response.data.currentMonthData;
+            const nextMonth = response.data.nextMonthData;
+
+            const prevMonthKey = format(subMonths(new Date(`${yearMonth}01`), 1), "yyyyMM");
+            const nextMonthKey = format(addMonths(new Date(`${yearMonth}01`), 1), "yyyyMM");
+
+            monthCacheRef.current.set(prevMonthKey, prevMonth);
+            monthCacheRef.current.set(yearMonth, currentMonthData);
+            monthCacheRef.current.set(nextMonthKey, nextMonth);
+
+            // プリフェッチ対象の月が現在月と同じ場合は state を更新
+            const currentMonthFormatted = format(currentMonth, "yyyyMM");
+            if (yearMonth === currentMonthFormatted) {
+                setMonthlyTransactions(currentMonthData);
+            }
         } catch (err) {
             // プリフェッチ失敗時も UI には影響しない
             console.warn(`Failed to prefetch month ${yearMonth}:`, err);
         }
-    }, [loginUser?.id]);
+    }, [loginUser?.id, currentMonth]);
 
     // 月間データキャッシュを無効化
     const invalidateMonthCache = useCallback((yearMonth: string) => {
