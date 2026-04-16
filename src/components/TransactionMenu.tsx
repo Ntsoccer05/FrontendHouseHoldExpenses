@@ -68,7 +68,7 @@ const TransactionMenu = memo(
         onClose,
     }: TransactionMenuProps) => {
         const { isMobile, showSnackBar } = useAppContext();
-        const { onSaveTransaction, onDeleteTransaction, invalidateMonthCache } = useTransactionContext();
+        const { onSaveTransaction, onDeleteTransaction, refreshMonthCache } = useTransactionContext();
         const menuDrawerWidth = 320;
 
         // コンテキストメニュー関連のstate
@@ -182,9 +182,9 @@ const TransactionMenu = memo(
                 // キャッシュを無効化（コピー元と今日の月）
                 const sourceMonth = format(new Date(transaction.date), "yyyyMM");
                 const todayMonth = format(new Date(today), "yyyyMM");
-                invalidateMonthCache(sourceMonth);
+                refreshMonthCache(sourceMonth);
                 if (sourceMonth !== todayMonth) {
-                    invalidateMonthCache(todayMonth);
+                    refreshMonthCache(todayMonth);
                 }
 
                 showSnackBar({
@@ -206,7 +206,7 @@ const TransactionMenu = memo(
                     message: ""
                 });
             }
-        }, [today, onSaveTransaction, showSnackBar, invalidateMonthCache]);
+        }, [today, onSaveTransaction, showSnackBar, refreshMonthCache]);
 
         // 別日にコピー（日付選択ダイアログを表示）
         const handleCopyToOtherDay = useCallback((transaction: Transaction) => {
@@ -248,9 +248,9 @@ const TransactionMenu = memo(
                 // キャッシュを無効化（コピー元とコピー先の月）
                 const sourceMonth = format(new Date(datePickerDialog.transaction.date), "yyyyMM");
                 const destinationMonth = format(new Date(selectedDate), "yyyyMM");
-                invalidateMonthCache(sourceMonth);
+                refreshMonthCache(sourceMonth);
                 if (sourceMonth !== destinationMonth) {
-                    invalidateMonthCache(destinationMonth);
+                    refreshMonthCache(destinationMonth);
                 }
 
                 showSnackBar({
@@ -273,7 +273,7 @@ const TransactionMenu = memo(
                     message: ""
                 });
             }
-        }, [datePickerDialog.transaction, selectedDate, onSaveTransaction, showSnackBar, invalidateMonthCache]);
+        }, [datePickerDialog.transaction, selectedDate, onSaveTransaction, showSnackBar, refreshMonthCache]);
 
         // 削除確認ダイアログを表示
         const handleShowDeleteConfirm = useCallback((transaction: Transaction) => {
