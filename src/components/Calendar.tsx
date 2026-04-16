@@ -55,7 +55,7 @@ const Calendar = memo(
         onDateClick,
         calendarRef,
     }: CalendarProps) => {
-        const { getMonthlyTransactions, monthlyTransactions, prefetchMonth } =
+        const { getMonthlyTransactions, monthlyTransactions } =
             useTransactionContext();
         const { setCurrentMonth, currentMonth, isMobile } = useAppContext();
         const theme = useTheme();
@@ -223,16 +223,9 @@ const Calendar = memo(
                 const newFormattedDate = format(newMonth, "yyyyMM");
 
                 // 現在表示中の月と異なる場合のみ更新
+                // setCurrentMonth → useEffect → fetchMonthlyTransactions の経路でデータ取得
                 if (currentMonthData !== newFormattedDate) {
                     setCurrentMonth(newMonth);
-                    // 現在月のデータを取得（キャッシュから即座に取得）
-                    getMonthlyTransactions(newFormattedDate);
-
-                    // 前月・次月をプリフェッチ（バックグラウンド）
-                    const prevMonth = format(subMonths(newMonth, 1), "yyyyMM");
-                    const nextMonth = format(addMonths(newMonth, 1), "yyyyMM");
-                    prefetchMonth(prevMonth);
-                    prefetchMonth(nextMonth);
                 }
 
                 const thisHolidays = holiday_jp.between(
@@ -252,7 +245,7 @@ const Calendar = memo(
                 // 月変更後に高さを調整
                 setTimeout(adjustCalendarHeight, 200);
             },
-            [setCurrentMonth, setCurrentDay, today, currentMonthData, adjustCalendarHeight, getMonthlyTransactions, prefetchMonth]
+            [setCurrentMonth, setCurrentDay, today, currentMonthData, adjustCalendarHeight]
         );
 
         // 日セルのクラス名を最適化

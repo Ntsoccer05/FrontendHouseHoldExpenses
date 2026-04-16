@@ -71,10 +71,12 @@ const Home = () => {
             }
         };
 
-        if (isInitialLoad) {
+        if (isInitialLoad && isAuthenticated) {
             initializeData();
+        } else if (isInitialLoad && !isAuthenticated) {
+            setIsInitialLoad(false);
         }
-    }, [isInitialLoad, getMonthlyTransactions, currentMonth, setCurrentMonth]);
+    }, [isInitialLoad, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // 一日分のデータを取得
     const dailyTransactions = useMemo(() => {
