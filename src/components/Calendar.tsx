@@ -97,20 +97,24 @@ const Calendar = memo(
             return 1 + additionalWeeks; // 最初の週 + 追加の週
         }, []);
 
-        // カレンダーの高さを動的に設定する関数（改善版）
+        // カレンダーの高さを動的に設定する関数（PC専用）
+        // モバイルは height="100%" で FullCalendar が内部管理するためスキップ
+        // NOTE: CSS に `height: auto !important` があるため、この関数のインラインスタイルは
+        //       600px以上の画面ではCSSに上書きされる。実質的に影響しないが念のため正しい値を設定する。
         const adjustCalendarHeight = useCallback(() => {
+            if (isMobile) return;
             if (!calendarRef.current || !currentMonth) return;
-            
+
             const weeks = calculateWeeksInMonth(currentMonth);
             const calendarElement = calendarRef.current.elRef.current as HTMLElement;
             const viewHarnessElement = calendarElement?.querySelector('.fc-view-harness') as HTMLElement;
-            
+
             if (viewHarnessElement) {
-                // より余裕のある高さ設定で8月31日も確実に表示
-                const baseHeight = isMobile ? 400 : 540;
-                const weekHeight = isMobile ? 105 : 115;
-                const calculatedHeight = baseHeight + (weeks * weekHeight);
-                
+                const weekHeight = 115;
+                // weeks × weekHeight のみ（旧: baseHeight=540 を加算していたのはバグ）
+                // CSSの height: auto !important により600px以上の画面では上書きされる
+                const calculatedHeight = weeks * weekHeight;
+
                 viewHarnessElement.style.height = `${calculatedHeight}px`;
             }
         }, [calendarRef, currentMonth, isMobile, calculateWeeksInMonth]);
@@ -522,6 +526,8 @@ const Calendar = memo(
             <Box
                 ref={swipeWrapperRef}
                 sx={{
+                    // モバイル: height="100%" を FullCalendar に伝播させるため親も 100% にする
+                    height: isMobile ? "100%" : "auto",
                     "& .fc-header-toolbar": {
                         paddingLeft: isMobile ? "16px" : "auto",
                         paddingRight: isMobile ? "16px" : "auto",
@@ -558,7 +564,7 @@ const Calendar = memo(
                     fixedWeekCount={false}
                     showNonCurrentDates={true}
                     dayMaxEvents={false}
-                    height="auto"
+                    height={isMobile ? "100%" : "auto"}
                     aspectRatio={isMobile ? 0.7 : 1.35}
                 />
             </Box>
