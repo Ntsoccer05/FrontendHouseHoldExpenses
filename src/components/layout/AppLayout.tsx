@@ -96,7 +96,10 @@ export default function AppLayout() {
                 sx={{
                     display: "flex",
                     bgcolor: (theme) => theme.palette.grey[100],
-                    minHeight: "100vh",
+                    // 100vh は iOS の "large viewport"（URL バー非表示時）基準。
+                    // URL バー表示中の可視 viewport は 100svh（small viewport height）。
+                    // 100vh のまま使うと ~75px のスクロール余地が生じてページが縦スクロールする。
+                    minHeight: "100svh",
                     overflow: "hidden",
                 }}
             >
