@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { MAINTENANCE_SCHEDULE } from "../../config/maintenance";
 import MaintenanceScreen from "./MaintenanceScreen";
 
@@ -9,7 +9,7 @@ function isMaintenanceTime(): boolean {
   return jstHour >= startHour && jstHour < endHour;
 }
 
-export default function MaintenanceGuard({ children }: { children: React.ReactNode }) {
+export default function MaintenanceGuard({ children }: { children: ReactNode }) {
   const [isMaintenance, setIsMaintenance] = useState(isMaintenanceTime);
 
   useEffect(() => {
