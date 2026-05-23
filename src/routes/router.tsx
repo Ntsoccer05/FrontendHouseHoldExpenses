@@ -21,13 +21,15 @@ import GoogleCallback from "../components/Auth/GoogleCallback";
 import { PrivateRoute } from "./PrivateRoute";
 import { AuthProvider } from "../context/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
+import MaintenanceGuard from "../components/common/MaintenanceGuard";
 
 function DefineRouter() {
     return (
         <HelmetProvider>
             <ThemeProvider theme={theme}>
                 <CssBaseline />
-                <Router>
+                <MaintenanceGuard>
+                    <Router>
                     <AuthProvider>
                         {/* AppProviderで囲まれている中でvalueで設定した値をグローバルに参照できる */}
                         <AppProvider>
@@ -116,7 +118,8 @@ function DefineRouter() {
                                 </Routes>
                         </AppProvider>
                     </AuthProvider>
-                </Router>
+                    </Router>
+                </MaintenanceGuard>
             </ThemeProvider>
         </HelmetProvider>
     );
