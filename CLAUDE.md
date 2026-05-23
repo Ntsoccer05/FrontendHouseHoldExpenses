@@ -137,12 +137,47 @@ src/
 - `src/theme/theme.ts` - Material-UI テーマ設定
 - `vite.config.ts` - Vite 設定 (注: `dist/` ではなく `build/` に出力)
 
-## 開発ワークフロー（重要）
+## 開発ワークフロー
 
-**新機能を実装する際の標準的なフローを定義しています。複雑度に応じて 2 つのフロー を使い分けることで、効率的かつ高品質な開発を実現します。**
+このプロジェクトは **Superpowers スキル** を使って機能開発を進めます。
+スキルは `.claude/skills/` に配置されており、Claude Code が自動的に読み込みます。
 
-- [`docs/development-workflow.md`](docs/development-workflow.md) - 実装フロー、判定方法、コマンド集、チェックリスト
-- [`docs/ideas/README.md`](docs/ideas/README.md) - アイデア管理、pending/done の分離、ファイル命名ルール
+### 標準の機能開発フロー
+
+| ステップ | スキル | 出力先 |
+|---------|--------|--------|
+| 1. 設計・要件整理 | `brainstorming` | `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` |
+| 2. 実装計画作成 | `writing-plans` | `docs/superpowers/plans/YYYY-MM-DD-<feature>.md` |
+| 3. 計画を実行 | `subagent-driven-development`（推奨）または `executing-plans` | コード・テスト・コミット |
+| 4. 完了処理 | ご自身で判断 | `git merge` / `git push` / PR 作成 |
+
+**アイデアの蓄積**: `docs/ideas/pending/` に要件メモを残すことができます（命名規則: `feature-xxx.md`）。設計フェーズで `brainstorming` スキルがこの内容を取り込みます。完了後は `docs/ideas/done/` に移動してください。詳細は [`docs/ideas/README.md`](docs/ideas/README.md) を参照。
+
+---
+
+### 補助スキル
+
+| 状況 | スキル |
+|------|--------|
+| バグ・テスト失敗 | `systematic-debugging` |
+| 実装前（TDD） | `test-driven-development` |
+| 完了宣言の前 | `verification-before-completion` |
+| コードレビュー依頼 | `requesting-code-review` |
+| レビュー受け取り | `receiving-code-review` |
+| 複数の独立した問題 | `dispatching-parallel-agents` |
+| 機能ブランチの隔離 | `using-git-worktrees` |
+
+---
+
+### テスト・品質チェック
+
+```bash
+npm run typecheck   # TypeScript 型チェック
+npm run lint        # ESLint
+npm run build       # ビルド確認
+```
+
+**注**: 自動テスト（Vitest / Jest）は現在未整備です。`test-driven-development` スキルに従って新機能にはテストを先に書くことを推奨します。
 
 ## TypeScript 設定
 

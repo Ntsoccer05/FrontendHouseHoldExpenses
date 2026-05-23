@@ -1,426 +1,301 @@
-# 開発ワークフロー
+# 開発ワークフロー（Superpowers）
 
-このドキュメントは、新機能を実装する際の標準的なワークフローを定義しています。複雑度に応じて 2 つのフロー を使い分けることで、効率的かつ高品質な開発を実現します。
-
-## 概要
-
-新機能の実装には 2 つのアプローチがあります：
-
-| 特徴 | フロー A（推奨）| フロー B |
-|------|--------------|---------|
-| **名称** | 壁打ち → ドキュメント → 実装 | 指示 → 即実装 |
-| **適用場面** | 複雑な新機能 | シンプルな修正 |
-| **時間** | 中～長 | 短 |
-| **品質** | 高 | 中 |
-| **ドキュメント** | 残る | 最小限 |
+このプロジェクトは **Superpowers スキル** を使って機能開発を進めます。
+スキルは `.claude/skills/` に配置されており、Claude Code が会話の流れに応じて自動的に適用します。
 
 ---
 
-## フロー A：複雑な機能（推奨）
-
-### 対象となる機能
-
-- 新しいページやセクションの追加
-- アーキテクチャに関わる変更
-- 複数ページ/コンポーネントにまたがる機能
-- 外部 API 連携
-- 複雑なビジネスロジック
-
-### ステップ 1: Claude との壁打ち
-
-このチャット画面でアイデアを詳しく説明します。
-
-**ユーザーが実行**: 壁打ちの内容を `docs/ideas/pending/` に記録してください。
-- このファイルは **ユーザーが手動で作成** します
-- ファイル名: `[YYYYMMDD]-[機能名]-initial-requirements.md`
-- 例: `20250412-ユーザープロフィール編集-initial-requirements.md`
-- テンプレートと詳細は [`docs/ideas/README.md`](ideas/README.md) を参照
-
-**あなたが提示する情報**:
-```
-「以下の機能を追加したいと考えています：
-
-【概要】
-- 支出の月別予測機能
-
-【目的】
-- ユーザーが翌月の支出を予測できるようにする
-
-【想定される処理】
-- 過去 6 ヶ月のデータを分析
-- 支出パターンを検出
-- 翌月の予想支出を表示
-
-【表示場所】
-- レポートページに新しいセクションを追加
-
-【その他】
-- オーバー予想の場合は通知
-```
-
-**Claude が質問する例**:
-```
-1. データソース：過去何ヶ月分のデータを使いますか？
-2. 予測精度：どの程度の精度が必要ですか？
-3. UI/UX：どのように表示しますか？ビジュアルは？
-4. 通知：どのような場面で通知しますか？
-5. 制約：パフォーマンスや技術的な制約はありますか？
-```
-
-**このステップの成果物**:
-- 要件と設計思想が明確に固まる
-- 実装方針が決定される
-
-### ステップ 2: マークダウンで記録（ドキュメント作成）
-
-壁打ちで合意した内容を、以下のマークダウンファイルとして `docs/` に保存します。
-
-#### **2-1. PRD（Product Requirements Document）の作成**
-
-以下のスキルを使用して自動生成します：
-
-```bash
-/prd-writing
-```
-
-**生成されるドキュメント内容**:
-- 機能の背景と目的
-- ユーザーニーズ
-- 成功指標（KPI）
-- 出荷予定時期
-- 技術的な制約
-
-**生成ファイル**: `docs/product-requirements.md`
-
-#### **2-2. 機能設計書の作成**
-
-```bash
-/functional-design
-```
-
-**内容**:
-- 機能の詳細説明
-- ユーザーフロー
-- 画面設計（UI/UX）
-- データモデル
-- API 仕様
-
-**ファイル**: `docs/functional-design.md`
-
-#### **2-3. アーキテクチャ設計書の作成**
-
-```bash
-/architecture-design
-```
-
-**内容**:
-- システム構成
-- フロントエンド実装方針
-- バックエンド実装方針（必要に応じて）
-- 技術スタック選定理由
-- セキュリティ考慮事項
-
-**ファイル**: `docs/architecture.md`
-
-**このステップの成果物**:
-- `docs/product-requirements.md`
-- `docs/functional-design.md`
-- `docs/architecture.md`
-- （既存の開発ガイドラインと統合可能な規約）
-
-### ステップ 3: /add-feature コマンドで自動実装
-
-ドキュメント作成が完了したら、以下を実行して実装を開始します。
-
-**重要**: `/add-feature` の引数は、`docs/ideas/pending/` のファイル名（`[機能名]` 部分）と一致させてください。
-
-```bash
-# 例: docs/ideas/pending/20250415-月別支出予測機能-initial-requirements.md がある場合
-/add-feature 月別支出予測機能
-```
-
-このコマンドにより、以下が自動生成されます：
+## 全体フロー
 
 ```
-.steering/[YYYYMMDD]-月別支出予測機能/
-├── requirements.md      # docs/product-requirements.md を参照
-├── design.md            # docs/functional-design.md を参照
-└── tasklist.md          # 実装タスク一覧（自動生成）
+アイデア
+  ↓
+[brainstorming] 設計・要件整理 → docs/superpowers/specs/
+  ↓
+[writing-plans] 実装計画作成 → docs/superpowers/plans/
+  ↓
+[subagent-driven-development] タスク実行（推奨）
+  または
+[executing-plans] タスク実行（同一セッション）
+  ↓
+マージ / PR / ブランチ保持（ご自身で判断）
 ```
 
-### ステップ 4: 実装ループ（tasklist.md 消化）
+---
 
-`tasklist.md` のタスクに従って、実装を進めます。
+## フェーズ1：設計（brainstorming）
 
-**流れ**:
-1. tasklist.md を開く（常に見える状態）
-2. 次の `[ ]` タスクを特定
-3. タスクを実装
-4. tasklist.md を `[x]` に更新
-5. すべてのタスクが `[x]` になるまで繰り返し
+### いつ使う
+新機能・改善案を思いついたとき。コードを書く前に**必ず**このフェーズを通します。
 
-**重要**: tasklist.md は常に最新状態を保つ（Claude が責任を持つ）
+### 始め方
+Claude Code のチャットでやりたいことを話しかけるだけです。
 
-### ステップ 5: 実装完了 & 振り返り & ファイル移動
+```
+「支出の月次グラフに前月比を表示したい」
+「ダークモードに対応したい」
+「カテゴリフィルターを複数選択できるようにしたい」
+```
 
-すべてのタスクが完了したら、以下を実行します：
+### Claude がすること
+1. `src/` のコード・`docs/` のドキュメント・最近のコミットを確認
+2. 一問ずつ質問して要件を明確化
+3. 2〜3 のアプローチを提案（トレードオフ付き）
+4. 設計をセクションごとに提示して承認を得る
+5. 設計書を `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` に保存・コミット
 
-**5-1. tasklist.md に振り返りを記録**
+### アイデアの事前メモ
+設計フェーズより先にアイデアをメモしておきたい場合は `docs/ideas/pending/` を使えます。
+命名規則: `feature-<機能名>.md` / `improvement-<改善名>.md` / `bugfix-<バグ名>.md`
+
+詳細は [`docs/ideas/README.md`](ideas/README.md) を参照してください。
+完了後は `docs/ideas/done/` に移動してください。
+
+---
+
+## フェーズ2：実装計画（writing-plans）
+
+### いつ使う
+設計が承認された直後。`brainstorming` スキルが自動的に移行します。
+
+### Claude がすること
+1. 設計書を読み込み、影響ファイルを洗い出す
+2. TDD サイクル付きのタスクに分解（各タスク 2〜5 分の粒度）
+3. 計画を `docs/superpowers/plans/YYYY-MM-DD-<feature>.md` に保存
+4. 実行方法の選択肢を提示
+
+### 計画のタスク例（React コンポーネント追加の場合）
 
 ```markdown
-## 実装後の振り返り
+### Task 1: MonthlyComparisonChart コンポーネント
 
-**実装完了日**: 2025-04-15
-...
+**Files:**
+- Create: `src/components/Report/MonthlyComparisonChart.tsx`
+- Modify: `src/pages/Report.tsx`
+
+- [ ] Step 1: テストを書く（失敗することを確認）
+- [ ] Step 2: npm test でテストが失敗することを確認
+- [ ] Step 3: 最小限のコンポーネントを実装
+- [ ] Step 4: npm test でテストが通ることを確認
+- [ ] Step 5: コミット
 ```
 
-**5-2. ideas ファイルを pending から done に移動**
+---
+
+## フェーズ3：実装（subagent-driven-development）
+
+### 推奨: subagent-driven-development
+
+タスクごとに専用サブエージェントを起動し、2 段階レビューを自動実行します。
+
+```
+各タスク:
+  実装サブエージェント → 仕様準拠レビュー → コード品質レビュー → 完了
+```
+
+**特徴**:
+- 文脈汚染なし（各タスクが独立）
+- 2 段階の自動品質チェック
+- 中断不要で全タスク連続実行
+
+### 代替: executing-plans
+
+同一セッションでチェックポイントを設けながら実行します。
+
+```
+[blocker 発生] → 即停止 → ユーザーに確認 → 再開
+```
+
+### 実装時の品質チェックコマンド
 
 ```bash
-# pending から done に移動
-mv docs/ideas/pending/[YYYYMMDD]-[機能名]-initial-requirements.md \
-   docs/ideas/done/[YYYYMMDD]-[機能名]-initial-requirements.md
+# TypeScript 型チェック（必須）
+npm run typecheck
 
-# git に追加してコミット
-git add docs/ideas/
-git commit -m "Move [機能名] from pending to done"
+# ESLint（必須）
+npm run lint
+
+# 両方まとめて
+npm run check
+
+# ビルド確認
+npm run build
+
+# 開発サーバー
+npm run dev    # http://localhost:5173
 ```
 
-**参考**: [`docs/ideas/README.md`](ideas/README.md)
+### このプロジェクトのコーディング規約
 
-**このステップの成果物**:
-- 完成した機能
-- 振り返りドキュメント（tasklist.md）
-- プロジェクト履歴
+- **コンポーネント**: 関数型のみ（クラスコンポーネント禁止）
+- **スタイリング**: MUI コンポーネントを使用、テーマは `src/theme/theme.ts`
+- **フォーム**: React Hook Form + Zod（スキーマは `src/validations/` に配置）
+- **状態管理**: React Context API（`src/context/` 参照）
+- **API 呼び出し**: `src/utils/axios.ts` のクライアントを使用
+- **型定義**: `src/types/index.ts` に集約
 
----
+### 新しいページを追加する場合
 
-## フロー B：シンプルな機能
-
-### 対象となる機能
-
-- UI の細かい調整（色、サイズ、配置）
-- バグ修正
-- パフォーマンス最適化（小規模）
-- 既存ロジックの改善
-
-### ステップ 1: 明確に指示を出す
-
-要件がはっきりしている場合は、直接指示します。
-
-**例**:
 ```
-「ホーム画面のボタンをプライマリーカラーに変更して」
-
-「キャッシュ時間を 10 分から 5 分に縮める」
-
-「ローディング表示を追加してください」
+1. src/pages/ にコンポーネントを作成
+2. src/routes/router.tsx にルートを追加
+3. PrivateRoute または OnlyPublicRoute でラップ
+4. 必要に応じてコンテキストプロバイダーでラップ
 ```
 
-### ステップ 2: /add-feature で即実装
+### 新しいフォームを追加する場合
+
+```
+1. src/validations/ に Zod スキーマを作成
+2. React Hook Form + zodResolver でフォームを構築
+3. AppContext の showSnackBar でフィードバック表示
+```
+
+### テストの書き方（未整備→整備推奨）
+
+現在自動テストは未整備です。`test-driven-development` スキルに従って新機能から順次追加してください。
 
 ```bash
-/add-feature ボタンの色変更
+# 将来的に使用するコマンド（Vitest を推奨）
+npm test
 ```
-
-自動生成された tasklist.md に従って実装を進めます。
-
-**このフロー の成果物**:
-- 完成した機能
-- .steering/ に記録されたタスク履歴
 
 ---
 
-## 判定フローチャート：どのフロー を選ぶ？
+## フェーズ4：完了処理（ご自身で判断）
 
+全タスク完了後、以下を確認してからブランチを処理してください。
+
+**完了前に必ず確認**:
+- `npm run typecheck` がエラーなし
+- `npm run lint` がエラーなし
+- `npm run build` が成功
+
+**完了方法（任意で選択）**:
+```bash
+# ローカルマージ
+git checkout main && git merge <branch>
+
+# PR 作成
+git push -u origin <branch>
+gh pr create
+
+# ブランチをそのまま保持
+git push -u origin <branch>
 ```
-新機能の追加
-
-    ↓
-
-要件がはっきりしているか？
-  ↙（NO）      ↘（YES）
-  ↓             ↓
-要件が複雑か？   指示内容は？
-  ↙（YES）      ↙（複雑）  ↘（シンプル）
-  ↓             ↓            ↓
-【フロー A】   【フロー A】 【フロー B】
-壁打ち         ドキュメント   即実装
-必須            作成後
-              実装
-```
-
-**判定ポイント**:
-
-| 質問 | YES なら | NO なら |
-|------|---------|--------|
-| **複数ページ/コンポーネントにまたがるか？** | フロー A | - |
-| **新しいデータモデルが必要か？** | フロー A | - |
-| **設計判断が必要か？** | フロー A | - |
-| **ビジネスロジックが複雑か？** | フロー A | - |
-| **シンプルな変更だけか？** | - | フロー B |
 
 ---
 
-## 実装時のコマンド集
+## 補助スキル
 
-### 開発中に使うコマンド
+### バグが出たとき → systematic-debugging
+
+```
+「このコンポーネントがレンダリングされない」
+「TypeScript のエラーが消えない」
+「API のレスポンスが正しく表示されない」
+```
+
+**4 フェーズ**: 根本原因調査 → パターン分析 → 仮説とテスト → 実装
+**禁止**: 「とりあえず直してみる」「`as any` で黙らせる」
+
+### 新機能実装前 → test-driven-development
+
+```
+RED（失敗テストを書く） → GREEN（最小限の実装） → REFACTOR（整理）
+```
+
+### 完了を宣言する前 → verification-before-completion
+
+「動いてると思います」は禁止。必ずコマンドを実行して出力を確認してから報告。
 
 ```bash
-# 動作確認
-npm run dev                # 開発サーバー起動
-
-# 品質チェック
-npm run lint              # ESLint: コード規約チェック
-npm run format            # Prettier: 自動フォーマット
-npm run typecheck         # TypeScript: 型チェック
-npm run check             # 上記すべてを一度に実行
-
-# コミット前に実行
-git add .
-git commit -m "..."       # husky が自動的に lint-staged + typecheck を実行
-
-# ビルド
-npm run build             # 本番ビルド（事前に npm run check を実行推奨）
+npm run typecheck   # エラー 0 件を確認
+npm run lint        # エラー 0 件を確認
+npm run build       # exit 0 を確認
 ```
 
-### Claude Code で使うコマンド
+### コードレビュー → requesting-code-review / receiving-code-review
 
-```bash
-# 新機能を追加
-/add-feature [機能名]
+PR 作成前・主要機能完了後にレビューサブエージェントを起動してチェック。
 
-# ドキュメント作成用スキル
-/prd-writing              # PRD を作成
-/functional-design        # 機能設計書を作成
-/architecture-design      # アーキテクチャ設計書を作成
+### 複数バグ同時発生 → dispatching-parallel-agents
 
-# 開発計画・進捗管理
-/steering                 # .steering/ ファイルの作成・更新（/add-feature で自動実行される）
+独立した問題（例: コンポーネント A のバグ と コンポーネント B のバグ）を並列エージェントで同時調査。
+
+### 機能ブランチを切る → using-git-worktrees
+
+main ブランチを汚さずに安全な作業環境を確保。
+
+---
+
+## ドキュメント管理
+
+| 種別 | 場所 | 管理スキル |
+|------|------|-----------|
+| 設計書（仕様） | `docs/superpowers/specs/` | `brainstorming` |
+| 実装計画 | `docs/superpowers/plans/` | `writing-plans` |
+| アイデアメモ | `docs/ideas/pending/` → `docs/ideas/done/` | 手動 |
+| 要件定義 | （HouseHoldExpenses 側で管理） | — |
+
+---
+
+## よくあるシナリオ
+
+### シナリオ 1: 新しいページ（画面）を追加する
+
+```
+1. brainstorming で画面仕様・データフロー・ルートを設計
+2. writing-plans で以下に分解:
+   - ページコンポーネント作成
+   - ルート追加
+   - API フック作成
+   - コンテキスト更新（必要な場合）
+3. subagent-driven-development で実装
+4. npm run typecheck && npm run build で確認
+5. `git push` して PR 作成
+```
+
+### シナリオ 2: バグを発見した
+
+```
+1. systematic-debugging で根本原因を特定
+2. test-driven-development で失敗テストを先に書く
+3. 修正を実装
+4. npm run typecheck でエラーなしを確認
+5. verification-before-completion で完了宣言
+```
+
+### シナリオ 3: 複数コンポーネントの独立したバグ
+
+```
+1. 各バグが独立しているか判断
+2. 独立していれば dispatching-parallel-agents で並列調査
+3. 各エージェントが根本原因を特定・修正
+4. npm run typecheck で全体確認
+```
+
+### シナリオ 4: 既存コンポーネントをリファクタリング
+
+```
+1. brainstorming でリファクタリング範囲と目標を設計
+2. writing-plans で影響ファイルと順序を計画
+   （壊れたら気付けるよう、先にテストを書く）
+3. subagent-driven-development で実装
+4. npm run check で品質確認
 ```
 
 ---
 
-## チェックリスト
+## バックエンド API との連携
 
-### フロー A（複雑な機能）を選んだ場合
+このプロジェクトは `HouseHoldExpenses`（Laravel）の API を利用します。
 
-**準備フェーズ**:
-- [ ] このチャット画面で Claude と壁打ちを完了
-- [ ] 要件と設計が固まった
-- [ ] ドキュメント（PRD、機能設計、アーキテクチャ設計）を作成済み
-- [ ] `/add-feature [機能名]` で実装開始
+| 項目 | 値 |
+|------|-----|
+| API ベース URL（開発） | `http://localhost:9000/api` |
+| 認証 | Laravel Sanctum（Cookie ベース） |
+| API クライアント | `src/utils/axios.ts` |
+| API 仕様書 | `HouseHoldExpenses/api/openapi.yaml` |
 
-**実装フェーズ**:
-- [ ] tasklist.md を常に参照しながら実装
-- [ ] 各タスク完了時に tasklist.md を更新（`[ ]` → `[x]`）
-- [ ] 5 タスクごとに `npm run check` で品質確認
-- [ ] すべてのタスク完了時に振り返りを記録
-
-**完了フェーズ**:
-- [ ] `npm run check` ですべてのチェックが通る
-- [ ] `npm run dev` で動作確認済み
-- [ ] git commit & push
-- [ ] tasklist.md に振り返りを記録
-
-### フロー B（シンプルな機能）を選んだ場合
-
-**実装フェーズ**:
-- [ ] 指示が明確
-- [ ] `/add-feature [機能名]` で実装開始
-- [ ] tasklist.md に従って実装
-- [ ] `npm run check` で品質確認
-
-**完了フェーズ**:
-- [ ] `npm run dev` で動作確認済み
-- [ ] git commit & push
-
----
-
-## トラブルシューティング
-
-### 実装中に要件が変わった場合
-
-1. このチャット画面で変更内容を相談
-2. tasklist.md を更新（変更点を追記または削除）
-3. design.md も更新（必要に応じて）
-4. 実装継続
-
-### 要件があいまいなまま進んでしまった場合
-
-1. 一度実装を停止
-2. このチャット画面で詳細を詰める
-3. ドキュメントを更新
-4. tasklist.md を修正
-5. 実装再開
-
-### tasklist.md と実装内容がズレている場合
-
-1. `npm run check` でコンパイルエラーを確認
-2. エラーを修正
-3. tasklist.md にズレの理由を注釈として追記
-4. design.md も更新（必要に応じて）
-
----
-
-## 例：実装フロー の実例
-
-### 例 1: 複雑な機能（月別支出予測）
-
-```
-あなた:
-「家計管理に支出予測機能を追加したい。
- 過去 6 ヶ月のデータから翌月の支出を予測する」
-
-私:
-「いくつか質問があります：
- 1. 予測精度：どの程度必要？
- 2. UI：レポートページですか？
- 3. 通知：オーバー時にアラート？
- ...」
-
-あなた:
-「過去 6 ヶ月を分析、精度は 80% 目標、
- レポートに新しいセクション追加、通知は後回し」
-
-私:
-「了解しました。以下のドキュメントを作成します：
- - PRD（要件定義）
- - 機能設計書（UI/UX）
- - アーキテクチャ設計書（実装方針）」
-
-（ドキュメント作成完了）
-
-あなた:
-「では /add-feature 月別支出予測機能 でお願い」
-
-私:
-（自動的に .steering/ を生成）
-（tasklist.md に従って実装）
-（完了後に振り返りを記録）
-```
-
-### 例 2: シンプルな機能（ボタン色変更）
-
-```
-あなた:
-「ホーム画面のボタンをプライマリーカラーに変更して」
-
-私:
-「了解です。 /add-feature ボタンの色変更 で実装します」
-
-（自動実装）
-```
-
----
-
-## まとめ
-
-**新機能を追加するたびに、このワークフロー に従ってください**:
-
-1. **判定**: 複雑か？シンプルか？
-2. **フロー A**: 複雑 → 壁打ち → ドキュメント → /add-feature → 実装
-3. **フロー B**: シンプル → 指示 → /add-feature → 実装
-4. **完了**: tasklist.md に振り返りを記録
-
-このワークフロー により、**品質と効率のバランスを取りながら**、持続可能な開発ができます。
+新しい API エンドポイントが必要な場合は、先に `HouseHoldExpenses` 側で実装してから、このプロジェクトのフロントエンドを実装してください。

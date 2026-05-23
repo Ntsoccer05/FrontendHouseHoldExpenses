@@ -20,10 +20,10 @@ export default function MaintenanceScreen() {
         <CardContent>
           <BuildIcon sx={{ fontSize: 64, color: "primary.main", mb: 2 }} />
           <Typography variant="h5" fontWeight="bold" gutterBottom>
-            サーバーメンテナンス中
+            メンテナンス中
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            現在、サーバーのメンテナンスを実施しています。
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            現在、メンテナンスを実施しています。
           </Typography>
           <Box
             sx={{
