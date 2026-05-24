@@ -47,42 +47,6 @@ const Home = () => {
 
     const { monthlyTransactions, getMonthlyTransactions } = useTransactionContext();
 
-    // モバイルのみ: body スクロールを念のため抑制する（防衛的設定）
-    // 根本原因: AppLayout の minHeight を 100svh に変更したことで scroll space 自体が消滅した。
-    // ここでは追加の安全弁として overflow: hidden のみ設定する。
-    // 注意: position: fixed を body に設定すると width: 100vw との不一致で
-    //       横スクロールが発生するため使用しない。
-    useEffect(() => {
-        if (!isMobile) return;
-        const prev = {
-            bodyOverflow: document.body.style.overflow,
-            htmlOverflow: document.documentElement.style.overflow,
-        };
-        document.body.style.overflow = "hidden";
-        document.documentElement.style.overflow = "hidden";
-        return () => {
-            document.body.style.overflow = prev.bodyOverflow;
-            document.documentElement.style.overflow = prev.htmlOverflow;
-        };
-    }, [isMobile]);
-
-    // iOS でのページスクロール阻止（モバイルのみ）
-    // fc-scroller の内部スクロールだけを有効にし、ページ全体が流れるのを防ぐ
-    useEffect(() => {
-        if (!isMobile) return;
-
-        const preventPageScroll = (e: TouchEvent) => {
-            const target = e.target as Element;
-            // day cells エリア（fc-scroller body）内のタッチはそのまま通す
-            if (target.closest(".fc-scrollgrid-section-body .fc-scroller")) return;
-            e.preventDefault();
-        };
-
-        document.addEventListener("touchmove", preventPageScroll, { passive: false });
-        return () => {
-            document.removeEventListener("touchmove", preventPageScroll);
-        };
-    }, [isMobile]);
 
     // 初期データの読み込み
     useEffect(() => {
@@ -249,16 +213,10 @@ const Home = () => {
                     </Grid>
                     <Box
                         sx={{
-                            position: isMobile ? "absolute" : "relative",
-                            left: isMobile ? 0 : "auto",
-                            width: isMobile ? "100vw" : "auto",
-                            // 100svh: ブラウザ UI を除いた最小可視領域。183px は Calendar Box 上端の絶対位置
-                            // 60px: FAB 専用エリア（FAB 高さ 50px + 下余白 10px）
-                            // → Calendar Box 下端を 60px 手前で止め、FAB がカレンダー内容と被らないようにする
-                            // → FAB は viewport 最下部の 60px 固定エリア内に常に表示される
-                            height: isMobile ? "calc(100svh - 183px - 60px)" : "auto",
-                            // overflowX: hidden で FC scrollbar compensation 起因の横スクロールを二重防止
-                            overflow: isMobile ? "hidden" : "visible",
+                            // モバイル: 親の p:2 (=16px) を負マージンで打ち消して横幅いっぱいに表示
+                            mx: { xs: -2, sm: 0 },
+                            width: { xs: "calc(100% + 32px)", sm: "100%" },
+                            overflowX: "hidden",
                             // 初期読み込み中の表示制御
                             opacity: isInitialLoad ? 0.5 : 1,
                             transition: "opacity 0.3s ease-in-out",
