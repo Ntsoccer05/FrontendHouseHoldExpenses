@@ -79,7 +79,7 @@ td.fc-day-sun {
         height: auto !important;
     }
     .fc .fc-daygrid-day-frame {
-        height: auto !important;
+        height: 100% !important;
         min-height: 80px;
     }
 }
