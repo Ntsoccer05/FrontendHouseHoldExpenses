@@ -56,6 +56,18 @@ td.fc-day-sun {
     }
 }
 
+/* モバイル版: 祝日背景を td レベルで適用（frame が td より短い問題を回避）        */
+/* PC は bg-event の height:100% で全体を覆えるためこの上書きは不要              */
+@media screen and (max-width: 599px) {
+    td.fc-daygrid-day.is-holiday {
+        background-color: rgba(239, 154, 154, 0.3) !important;
+    }
+    /* td 背景で全体をカバーするので bg-event による二重塗りを防ぐ */
+    td.fc-daygrid-day.is-holiday .fc-bg-event {
+        display: none !important;
+    }
+}
+
 /* モバイル版: カレンダー全体をページスクロールで表示（全日付を一覧表示） */
 @media screen and (max-width: 599px) {
     .fc {

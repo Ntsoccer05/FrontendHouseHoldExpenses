@@ -266,9 +266,18 @@ const Calendar = memo(
                         return ["non-current-month"];
                     }
                 }
+                // 祝日クラスを付与（日曜は既に赤背景なので除外）
+                const isSunday = cellDate.getDay() === 0;
+                if (!isSunday) {
+                    const dateStr = format(cellDate, "yyyy-MM-dd");
+                    const isHoliday = calendarState.holidays.some(
+                        (h) => format(h.date, "yyyy-MM-dd") === dateStr
+                    );
+                    if (isHoliday) return ["is-holiday"];
+                }
                 return [];
             },
-            [calendarRef]
+            [calendarRef, calendarState.holidays]
         );
 
         const animateCalendarSwipe = useCallback((direction: "prev" | "next") => {
