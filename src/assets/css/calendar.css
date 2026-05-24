@@ -48,23 +48,27 @@ td.fc-day-sun {
     }
 }
 
-/* モバイル版: toolbar と曜日ヘッダーを構造的に固定、tbody のみ内部スクロール */
+/* モバイル版: ヘッダーの左右に余白を付ける */
 @media screen and (max-width: 599px) {
-    /* height="100%" の伝播チェーン: Calendar Box(100svh) → swipeWrapper → .fc */
+    .fc-header-toolbar.fc-toolbar {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
+
+/* モバイル版: カレンダー全体をページスクロールで表示（全日付を一覧表示） */
+@media screen and (max-width: 599px) {
     .fc {
-        height: 100%;
-        /* FullCalendar の scrollbar compensation（col-header に padding-right を追加する処理）に
-           よる横はみ出しをクリップする。scrollbar-width: none だけでは JS 計測タイミングによって
-           補正が残ることがあるため、overflow-x: hidden を追加して確実に阻止する。 */
+        /* FullCalendar の scrollbar compensation による横はみ出しをクリップ */
         overflow-x: hidden;
     }
 
     .fc-view-harness.fc-view-harness-active {
-        min-height: unset; /* JS による min-height を解除し FullCalendar に高さを任せる */
+        min-height: unset;
+        height: auto !important;
     }
 
-    /* FullCalendar が JS で設定する行・テーブルの固定高さを上書きしてストレッチを防ぐ */
-    /* CSS !important は著者スタイルシートの !important として inline style より優先される */
+    /* FullCalendar が JS で設定する行・テーブルの固定高さを上書きしてコンテンツに合わせる */
     .fc .fc-daygrid-body {
         height: auto !important;
     }
@@ -76,28 +80,7 @@ td.fc-day-sun {
     }
     .fc .fc-daygrid-day-frame {
         height: auto !important;
-        /* デバイス高さに応じてセル高さを動的計算し、5週が常に fc-scroller を埋めるようにする
-           計算式: (100svh - 323px) / 5
-             100svh : URL バー表示時の最小可視 viewport
-             183px  : Calendar Box 上端（AppBar + padding + MonthlySummary）
-             60px   : FAB 専用エリア（Calendar Box 下）
-             80px   : fc-header-toolbar + fc-col-header 分
-             /5     : 5週で割って 1行あたりの高さを算出
-           clamp(80px, 計算値, 120px) で短い端末は 80px 固定、長い端末は 120px 上限にクランプ */
-        min-height: clamp(80px, calc((100svh - 323px) / 5), 120px);
-    }
-
-    /* tbody (日付セル部分) のスクローラーのみスクロール可能にする */
-    /* toolbar と col-header は FullCalendar の構造上スクロール外にあるため常に表示される */
-    .fc-scrollgrid-section-body .fc-scroller {
-        overflow: hidden auto !important;
-        /* スクロールバーを非表示にする: FullCalendar がスクロールバー幅分の補正を行い    */
-        /* col-header が横にはみ出す（横スクロール発生）のを防ぐ                        */
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* IE/Edge */
-    }
-    .fc-scrollgrid-section-body .fc-scroller::-webkit-scrollbar {
-        display: none; /* Chrome / Safari / Android */
+        min-height: 80px;
     }
 }
 

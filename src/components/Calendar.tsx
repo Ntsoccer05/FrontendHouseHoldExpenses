@@ -526,12 +526,7 @@ const Calendar = memo(
             <Box
                 ref={swipeWrapperRef}
                 sx={{
-                    // モバイル: height="100%" を FullCalendar に伝播させるため親も 100% にする
-                    height: isMobile ? "100%" : "auto",
-                    "& .fc-header-toolbar": {
-                        paddingLeft: isMobile ? "16px" : "auto",
-                        paddingRight: isMobile ? "16px" : "auto",
-                    },
+                    height: "auto",
                     // ローディング中のスタイル
                     opacity: isLoading ? 0.7 : 1,
                     transition: "opacity 0.2s ease-in-out",
@@ -564,7 +559,7 @@ const Calendar = memo(
                     fixedWeekCount={false}
                     showNonCurrentDates={true}
                     dayMaxEvents={false}
-                    height={isMobile ? "100%" : "auto"}
+                    height="auto"
                     aspectRatio={isMobile ? 0.7 : 1.35}
                 />
             </Box>
