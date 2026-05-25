@@ -23,6 +23,8 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
+    DragStartEvent,
+    DragOverEvent,
 } from "@dnd-kit/core";
 import {
     arrayMove,
@@ -70,9 +72,13 @@ interface CategoryEditProps {
 
 const SortableRow = ({
     id,
+    showLineAbove,
+    showLineBelow,
     children,
 }: {
     id: number;
+    showLineAbove?: boolean;
+    showLineBelow?: boolean;
     children: React.ReactNode;
 }) => {
     const { attributes, listeners, setNodeRef, isDragging } = useSortable({ id });
@@ -80,7 +86,14 @@ const SortableRow = ({
         <TableRow
             ref={setNodeRef}
             {...attributes}
-            sx={{ opacity: isDragging ? 0.3 : 1 }}
+            sx={{
+                opacity: isDragging ? 0.3 : 1,
+                boxShadow: showLineAbove
+                    ? "inset 0 2px 0 0 #1976d2"
+                    : showLineBelow
+                    ? "inset 0 -2px 0 0 #1976d2"
+                    : "none",
+            }}
         >
             <TableCell
                 padding="checkbox"
@@ -112,6 +125,8 @@ const CategoryEditForm = React.memo(
         const { editCategory, sortCategories } = useCategoryContext();
 
         const [localItems, setLocalItems] = useState<LocalItem[]>([]);
+        const [activeId, setActiveId] = useState<number | null>(null);
+        const [overId, setOverId] = useState<number | null>(null);
         const originalItemsRef = useRef<LocalItem[]>([]);
         // stale closure 回避: effect 内で最新の localItems/categories を読む
         const localItemsRef = useRef<LocalItem[]>(localItems);
@@ -182,7 +197,22 @@ const CategoryEditForm = React.memo(
         // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [isSaving]);
 
+        const handleDragStart = (event: DragStartEvent) => {
+            setActiveId(event.active.id as number);
+        };
+
+        const handleDragOver = (event: DragOverEvent) => {
+            setOverId((event.over?.id as number) ?? null);
+        };
+
+        const handleDragCancel = () => {
+            setActiveId(null);
+            setOverId(null);
+        };
+
         const handleDragEnd = (event: DragEndEvent) => {
+            setActiveId(null);
+            setOverId(null);
             const { active, over } = event;
             if (!over || active.id === over.id) return;
             let moved = false;
@@ -235,12 +265,18 @@ const CategoryEditForm = React.memo(
 
         const isSelected = (id: number) => selected.indexOf(id) !== -1;
 
+        const activeIndex = localItems.findIndex((item) => item.id === activeId);
+
         return (
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
+                onDragCancel={handleDragCancel}
                 modifiers={[restrictToVerticalAxis]}
+                accessibility={{ container: document.body }}
             >
                 <SortableContext
                     items={localItems.map((item) => item.id)}
@@ -250,6 +286,9 @@ const CategoryEditForm = React.memo(
                         {localItems.map((item, index) => {
                             const isItemSelected = isSelected(item.id);
                             const labelId = `enhanced-table-checkbox-${index}`;
+                            const isOver = overId === item.id && activeId !== null;
+                            const showLineAbove = isOver && activeIndex !== -1 && activeIndex > index;
+                            const showLineBelow = isOver && activeIndex !== -1 && activeIndex < index;
 
                             const dataCells = (
                                 <>
@@ -330,7 +369,12 @@ const CategoryEditForm = React.memo(
 
                             if (edited) {
                                 return (
-                                    <SortableRow key={item.id} id={item.id}>
+                                    <SortableRow
+                                        key={item.id}
+                                        id={item.id}
+                                        showLineAbove={showLineAbove}
+                                        showLineBelow={showLineBelow}
+                                    >
                                         {dataCells}
                                     </SortableRow>
                                 );
