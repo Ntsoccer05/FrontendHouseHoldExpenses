@@ -11,12 +11,21 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.response.use(
-  (response) => response, // 通常のレスポンスはそのまま返す
+  (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.warn("認証エラー: ログインページへリダイレクトします");
+      const currentPath = window.location.pathname;
+      const publicPaths = ['/login', '/register', '/forget-password', '/reset-password'];
+      const isPublicPath = publicPaths.some(p => currentPath.startsWith(p));
+
+      if (!isPublicPath) {
+        // cookieとsessionStorageを削除してログインページへ
+        document.cookie = 'loginUser=; Max-Age=0; path=/';
+        sessionStorage.clear();
+        window.location.href = '/login';
+      }
     }
-    return Promise.reject(error); // エラーをそのまま投げる
+    return Promise.reject(error);
   }
 );
 

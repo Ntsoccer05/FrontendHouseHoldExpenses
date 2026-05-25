@@ -7,7 +7,7 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 ## 概要
 
-コードベースにまったく馴染みのない開発者が見ても迷わないよう、包括的な実装計画を作成します。各タスクで触るファイル、コード、確認が必要なドキュメント、テスト方法まで、必要なものをすべて文書化します。全体の計画を一口サイズのタスクに分割して提供します。DRY。YAGNI。TDD。頻繁なコミット。
+コードベースにまったく馴染みのない開発者が見ても迷わないよう、包括的な実装計画を作成します。各タスクで触るファイル、コード、確認が必要なドキュメント、テスト方法まで、必要なものをすべて文書化します。全体の計画を一口サイズのタスクに分割して提供します。DRY。YAGNI。TDD。実装完了後にリポジトリごとにまとめてコミット。
 
 担当者はスキルのある開発者と想定しますが、ツールセットや問題ドメインについてはほとんど知らないと仮定します。また、適切なテスト設計についての知識は不足していると仮定します。
 
@@ -15,7 +15,7 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 **コンテキスト：** 隔離されたワークツリーで作業している場合は、実行時に `superpowers:using-git-worktrees` スキルで作成されたものであるべきです。
 
-**計画の保存先：** `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`
+**計画の保存先：** `.claude/plans/YYYY-MM-DD-<feature-name>.md`
 - （ユーザーの計画ファイル配置の設定があればそちらが優先）
 
 ## スコープ確認
@@ -40,7 +40,6 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 - 「失敗することを確認するために実行する」— ステップ
 - 「テストをパスさせる最小限のコードを実装する」— ステップ
 - 「テストを実行してパスすることを確認する」— ステップ
-- 「コミットする」— ステップ
 
 ## 計画ドキュメントのヘッダー
 
@@ -94,13 +93,6 @@ def function(input):
 
 Run: `pytest tests/path/test.py::test_name -v`
 Expected: PASS
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add tests/path/test.py src/path/file.py
-git commit -m "feat: add specific feature"
-```
 ````
 
 ## プレースホルダー禁止
@@ -117,7 +109,30 @@ git commit -m "feat: add specific feature"
 - 常に正確なファイルパスを記載
 - すべてのステップで完全なコード — コードを変更するステップにはコードを示す
 - 期待される出力を含む正確なコマンド
-- DRY、YAGNI、TDD、頻繁なコミット
+- DRY、YAGNI、TDD、最後にまとめてコミット
+
+## 最終コミット
+
+タスク内での個別コミットは行わない。すべてのタスク完了後、計画の末尾に最終コミットのステップを追加する。
+
+複数リポジトリにまたがる場合はリポジトリごとに個別にコミットする：
+
+```bash
+cd <リポジトリA>
+git add -A
+git commit -m "fix: <バックエンドの変更内容>"
+
+cd <リポジトリB>
+git add -A
+git commit -m "feat: <フロントエンドの変更内容>"
+```
+
+単一リポジトリの場合：
+
+```bash
+git add -A
+git commit -m "feat: <実装内容を一言で>"
+```
 
 ## 自己レビュー
 
@@ -135,7 +150,7 @@ git commit -m "feat: add specific feature"
 
 計画を保存したら、実行方法を選択肢として提示する：
 
-**「計画が完成して `docs/superpowers/plans/<filename>.md` に保存しました。2つの実行オプションがあります：**
+**「計画が完成して `.claude/plans/<filename>.md` に保存しました。2つの実行オプションがあります：**
 
 **1. サブエージェント駆動（推奨）** — タスクごとに新しいサブエージェントを起動し、タスク間でレビュー、高速イテレーション
 
