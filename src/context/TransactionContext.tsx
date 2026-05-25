@@ -259,18 +259,23 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
             sourceDate: string,
             destinationDate: string
         ) => {
-            await apiClient.post("/copyMultipleContents", {
-                source_date: sourceDate,
-                destination_date: destinationDate,
-                content_ids: transactionIds.map((id) => parseInt(id, 10)),
-            });
+            try {
+                await apiClient.post("/copyMultipleContents", {
+                    source_date: sourceDate,
+                    destination_date: destinationDate,
+                    content_ids: transactionIds.map((id) => parseInt(id, 10)),
+                });
 
-            // コピー元とコピー先の月のキャッシュを無効化
-            const sourceMonth = format(new Date(sourceDate), "yyyyMM");
-            const destinationMonth = format(new Date(destinationDate), "yyyyMM");
-            await refreshMonthCache(sourceMonth);
-            if (sourceMonth !== destinationMonth) {
-                await refreshMonthCache(destinationMonth);
+                // コピー元とコピー先の月のキャッシュを無効化
+                const sourceMonth = format(new Date(sourceDate), "yyyyMM");
+                const destinationMonth = format(new Date(destinationDate), "yyyyMM");
+                await refreshMonthCache(sourceMonth);
+                if (sourceMonth !== destinationMonth) {
+                    await refreshMonthCache(destinationMonth);
+                }
+            } catch (err) {
+                console.error("一括コピーエラー:", err);
+                throw err;
             }
         },
         [refreshMonthCache]
