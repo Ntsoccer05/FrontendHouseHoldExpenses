@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import useSocialLogin from "../../hooks/useSocialLogin";
 import { Provider } from "../../types";
@@ -12,16 +12,14 @@ const GoogleCallback = () => {
         () => queryString.parse(location.search) ?? {},
         [location.search]
     );
-    // const authCode = queryParams.code;
     const socialLogin = useSocialLogin();
     const { fetchLoginUserLoading } = useAuthContext();
-
-    const handleLogin = async () => {
-        await socialLogin(provider, socialResponse);
-    };
+    const calledRef = useRef(false);
 
     useEffect(() => {
-        handleLogin();
+        if (calledRef.current) return;
+        calledRef.current = true;
+        socialLogin(provider, socialResponse);
     }, []);
 
     return  (fetchLoginUserLoading &&

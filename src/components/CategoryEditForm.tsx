@@ -322,8 +322,9 @@ const CategoryEditForm = React.memo(
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
-                // 縦方向だけの移動に制限
                 modifiers={[restrictToVerticalAxis]}
+                // dnd-kitのアクセシビリティ用<div>をbodyに描画し、<table>内の不正なDOM構造を回避
+                accessibility={{ container: document.body }}
             >
                 <SortableContext
                     items={

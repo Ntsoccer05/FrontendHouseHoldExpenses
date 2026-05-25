@@ -4,6 +4,7 @@ import {
     Card,
     CardActionArea,
     CardContent,
+    Checkbox,
     Drawer,
     Grid,
     List,
@@ -22,7 +23,7 @@ import {
     CircularProgress,
     Backdrop,
 } from "@mui/material";
-import { memo, useState, useRef, useCallback } from "react";
+import { memo, useState, useRef, useCallback, useEffect } from "react";
 import DailySummary from "./DailySummary";
 import NotesIcon from "@mui/icons-material/Notes";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
@@ -68,7 +69,7 @@ const TransactionMenu = memo(
         onClose,
     }: TransactionMenuProps) => {
         const { isMobile, showSnackBar } = useAppContext();
-        const { onSaveTransaction, onDeleteTransaction, refreshMonthCache } = useTransactionContext();
+        const { onSaveTransaction, onDeleteTransaction, refreshMonthCache, onCopyMultipleTransactions } = useTransactionContext();
         const menuDrawerWidth = 320;
 
         // コンテキストメニュー関連のstate
@@ -90,12 +91,29 @@ const TransactionMenu = memo(
             message: "",
         });
 
+        // 今日の日付を取得
+        const today = new Date().toISOString().split('T')[0];
+
+        // 複数選択コピー用 state
+        const [selectedIds, setSelectedIds] = useState<string[]>([]);
+        const [bulkCopyDialog, setBulkCopyDialog] = useState<{
+            open: boolean;
+            destinationDate: string;
+        }>({ open: false, destinationDate: currentDay });
+        const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+
         // 長押し関連
         const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
         const [isDragging, setIsDragging] = useState(false);
 
-        // 今日の日付を取得
-        const today = new Date().toISOString().split('T')[0];
+        // 日付が変わったら選択状態をリセット、コピー先日付も対象日に戻す
+        useEffect(() => {
+            setSelectedIds([]);
+            setBulkCopyDialog((prev) => ({
+                ...prev,
+                destinationDate: prev.open ? prev.destinationDate : currentDay,
+            }));
+        }, [currentDay]);
 
         // コンテキストメニューを表示
         const handleContextMenu = useCallback((event: React.MouseEvent, transaction: Transaction) => {
@@ -320,6 +338,106 @@ const TransactionMenu = memo(
             onSelectTransaction(transaction);
         }, [contextMenu, onSelectTransaction]);
 
+        // 個別チェックボックスのトグル
+        const handleToggleSelect = useCallback((id: string) => {
+            setSelectedIds((prev) =>
+                prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
+            );
+        }, []);
+
+        // 全選択/全解除
+        const handleSelectAll = useCallback(() => {
+            setSelectedIds((prev) =>
+                prev.length === dailyTransactions.length
+                    ? []
+                    : dailyTransactions.map((t) => t.id)
+            );
+        }, [dailyTransactions]);
+
+        // 一括コピーダイアログを開く
+        const handleBulkCopyClick = useCallback(() => {
+            setBulkCopyDialog((prev) => ({ ...prev, open: true }));
+        }, []);
+
+        // 一括コピー実行
+        const handleExecuteBulkCopy = useCallback(async () => {
+            if (!bulkCopyDialog.destinationDate || selectedIds.length === 0) return;
+
+            setOperationState({
+                isOperating: true,
+                operationType: 'copy',
+                message: `${selectedIds.length}件をコピー中...`,
+            });
+
+            try {
+                await onCopyMultipleTransactions(
+                    selectedIds,
+                    currentDay,
+                    bulkCopyDialog.destinationDate
+                );
+
+                showSnackBar({
+                    title: "コピー完了",
+                    bodyText: `${selectedIds.length}件を${formatJPDay(bulkCopyDialog.destinationDate)}にコピーしました`,
+                    backgroundColor: "#455a64",
+                });
+
+                setSelectedIds([]);
+                setBulkCopyDialog((prev) => ({ ...prev, open: false }));
+            } catch (error) {
+                console.error("一括コピー失敗:", error);
+                showSnackBar({
+                    title: "エラー",
+                    bodyText: "コピーに失敗しました",
+                    backgroundColor: "#d32f2f",
+                });
+            } finally {
+                setOperationState({ isOperating: false, operationType: null, message: '' });
+            }
+        }, [
+            selectedIds,
+            currentDay,
+            bulkCopyDialog.destinationDate,
+            onCopyMultipleTransactions,
+            showSnackBar,
+        ]);
+
+        // 一括削除ダイアログを開く
+        const handleBulkDeleteClick = useCallback(() => {
+            setBulkDeleteDialogOpen(true);
+        }, []);
+
+        // 一括削除実行
+        const handleExecuteBulkDelete = useCallback(async () => {
+            if (selectedIds.length === 0) return;
+
+            setOperationState({
+                isOperating: true,
+                operationType: 'delete',
+                message: `${selectedIds.length}件を削除中...`,
+            });
+
+            try {
+                await onDeleteTransaction(selectedIds);
+                showSnackBar({
+                    title: "削除完了",
+                    bodyText: `${selectedIds.length}件を削除しました`,
+                    backgroundColor: "#455a64",
+                });
+                setSelectedIds([]);
+                setBulkDeleteDialogOpen(false);
+            } catch (error) {
+                console.error("一括削除失敗:", error);
+                showSnackBar({
+                    title: "エラー",
+                    bodyText: "削除に失敗しました",
+                    backgroundColor: "#d32f2f",
+                });
+            } finally {
+                setOperationState({ isOperating: false, operationType: null, message: '' });
+            }
+        }, [selectedIds, onDeleteTransaction, showSnackBar]);
+
         // コンテキストメニューアイテムの処理
         const handleContextMenuAction = useCallback((action: string, transaction: Transaction) => {
             handleCloseContextMenu();
@@ -383,30 +501,85 @@ const TransactionMenu = memo(
                             columns={isMobile ? 3 : 2}
                         />
 
-                        {/* 内訳タイトル&内訳追加ボタン */}
-                        <Box
-                            sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                p: 1,
-                            }}
-                        >
-                            <Box display="flex" alignItems="center">
-                                <NotesIcon sx={{ mr: 1 }} />
-                                <Typography variant="body1">内訳</Typography>
+                        {/* 内訳ヘッダー: 1行目（常時） */}
+                        <Box sx={{ display: "flex", alignItems: "center", px: 1, pt: 1 }}>
+                            {dailyTransactions.length > 0 && (
+                                <Checkbox
+                                    size="small"
+                                    checked={
+                                        selectedIds.length === dailyTransactions.length &&
+                                        dailyTransactions.length > 0
+                                    }
+                                    indeterminate={
+                                        selectedIds.length > 0 &&
+                                        selectedIds.length < dailyTransactions.length
+                                    }
+                                    onChange={handleSelectAll}
+                                    sx={{ p: 0.5 }}
+                                />
+                            )}
+                            <Box display="flex" alignItems="center" sx={{ flex: 1 }}>
+                                <NotesIcon sx={{ mr: 0.5 }} fontSize="small" />
+                                <Typography variant="body1" fontWeight="medium">内訳</Typography>
                             </Box>
                             <Button
-                                startIcon={<AddCircleIcon />}
+                                variant="contained"
+                                size="small"
                                 color="primary"
                                 onClick={onAddTransactionForm}
+                                startIcon={<AddCircleIcon />}
+                                sx={{ borderRadius: 2 }}
                             >
-                                内訳を追加
+                                追加
                             </Button>
                         </Box>
 
+                        {/* 内訳ヘッダー: 2行目（複数選択時のみ） */}
+                        {selectedIds.length > 0 && (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    px: 1,
+                                    pb: 0.5,
+                                    gap: 1,
+                                    bgcolor: 'action.selected',
+                                    borderRadius: 1,
+                                    mx: 1,
+                                }}
+                            >
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ flex: 1 }}
+                                >
+                                    {selectedIds.length}件選択中
+                                </Typography>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    color="primary"
+                                    onClick={handleBulkCopyClick}
+                                    startIcon={<ContentCopyIcon />}
+                                    sx={{ borderRadius: 2 }}
+                                >
+                                    コピー
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    color="error"
+                                    onClick={handleBulkDeleteClick}
+                                    startIcon={<DeleteIcon />}
+                                    sx={{ borderRadius: 2 }}
+                                >
+                                    削除
+                                </Button>
+                            </Box>
+                        )}
+
                         {/* 取引一覧 */}
-                        <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+                        <Box sx={{ flexGrow: 1, overflowY: "auto", px: 0.5 }}>
                             <List aria-label="取引履歴">
                                 <Stack spacing={2}>
                                     {dailyTransactions.map((transaction) => (
@@ -414,86 +587,98 @@ const TransactionMenu = memo(
                                             disablePadding
                                             key={transaction.id}
                                         >
-                                            <Card
-                                                sx={{
-                                                    width: "100%",
-                                                    backgroundColor:
-                                                        transaction.type === "income"
-                                                            ? (theme) =>
-                                                                  theme.palette.incomeColor.light
-                                                            : (theme) =>
-                                                                  theme.palette.expenseColor.light,
-                                                    '&:hover': {
-                                                        boxShadow: 2,
-                                                    },
-                                                    position: 'relative',
-                                                }}
-                                                onContextMenu={(e) => handleContextMenu(e, transaction)}
-                                                onTouchStart={(e) => handleTouchStart(e, transaction)}
-                                                onTouchEnd={handleTouchEnd}
-                                                onTouchMove={handleTouchMove}
-                                            >
-                                                <CardActionArea
-                                                    onClick={() => handleTransactionClick(transaction)}
+                                            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 0.5 }}>
+                                                <Checkbox
+                                                    size="small"
+                                                    checked={selectedIds.includes(transaction.id)}
+                                                    onChange={() => handleToggleSelect(transaction.id)}
+                                                    sx={{ p: 0.5, flexShrink: 0 }}
+                                                />
+                                                <Card
+                                                    sx={{
+                                                        flex: 1,
+                                                        minWidth: 0,
+                                                        backgroundColor:
+                                                            transaction.type === "income"
+                                                                ? (theme) =>
+                                                                      theme.palette.incomeColor.light
+                                                                : (theme) =>
+                                                                      theme.palette.expenseColor.light,
+                                                        '&:hover': {
+                                                            boxShadow: 2,
+                                                        },
+                                                        position: 'relative',
+                                                        boxShadow: selectedIds.includes(transaction.id)
+                                                            ? (theme) => `0 0 0 2px ${theme.palette.primary.main}`
+                                                            : undefined,
+                                                    }}
+                                                    onContextMenu={(e) => handleContextMenu(e, transaction)}
+                                                    onTouchStart={(e) => handleTouchStart(e, transaction)}
+                                                    onTouchEnd={handleTouchEnd}
+                                                    onTouchMove={handleTouchMove}
                                                 >
-                                                    <CardContent sx={{
-                                                        padding: { xs: 1, md: 2 },
-                                                    }}>
-                                                        <Grid
-                                                            container
-                                                            spacing={{ xs: 0.5, sm: 1 }}
-                                                            alignItems="center"
-                                                            wrap="wrap"
-                                                        >
+                                                    <CardActionArea
+                                                        onClick={() => handleTransactionClick(transaction)}
+                                                    >
+                                                        <CardContent sx={{
+                                                            padding: { xs: 1, md: 2 },
+                                                        }}>
                                                             <Grid
-                                                                item
-                                                                xs={1}
-                                                                sm={0.5}
-                                                                md={1}
-                                                                style={{
-                                                                    paddingLeft: 0,
-                                                                }}
+                                                                container
+                                                                spacing={{ xs: 0.5, sm: 1 }}
+                                                                alignItems="center"
+                                                                wrap="wrap"
                                                             >
-                                                                {transaction.icon && (
-                                                                    <DynamicIcon
-                                                                        iconName={transaction.icon}
-                                                                        fontSize={"medium"}
-                                                                    />
-                                                                )}
-                                                            </Grid>
-                                                            <Grid item xs={2.5}>
-                                                                <Typography
-                                                                    variant="caption"
-                                                                    display="block"
-                                                                    gutterBottom
-                                                                >
-                                                                    {transaction.category}
-                                                                </Typography>
-                                                            </Grid>
-                                                            <Grid item xs={4}>
-                                                                <Typography
-                                                                    variant="body2"
-                                                                    gutterBottom
-                                                                >
-                                                                    {transaction.content}
-                                                                </Typography>
-                                                            </Grid>
-                                                            <Grid item xs={4.5}>
-                                                                <Typography
-                                                                    gutterBottom
-                                                                    textAlign={"right"}
-                                                                    color="text.secondary"
-                                                                    sx={{
-                                                                        wordBreak: "break-all",
+                                                                <Grid
+                                                                    item
+                                                                    xs={1}
+                                                                    sm={0.5}
+                                                                    md={1}
+                                                                    style={{
+                                                                        paddingLeft: 0,
                                                                     }}
                                                                 >
-                                                                    ¥{formatCurrency(transaction.amount)}
-                                                                </Typography>
+                                                                    {transaction.icon && (
+                                                                        <DynamicIcon
+                                                                            iconName={transaction.icon}
+                                                                            fontSize={"medium"}
+                                                                        />
+                                                                    )}
+                                                                </Grid>
+                                                                <Grid item xs={2.5}>
+                                                                    <Typography
+                                                                        variant="caption"
+                                                                        display="block"
+                                                                        gutterBottom
+                                                                    >
+                                                                        {transaction.category}
+                                                                    </Typography>
+                                                                </Grid>
+                                                                <Grid item xs={4}>
+                                                                    <Typography
+                                                                        variant="body2"
+                                                                        gutterBottom
+                                                                    >
+                                                                        {transaction.content}
+                                                                    </Typography>
+                                                                </Grid>
+                                                                <Grid item xs={4.5}>
+                                                                    <Typography
+                                                                        gutterBottom
+                                                                        textAlign={"right"}
+                                                                        color="text.secondary"
+                                                                        sx={{
+                                                                            wordBreak: "break-all",
+                                                                        }}
+                                                                    >
+                                                                        ¥{formatCurrency(transaction.amount)}
+                                                                    </Typography>
+                                                                </Grid>
                                                             </Grid>
-                                                        </Grid>
-                                                    </CardContent>
-                                                </CardActionArea>
-                                            </Card>
+                                                        </CardContent>
+                                                    </CardActionArea>
+                                                </Card>
+                                            </Box>
                                         </ListItem>
                                     ))}
                                 </Stack>
@@ -631,9 +816,112 @@ const TransactionMenu = memo(
                     </DialogActions>
                 </Dialog>
 
+                {/* 一括コピー用日付選択ダイアログ */}
+                <Dialog
+                    open={bulkCopyDialog.open}
+                    onClose={() => setBulkCopyDialog((prev) => ({ ...prev, open: false }))}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>コピー先の日付を選択</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            autoFocus
+                            margin="dense"
+                            label="コピー先の日付"
+                            type="date"
+                            fullWidth
+                            variant="outlined"
+                            value={bulkCopyDialog.destinationDate}
+                            onChange={(e) =>
+                                setBulkCopyDialog((prev) => ({
+                                    ...prev,
+                                    destinationDate: e.target.value,
+                                }))
+                            }
+                            onClick={(e) => {
+                                const input = (e.currentTarget as HTMLElement).querySelector('input');
+                                if (input && 'showPicker' in input) {
+                                    (input as HTMLInputElement).showPicker();
+                                }
+                            }}
+                            InputLabelProps={{ shrink: true }}
+                        />
+                        <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                コピー対象（{selectedIds.length}件）
+                            </Typography>
+                            {dailyTransactions
+                                .filter((t) => selectedIds.includes(t.id))
+                                .map((t) => (
+                                    <Typography key={t.id} variant="body2">
+                                        {t.category}
+                                        {t.content && ` - ${t.content}`}
+                                        　¥{formatCurrency(t.amount)}
+                                    </Typography>
+                                ))}
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={() => setBulkCopyDialog((prev) => ({ ...prev, open: false }))}
+                        >
+                            キャンセル
+                        </Button>
+                        <Button
+                            onClick={handleExecuteBulkCopy}
+                            variant="contained"
+                            disabled={
+                                !bulkCopyDialog.destinationDate ||
+                                bulkCopyDialog.destinationDate === currentDay
+                            }
+                        >
+                            コピー
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* 一括削除確認ダイアログ */}
+                <Dialog
+                    open={bulkDeleteDialogOpen}
+                    onClose={() => setBulkDeleteDialogOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>削除確認</DialogTitle>
+                    <DialogContent>
+                        <Typography variant="body1" gutterBottom>
+                            選択した{selectedIds.length}件を削除しますか？
+                        </Typography>
+                        <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                            {dailyTransactions
+                                .filter((t) => selectedIds.includes(t.id))
+                                .map((t) => (
+                                    <Typography key={t.id} variant="body2">
+                                        {t.category}
+                                        {t.content && ` - ${t.content}`}
+                                        　¥{formatCurrency(t.amount)}
+                                    </Typography>
+                                ))}
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setBulkDeleteDialogOpen(false)}>
+                            キャンセル
+                        </Button>
+                        <Button
+                            onClick={handleExecuteBulkDelete}
+                            variant="contained"
+                            color="error"
+                        >
+                            削除
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
                 {/* 操作中のローディング */}
                 <Backdrop
-                    sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+                    sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.modal + 1 }}
                     open={operationState.isOperating}
                 >
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>

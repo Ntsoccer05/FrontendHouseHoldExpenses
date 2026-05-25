@@ -57,7 +57,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 [コードレビュアーサブエージェントを起動]
   DESCRIPTION: verifyIndex() と repairIndex() を4種類のissueタイプで追加
-  PLAN_OR_REQUIREMENTS: docs/superpowers/plans/deployment-plan.md の Task 2
+  PLAN_OR_REQUIREMENTS: .claude/plans/deployment-plan.md の Task 2
   BASE_SHA: a7981ec
   HEAD_SHA: 3df7661
 

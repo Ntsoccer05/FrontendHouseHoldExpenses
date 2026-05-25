@@ -76,8 +76,6 @@ const TransactionForm = memo(
 
         // 削除中ローディング
         const [isDeleting, setIsDeleting] = useState(false);
-        // コピー中ローディング
-        const [isCopying, setIsCopying] = useState(false);
         // 削除確認ダイアログの状態
         const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -282,32 +280,6 @@ const TransactionForm = memo(
                     console.error(error);
                 } finally {
                     setIsDeleting(false);
-                }
-            }
-        };
-
-        //コピー処理
-        const handleCopy = async () => {
-            if (selectedTransaction) {
-                setIsCopying(true);
-                try {
-                    // 現在のフォームの値を取得
-                    const formData = watch();
-                    // TransactionData型に合わせてcontentをstring型に変換
-                    const currentFormData = {
-                        ...formData,
-                        content: formData.content || "", // nullの場合は空文字列に変換
-                    };
-                    await onSaveTransaction(currentFormData);
-                    showSnackBar({
-                        title: "コピー完了",
-                        bodyText: "家計簿がコピーされました。",
-                        backgroundColor: "#455a64"
-                    });
-                } catch (error) {
-                    console.error(error);
-                } finally {
-                    setIsCopying(false);
                 }
             }
         };
@@ -653,30 +625,6 @@ const TransactionForm = memo(
                                     }}
                                 >
                                     {isDeleting ? "削除中…" : "削除"}
-                                </Button>
-                                 <Button
-                                    onClick={handleCopy}
-                                    variant="outlined"
-                                    color="primary"
-                                    fullWidth
-                                    startIcon={
-                                        isCopying && (
-                                            <CircularProgress color="inherit" size={20} />
-                                        )
-                                    }
-                                    disabled={isSubmitting || isDeleting || isCopying || selectedTransaction.date === watch("date")}
-                                    sx={{
-                                        bgcolor: (theme) =>
-                                            (isSubmitting || isDeleting || isCopying)
-                                                ? theme.palette.action.disabledBackground
-                                                : undefined,
-                                        color: (theme) =>
-                                            (isSubmitting || isDeleting || isCopying)
-                                                ? theme.palette.action.disabled
-                                                : undefined,
-                                    }}
-                                >
-                                    {isCopying ? "別日にコピー中…" : "別日にコピー"}
                                 </Button>
                             </>
                         )}

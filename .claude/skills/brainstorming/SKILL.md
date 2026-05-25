@@ -26,7 +26,7 @@ description: "You MUST use this before any creative work - creating features, bu
 3. **確認質問をする** — 一度に一つ、目的・制約・成功基準を理解する
 4. **2〜3のアプローチを提案** — トレードオフと推奨案を示す
 5. **デザインを提示** — セクションの複雑さに合わせてスケールし、各セクション後にユーザーの承認を得る
-6. **デザインドキュメントを書く** — `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` に保存してコミット
+6. **デザインドキュメントを書く** — `.claude/specs/YYYY-MM-DD-<topic>-design.md` に保存してコミット
 7. **仕様の自己レビュー** — プレースホルダー・矛盾・曖昧さ・スコープの確認（下記参照）
 8. **ユーザーが仕様を確認** — 進める前に仕様ファイルをユーザーにレビューするよう依頼
 9. **実装への移行** — writing-plans スキルを呼び出して実装計画を作成
@@ -108,7 +108,7 @@ digraph brainstorming {
 
 **ドキュメント：**
 
-- 確認済みデザイン（仕様）を `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` に書き込む
+- 確認済みデザイン（仕様）を `.claude/specs/YYYY-MM-DD-<topic>-design.md` に書き込む
   - （ユーザーの仕様ファイル配置の設定があればそちらが優先）
 - 利用可能であれば elements-of-style:writing-clearly-and-concisely スキルを使用
 - デザインドキュメントを git にコミットする

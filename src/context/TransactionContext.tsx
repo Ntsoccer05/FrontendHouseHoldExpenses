@@ -19,6 +19,11 @@ interface TransactionContext {
     onDeleteTransaction: (
         transactionIds: string | readonly string[]
     ) => Promise<void>;
+    onCopyMultipleTransactions: (
+        transactionIds: string[],
+        sourceDate: string,
+        destinationDate: string
+    ) => Promise<void>;
     onUpdateTransaction: (
         transaction: TransactionData,
         transactionId: string
@@ -162,10 +167,15 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
             });
             const data: Transaction[] = response.data.monthlyTransactionData || [];
             monthCacheRef.current.set(yearMonth, data);
+            // 現在表示中の月なら画面にも即時反映
+            const currentMonthFormatted = format(currentMonth, "yyyyMM");
+            if (yearMonth === currentMonthFormatted) {
+                setMonthlyTransactions(data);
+            }
         } catch {
             // サイレント失敗（次回 getMonthlyTransactions で bulk 再取得）
         }
-    }, [loginUser?.id]);
+    }, [loginUser?.id, currentMonth]);
 
     // 年間取引データの取得
     const getYearlyTransactions = useCallback(async (currentYear: string) => {
@@ -247,6 +257,35 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
         [loginUser?.id, setMonthlyTransactions, refreshMonthCache, currentMonth]
     );
 
+    // 複数取引をコピー
+    const onCopyMultipleTransactions = useCallback(
+        async (
+            transactionIds: string[],
+            sourceDate: string,
+            destinationDate: string
+        ) => {
+            try {
+                await apiClient.post("/copyMultipleContents", {
+                    source_date: sourceDate,
+                    destination_date: destinationDate,
+                    content_ids: transactionIds.map((id) => parseInt(id, 10)),
+                });
+
+                // コピー元とコピー先の月のキャッシュを無効化
+                const sourceMonth = format(new Date(sourceDate), "yyyyMM");
+                const destinationMonth = format(new Date(destinationDate), "yyyyMM");
+                await refreshMonthCache(sourceMonth);
+                if (sourceMonth !== destinationMonth) {
+                    await refreshMonthCache(destinationMonth);
+                }
+            } catch (err) {
+                console.error("一括コピーエラー:", err);
+                throw err;
+            }
+        },
+        [refreshMonthCache]
+    );
+
     // 取引を更新
     const onUpdateTransaction = useCallback(
         async (transaction: TransactionData, transactionId: string) => {
@@ -284,6 +323,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
             value={{
                 onSaveTransaction,
                 onDeleteTransaction,
+                onCopyMultipleTransactions,
                 onUpdateTransaction,
                 getMonthlyTransactions,
                 prefetchMonth,

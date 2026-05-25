@@ -20,8 +20,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [loginUser, setLoginUser] = useState<LoginUser | null>(null);
-  const [fetchLoginUserLoading, setFetchLoginUserLoading] = useState<boolean>(false);
   const [cookieValue, updateCookie, deleteCookie] = useCookie('loginUser');
+  // cookieが存在する場合は起動時にサーバー認証確認を行うためtrue
+  const [fetchLoginUserLoading, setFetchLoginUserLoading] = useState<boolean>(!!cookieValue);
   const navigate = useNavigate();
 
   const fetchUser = async () => {
@@ -43,6 +44,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setFetchLoginUserLoading((prevValue) => prevValue = false);
     }
   };
+
+  // アプリ起動時: cookieが存在する場合のみサーバー側セッション有効性を確認
+  useEffect(() => {
+    if (cookieValue) {
+      fetchUser();
+    }
+    // fetchUser の参照ではなく起動時1回のみ実行
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (cookieValue) {

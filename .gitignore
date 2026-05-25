@@ -2,4 +2,5 @@ node_modules
 .env
 *_env
 
+.claude/settings.json
 .claude/settings.local.json
