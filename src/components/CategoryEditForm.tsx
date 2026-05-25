@@ -67,7 +67,7 @@ interface CategoryEditProps {
     setAdded: React.Dispatch<React.SetStateAction<boolean>>;
     setEdited: React.Dispatch<React.SetStateAction<boolean>>;
     setIsSaving: React.Dispatch<React.SetStateAction<boolean>>;
-    onSortChanged?: () => void;
+    onChanged?: () => void;
 }
 
 const SortableRow = ({
@@ -120,7 +120,7 @@ const CategoryEditForm = React.memo(
         setAdded,
         setEdited,
         setIsSaving,
-        onSortChanged,
+        onChanged,
     }: CategoryEditProps) => {
         const { editCategory, sortCategories } = useCategoryContext();
 
@@ -223,7 +223,7 @@ const CategoryEditForm = React.memo(
                 moved = true;
                 return arrayMove(prev, oldIndex, newIndex);
             });
-            if (moved) onSortChanged?.();
+            if (moved) onChanged?.();
         };
 
         const handleLabelChange = (index: number, value: string) => {
@@ -232,6 +232,7 @@ const CategoryEditForm = React.memo(
                     i === index ? { ...item, label: value } : item,
                 ),
             );
+            onChanged?.();
         };
 
         const handleIconChange = (index: number, value: string) => {
@@ -240,6 +241,7 @@ const CategoryEditForm = React.memo(
                     i === index ? { ...item, icon: value } : item,
                 ),
             );
+            onChanged?.();
         };
 
         const handleClick = (

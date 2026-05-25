@@ -120,10 +120,10 @@ function Category() {
     const onUpdateCategories = () => {
         if (edited) {
             setIsSaving(true);
-            setHasSortChanged(false);
+            setHasChanged(false);
             setEdited(false);
         } else {
-            setHasSortChanged(false);
+            setHasChanged(false);
             setEdited(true);
         }
     };
@@ -164,8 +164,8 @@ function Category() {
 
     // 並び替えの保存フラグ（true = 保存ボタン押下、false = キャンセル）
     const [isSaving, setIsSaving] = useState(false);
-    // 未保存の並び替え変更があるか
-    const [hasSortChanged, setHasSortChanged] = useState(false);
+    // 未保存の変更があるか（並び替え・ラベル・アイコン）
+    const [hasChanged, setHasChanged] = useState(false);
     // キャンセル確認ダイアログ
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
@@ -198,7 +198,7 @@ function Category() {
             nextType === "expense" ? ExpenseCategories : IncomeCategories;
         setCategories(newCategories);
         setEdited(false);
-        setHasSortChanged(false);
+        setHasChanged(false);
     };
 
     // 収支タイプを切り替える関数（編集中の場合は確認ダイアログを表示）
@@ -227,7 +227,7 @@ function Category() {
 
     // キャンセルボタン押下
     const handleCancelEdit = () => {
-        if (hasSortChanged) {
+        if (hasChanged) {
             setCancelDialogOpen(true);
         } else {
             setEdited(false);
@@ -237,7 +237,7 @@ function Category() {
     // キャンセル確認ダイアログで「破棄する」
     const handleCancelConfirm = () => {
         setCancelDialogOpen(false);
-        setHasSortChanged(false);
+        setHasChanged(false);
         setEdited(false);
     };
 
@@ -426,7 +426,7 @@ function Category() {
                                     setEdited={setEdited}
                                     isSaving={isSaving}
                                     setIsSaving={setIsSaving}
-                                    onSortChanged={() => setHasSortChanged(true)}
+                                    onChanged={() => setHasChanged(true)}
                                 />
                             </Table>
                         </TableContainer>
