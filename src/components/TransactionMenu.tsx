@@ -334,8 +334,7 @@ const TransactionMenu = memo(
         }, [contextMenu, onSelectTransaction]);
 
         // 個別チェックボックスのトグル
-        const handleToggleSelect = useCallback((id: string, e: React.MouseEvent) => {
-            e.stopPropagation();
+        const handleToggleSelect = useCallback((id: string) => {
             setSelectedIds((prev) =>
                 prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
             );
@@ -528,7 +527,7 @@ const TransactionMenu = memo(
                                                 <Checkbox
                                                     size="small"
                                                     checked={selectedIds.includes(transaction.id)}
-                                                    onClick={(e) => handleToggleSelect(transaction.id, e)}
+                                                    onChange={() => handleToggleSelect(transaction.id)}
                                                     sx={{ p: 0.5, flexShrink: 0 }}
                                                 />
                                                 <Card
