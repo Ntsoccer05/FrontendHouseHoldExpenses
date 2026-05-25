@@ -188,7 +188,6 @@ const Sidebar = ({
                 variant="temporary"
                 open={mobileOpen}
                 onClose={handleDrawerToggle}
-                onClick={handleDrawerToggle}
                 ModalProps={{
                     keepMounted: true, // Better open performance on mobile.
                 }}
@@ -200,7 +199,7 @@ const Sidebar = ({
                     },
                 }}
             >
-                {drawer}
+                <div onClick={handleDrawerToggle}>{drawer}</div>
             </Drawer>
 
             {/* PC用 */}

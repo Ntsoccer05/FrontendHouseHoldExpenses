@@ -25,6 +25,7 @@ import {
     DialogContentText,
     DialogTitle,
 } from "@mui/material";
+import LoadingButton from "@mui/lab/LoadingButton";
 import { Stack } from "@mui/material";
 import { CategoryItem, TransactionType } from "../types";
 import { useEffect, useState } from "react";
@@ -168,6 +169,9 @@ function Category() {
     const [hasChanged, setHasChanged] = useState(false);
     // キャンセル確認ダイアログ
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+    // 削除確認ダイアログ
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // モバイル用Drawerを閉じる処理
     const handleCloseMobileDrawer = () => {
@@ -247,14 +251,28 @@ function Category() {
     };
 
     //削除処理
-    const onDeleteCategories = async () => {
+    const onDeleteCategories = () => {
         if (selected.length > 0) {
-            const tgtCategories = categories?.filter((category) => {
-                return selected.includes(category.id as number);
-            }) as CategoryItem[];
+            setDeleteDialogOpen(true);
+        }
+    };
+
+    const handleDeleteConfirm = async () => {
+        setIsDeleting(true);
+        try {
+            const tgtCategories = categories?.filter((category) =>
+                selected.includes(category.id as number)
+            ) as CategoryItem[];
             await deleteCategories(tgtCategories, type);
             setSelected([]);
+            setDeleteDialogOpen(false);
+        } finally {
+            setIsDeleting(false);
         }
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteDialogOpen(false);
     };
 
     const openAddCategoryForm = () => {
@@ -339,12 +357,14 @@ function Category() {
                         )}
                             {isMobile ? (
                                 <Box display="flex" gap={2} alignItems="center">
-                                    <Box textAlign="center">
-                                        <IconButton onClick={openAddCategoryForm} sx={{flexDirection: "column"}}>
-                                            <AddIcon />
-                                            <Typography variant="caption">追加</Typography>
-                                        </IconButton>
-                                    </Box>
+                                    {!edited && (
+                                        <Box textAlign="center">
+                                            <IconButton onClick={openAddCategoryForm} sx={{flexDirection: "column"}}>
+                                                <AddIcon />
+                                                <Typography variant="caption">追加</Typography>
+                                            </IconButton>
+                                        </Box>
+                                    )}
                                     {numSelected > 0 ? (
                                         <Box textAlign="center">
                                             <IconButton onClick={onDeleteCategories} sx={{ flexDirection: "column" }}>
@@ -373,11 +393,6 @@ function Category() {
                                 </Box>
                                 ) : (
                                 <>
-                                    <Tooltip title="追加">
-                                        <IconButton onClick={openAddCategoryForm}>
-                                            <AddIcon />
-                                        </IconButton>
-                                    </Tooltip>
                                     {numSelected > 0 ? (
                                         <Tooltip title="削除">
                                             <IconButton onClick={onDeleteCategories}>
@@ -474,6 +489,22 @@ function Category() {
                     <Button onClick={handleSwitchConfirm} color="error" variant="contained">
                         切り替える
                     </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 削除確認ダイアログ */}
+            <Dialog open={deleteDialogOpen} onClose={!isDeleting ? handleDeleteCancel : undefined}>
+                <DialogTitle>カテゴリを削除しますか？</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        選択した {selected.length} 件のカテゴリを削除します。この操作は元に戻せません。
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleDeleteCancel} disabled={isDeleting}>キャンセル</Button>
+                    <LoadingButton onClick={handleDeleteConfirm} color="error" variant="contained" loading={isDeleting}>
+                        削除する
+                    </LoadingButton>
                 </DialogActions>
             </Dialog>
         </>

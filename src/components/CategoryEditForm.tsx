@@ -15,6 +15,7 @@ import { CategoryItem } from "../types";
 import DynamicIcon from "./common/DynamicIcon";
 import { expenseMuiIcons, incomeMuiIcons } from "../config/CategoryIcon";
 import { useCategoryContext } from "../context/CategoryContext";
+import { useAppContext } from "../context/AppContext";
 import {
     DndContext,
     closestCenter,
@@ -48,13 +49,6 @@ const toLocalItems = (categories: CategoryItem[] | undefined): LocalItem[] =>
         icon: c.icon,
     })) ?? [];
 
-const toCategories = (items: LocalItem[]): CategoryItem[] =>
-    items.map((item) => ({
-        id: item.id,
-        label: item.label,
-        icon: item.icon,
-        filtered_id: 0, // sortCategories 内で index+1 に再採番される
-    }));
 
 interface CategoryEditProps {
     edited: boolean;
@@ -122,7 +116,8 @@ const CategoryEditForm = React.memo(
         setIsSaving,
         onChanged,
     }: CategoryEditProps) => {
-        const { editCategory, sortCategories } = useCategoryContext();
+        const { batchSaveCategories } = useCategoryContext();
+        const { setIsLoading } = useAppContext();
 
         const [localItems, setLocalItems] = useState<LocalItem[]>([]);
         const [activeId, setActiveId] = useState<number | null>(null);
@@ -169,29 +164,20 @@ const CategoryEditForm = React.memo(
         React.useEffect(() => {
             if (!isSaving) return;
             const save = async () => {
-                const items = localItemsRef.current;
-                await sortCategories(toCategories(items), type);
-                const changedItems = items.filter((item) => {
-                    const original = originalItemsRef.current.find(
-                        (o) => o.id === item.id,
-                    );
-                    return (
-                        original &&
-                        (original.label !== item.label ||
-                            original.icon !== item.icon)
-                    );
-                });
-                await Promise.all(
-                    changedItems.map((item) =>
-                        editCategory({
-                            id: item.id,
-                            content: item.label,
-                            icon: item.icon,
-                            type,
-                        }),
-                    ),
-                );
-                setIsSaving(false);
+                setIsLoading(true);
+                try {
+                    const items = localItemsRef.current;
+                    const categories = items.map((item, index) => ({
+                        id: item.id,
+                        label: item.label,
+                        icon: item.icon,
+                        filtered_id: index + 1,
+                    }));
+                    await batchSaveCategories(categories, type);
+                } finally {
+                    setIsLoading(false);
+                    setIsSaving(false);
+                }
             };
             save();
         // eslint-disable-next-line react-hooks/exhaustive-deps
