@@ -37,6 +37,8 @@ export interface Transaction {
     type: TransactionType;
     category: string;
     icon?: string;
+    isFixedExpense?: boolean;
+    fixedExpenseId?: number | null;
 }
 export interface TransactionData {
     date: string;
@@ -45,6 +47,8 @@ export interface TransactionData {
     type: TransactionType;
     category: string;
     icon?: string;
+    isFixedExpense?: boolean;
+    fixedExpenseDay?: number;
 }
 
 export interface Balance {
@@ -104,4 +108,25 @@ export interface SnackBarState {
   bodyText: string;
   backgroundColor: string;
   autoHideDuration: number;
+}
+
+export interface FixedExpense {
+    id: number;
+    user_id: number;
+    type_id: number;
+    category_id: number;
+    amount: number;
+    content: string;
+    fixed_expense_day: number;
+    is_active: boolean;
+    last_replicated_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface FixedExpenseFormData {
+    category_id: number;
+    amount: number;
+    content: string;
+    fixed_expense_day: number;
 }

@@ -2,6 +2,7 @@ import {
     Box,
     Button,
     ButtonGroup,
+    Checkbox,
     CircularProgress,
     Dialog,
     DialogActions,
@@ -9,6 +10,7 @@ import {
     DialogContentText,
     DialogTitle,
     FormControl,
+    FormControlLabel,
     FormHelperText,
     IconButton,
     InputLabel,
@@ -101,6 +103,8 @@ const TransactionForm = memo(
                 amount: 0,
                 category: "",
                 content: "",
+                isFixedExpense: false,
+                fixedExpenseDay: undefined,
             },
             // resolver: zodResolver()でバリデーション設定
             resolver: zodResolver(transactionSchema),
@@ -123,6 +127,7 @@ const TransactionForm = memo(
                 amount: 0,
                 category: defaultCategory,
                 content: "",
+                isFixedExpense: false,
             });
         }, [currentDay]);
 
@@ -135,6 +140,7 @@ const TransactionForm = memo(
                     amount: 0,
                     category: ExpenseCategories[0].label ?? "",
                     content: "",
+                    isFixedExpense: false,
                 });
                 setCategories(ExpenseCategories);
             }
@@ -168,6 +174,7 @@ const TransactionForm = memo(
                     amount: 0,
                     category: newCategories?.[0]?.label || "",
                     content: "",
+                    isFixedExpense: false,
                 });
             }
         }, [currentType]);
@@ -210,6 +217,7 @@ const TransactionForm = memo(
                 amount: 0,
                 category: selectedLabel,
                 content: "",
+                isFixedExpense: false,
             });
         };
 
@@ -246,6 +254,7 @@ const TransactionForm = memo(
                     amount: 0,
                     category: categories?.[0].label,
                     content: "",
+                    isFixedExpense: false,
                 });
             }
         }, [selectedTransaction]);
@@ -566,6 +575,24 @@ const TransactionForm = memo(
                                 />
                             )}
                         />
+                        {/* 固定費チェックボックス（支出かつ新規入力のみ表示） */}
+                        {currentType === "expense" && !selectedTransaction && (
+                            <Controller
+                                name="isFixedExpense"
+                                control={control}
+                                render={({ field }) => (
+                                    <FormControlLabel
+                                        control={
+                                            <Checkbox
+                                                checked={!!field.value}
+                                                onChange={(e) => field.onChange(e.target.checked)}
+                                            />
+                                        }
+                                        label="固定費として登録（毎月自動複製）"
+                                    />
+                                )}
+                            />
+                        )}
                         {/* 保存ボタン */}
                         <Button
                             type="submit"
