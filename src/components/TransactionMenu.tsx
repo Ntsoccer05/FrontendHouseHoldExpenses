@@ -96,21 +96,23 @@ const TransactionMenu = memo(
 
         // 複数選択コピー用 state
         const [selectedIds, setSelectedIds] = useState<string[]>([]);
-        // 前回のコピー先日付をキャッシュ（次回ダイアログ表示時に復元）
-        const lastCopyDateRef = useRef<string>(today);
         const [bulkCopyDialog, setBulkCopyDialog] = useState<{
             open: boolean;
             destinationDate: string;
-        }>({ open: false, destinationDate: today });
+        }>({ open: false, destinationDate: currentDay });
         const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
         // 長押し関連
         const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
         const [isDragging, setIsDragging] = useState(false);
 
-        // 日付が変わったら選択状態をリセット
+        // 日付が変わったら選択状態をリセット、コピー先日付も対象日に戻す
         useEffect(() => {
             setSelectedIds([]);
+            setBulkCopyDialog((prev) => ({
+                ...prev,
+                destinationDate: prev.open ? prev.destinationDate : currentDay,
+            }));
         }, [currentDay]);
 
         // コンテキストメニューを表示
@@ -352,9 +354,9 @@ const TransactionMenu = memo(
             );
         }, [dailyTransactions]);
 
-        // 一括コピーダイアログを開く（前回入力日付を復元、なければ今日）
+        // 一括コピーダイアログを開く
         const handleBulkCopyClick = useCallback(() => {
-            setBulkCopyDialog({ open: true, destinationDate: lastCopyDateRef.current });
+            setBulkCopyDialog((prev) => ({ ...prev, open: true }));
         }, []);
 
         // 一括コピー実行
@@ -380,10 +382,8 @@ const TransactionMenu = memo(
                     backgroundColor: "#455a64",
                 });
 
-                // 次回のために日付をキャッシュ
-                lastCopyDateRef.current = bulkCopyDialog.destinationDate;
                 setSelectedIds([]);
-                setBulkCopyDialog({ open: false, destinationDate: today });
+                setBulkCopyDialog((prev) => ({ ...prev, open: false }));
             } catch (error) {
                 console.error("一括コピー失敗:", error);
                 showSnackBar({
