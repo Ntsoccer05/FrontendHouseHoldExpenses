@@ -26,7 +26,7 @@ import {
     DialogTitle,
 } from "@mui/material";
 import LoadingButton from "@mui/lab/LoadingButton";
-import { Stack } from "@mui/material";
+import { Stack, CircularProgress } from "@mui/material";
 import { CategoryItem, TransactionType } from "../types";
 import { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
@@ -113,6 +113,7 @@ function Category() {
     const [selected, setSelected] = useState<readonly number[]>([]);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [added, setAdded] = useState(false);
+    const [isAdding, setIsAdding] = useState(false);
 
     const numSelected = selected.length;
     const [edited, setEdited] = useState<boolean>(false);
@@ -120,6 +121,10 @@ function Category() {
 
     const onUpdateCategories = () => {
         if (edited) {
+            if (!hasChanged) {
+                setEdited(false);
+                return;
+            }
             setIsSaving(true);
             setHasChanged(false);
             setEdited(false);
@@ -301,7 +306,7 @@ function Category() {
                 <Box sx={{ flexGrow: 1 }}>
                     {/* 収支切り替えボタン */}
                     <Stack spacing={2}>
-                        <ButtonGroup fullWidth>
+                        <ButtonGroup fullWidth disabled={isSaving || isAdding}>
                             <Button
                                 variant={
                                     type === "expense" ? "contained" : "outlined"
@@ -357,7 +362,7 @@ function Category() {
                         )}
                             {isMobile ? (
                                 <Box display="flex" gap={2} alignItems="center">
-                                    {!edited && (
+                                    {!edited && !isSaving && (
                                         <Box textAlign="center">
                                             <IconButton onClick={openAddCategoryForm} sx={{flexDirection: "column"}}>
                                                 <AddIcon />
@@ -376,16 +381,16 @@ function Category() {
                                         <Box display="flex" gap={1}>
                                             {edited && (
                                                 <Box textAlign="center">
-                                                    <IconButton onClick={handleCancelEdit} sx={{ flexDirection: "column" }}>
+                                                    <IconButton onClick={handleCancelEdit} disabled={isSaving} sx={{ flexDirection: "column" }}>
                                                         <CancelIcon />
                                                         <Typography variant="caption" sx={{ whiteSpace: "nowrap" }}>キャンセル</Typography>
                                                     </IconButton>
                                                 </Box>
                                             )}
                                             <Box textAlign="center">
-                                                <IconButton onClick={onUpdateCategories} sx={{ flexDirection: "column" }}>
-                                                    {edited ? <SaveIcon /> : <EditIcon />}
-                                                    <Typography variant="caption">{edited ? "保存" : "編集"}</Typography>
+                                                <IconButton onClick={onUpdateCategories} disabled={isSaving} sx={{ flexDirection: "column" }}>
+                                                    {isSaving ? <CircularProgress size={24} /> : edited ? <SaveIcon /> : <EditIcon />}
+                                                    <Typography variant="caption">{isSaving || edited ? "保存" : "編集"}</Typography>
                                                 </IconButton>
                                             </Box>
                                         </Box>
@@ -409,9 +414,11 @@ function Category() {
                                                 </Tooltip>
                                             )}
                                             <Tooltip title={edited ? "保存" : "編集"}>
-                                                <IconButton onClick={onUpdateCategories}>
-                                                    {edited ? <SaveIcon /> : <EditIcon />}
-                                                </IconButton>
+                                                <span>
+                                                    <IconButton onClick={onUpdateCategories} disabled={isSaving}>
+                                                        {isSaving ? <CircularProgress size={24} /> : edited ? <SaveIcon /> : <EditIcon />}
+                                                    </IconButton>
+                                                </span>
                                             </Tooltip>
                                         </>
                                     )}
@@ -455,6 +462,7 @@ function Category() {
                         onClose={handleCloseMobileDrawer}
                         setIsMobileDrawerOpen={setIsMobileDrawerOpen}
                         setAdded={setAdded}
+                        onSubmittingChange={setIsAdding}
                     ></AddCategoryForm>
                 </Box>
             </Box>

@@ -28,6 +28,7 @@ interface AddCategoryFormProps {
     setIsMobileDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
     onClose: () => void;
     setAdded: React.Dispatch<React.SetStateAction<boolean>>;
+    onSubmittingChange?: (isSubmitting: boolean) => void;
 }
 
 const AddCategoryForm = memo(
@@ -37,6 +38,7 @@ const AddCategoryForm = memo(
         onClose,
         setIsMobileDrawerOpen,
         setAdded,
+        onSubmittingChange,
     }: AddCategoryFormProps) => {
         const { isMobile, ExpenseCategories, IncomeCategories } =
             useAppContext();
@@ -91,17 +93,22 @@ const AddCategoryForm = memo(
             reset();
         }, [type, reset]);
 
+        const setSubmitting = (value: boolean) => {
+            setIsSubmitting(value);
+            onSubmittingChange?.(value);
+        };
+
         // 送信処理
         const onSubmit: SubmitHandler<Schema> = async (data) => {
             data.type = type;
-            setIsSubmitting(true);
+            setSubmitting(true);
             try {
                 await addCategories(data);
                 setIsMobileDrawerOpen(false);
                 reset();
                 setAdded(true);
             } finally {
-                setIsSubmitting(false);
+                setSubmitting(false);
             }
         };
 
