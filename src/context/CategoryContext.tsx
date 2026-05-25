@@ -33,6 +33,10 @@ interface CategoryContextType {
         tgtCategories: CategoryItem[],
         type: TransactionType
     ) => Promise<void>;
+    batchSaveCategories: (
+        categories: { id: number; label: string; icon: string; filtered_id: number }[],
+        type: TransactionType
+    ) => Promise<void>;
 }
 
 // createContextでグローバルにする値を設定　CategoryContext.Providerのvalueの設定値の型を指定する必要がある
@@ -51,6 +55,7 @@ export const CategoryProvider = ({ children }: CategoryProviderProps) => {
         ExpenseCategories,
         getExpenseCategory,
         getIncomeCategory,
+        setIsLoading,
     } = useAppContext();
 
     const { loginUser } = useAuthContext();
@@ -62,20 +67,22 @@ export const CategoryProvider = ({ children }: CategoryProviderProps) => {
                     data.type === "income"
                         ? "/addIncomeCategory"
                         : "/addExpenseCategory";
-                await apiClient 
+                setIsLoading(true);
+                await apiClient
                     .post(api, {
                         user_id: loginUser.id,
                         data,
-                    })
-                    .then(async (res) => {
-                        data.type === "expense"
-                            ? await getExpenseCategory()
-                            : await getIncomeCategory();
-                    })
-                    .catch((err) => {});
+                    });
+                if (data.type === "expense") {
+                    await getExpenseCategory();
+                } else {
+                    await getIncomeCategory();
+                }
             }
         } catch (err) {
             console.log(err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -163,33 +170,54 @@ export const CategoryProvider = ({ children }: CategoryProviderProps) => {
         }
     };
 
+    const batchSaveCategories = async (
+        categories: { id: number; label: string; icon: string; filtered_id: number }[],
+        type: TransactionType
+    ) => {
+        try {
+            if (loginUser && categories.length > 0) {
+                const api =
+                    type === "income"
+                        ? "/batchSaveIncomeCategories"
+                        : "/batchSaveExpenseCategories";
+                await apiClient.post(api, {
+                    categories,
+                    user_id: loginUser.id,
+                });
+                type === "expense"
+                    ? await getExpenseCategory()
+                    : await getIncomeCategory();
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
     const deleteCategories = async (
         tgtCategories: CategoryItem[],
         type: TransactionType
     ) => {
         try {
             if (loginUser && tgtCategories.length > 0) {
-                const deleteData = {
-                    tgtCategories,
-                };
                 const api =
                     type === "income"
                         ? "/deleteIncomeCategory"
                         : "/deleteExpenseCategory";
-                await apiClient
-                    .post(api, {
-                        deleteData: deleteData,
-                        user_id: loginUser.id,
-                    })
-                    .then((res) => {
-                        type === "expense"
-                            ? getExpenseCategory()
-                            : getIncomeCategory();
-                    })
-                    .catch((err) => {});
+                setIsLoading(true);
+                await apiClient.post(api, {
+                    deleteData: { tgtCategories },
+                    user_id: loginUser.id,
+                });
+                if (type === "expense") {
+                    await getExpenseCategory();
+                } else {
+                    await getIncomeCategory();
+                }
             }
         } catch (err) {
             console.log(err);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -201,6 +229,7 @@ export const CategoryProvider = ({ children }: CategoryProviderProps) => {
                 deleteCategories,
                 addCategories,
                 sortCategories,
+                batchSaveCategories,
             }}
         >
             {children}

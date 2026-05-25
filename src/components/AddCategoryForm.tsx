@@ -1,6 +1,5 @@
 import {
     Box,
-    Button,
     Drawer,
     Stack,
     Typography,
@@ -12,7 +11,8 @@ import {
     Select,
     TextField,
 } from "@mui/material";
-import { memo } from "react";
+import LoadingButton from "@mui/lab/LoadingButton";
+import { memo, useState, useEffect } from "react";
 import { TransactionType } from "../types";
 import { useAppContext } from "../context/AppContext";
 import { Controller, SubmitHandler, useForm } from "react-hook-form";
@@ -28,6 +28,7 @@ interface AddCategoryFormProps {
     setIsMobileDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
     onClose: () => void;
     setAdded: React.Dispatch<React.SetStateAction<boolean>>;
+    onSubmittingChange?: (isSubmitting: boolean) => void;
 }
 
 const AddCategoryForm = memo(
@@ -37,6 +38,7 @@ const AddCategoryForm = memo(
         onClose,
         setIsMobileDrawerOpen,
         setAdded,
+        onSubmittingChange,
     }: AddCategoryFormProps) => {
         const { isMobile, ExpenseCategories, IncomeCategories } =
             useAppContext();
@@ -84,14 +86,30 @@ const AddCategoryForm = memo(
             resolver: zodResolver(categorySchema),
         });
 
+        const [isSubmitting, setIsSubmitting] = useState(false);
+
+        // 支出/収入切り替え時にフォームをリセット（PCの常時表示サイドバー対応）
+        useEffect(() => {
+            reset();
+        }, [type, reset]);
+
+        const setSubmitting = (value: boolean) => {
+            setIsSubmitting(value);
+            onSubmittingChange?.(value);
+        };
+
         // 送信処理
         const onSubmit: SubmitHandler<Schema> = async (data) => {
             data.type = type;
-            await addCategories(data);
-            // フォームの入力値を空にする
-            setIsMobileDrawerOpen(false);
-            reset();
-            setAdded(true);
+            setSubmitting(true);
+            try {
+                await addCategories(data);
+                setIsMobileDrawerOpen(false);
+                reset();
+                setAdded(true);
+            } finally {
+                setSubmitting(false);
+            }
         };
 
         return (
@@ -199,15 +217,16 @@ const AddCategoryForm = memo(
                             />
 
                             {/* 保存ボタン */}
-                            <Button
+                            <LoadingButton
                                 type="submit"
                                 variant="contained"
                                 color={type === "expense" ? "error" : "primary"}
                                 fullWidth
-                                disabled={!isValid} // isValidを使ってエラーがあれば無効化
+                                disabled={!isValid}
+                                loading={isSubmitting}
                             >
                                 追加
-                            </Button>
+                            </LoadingButton>
                         </Stack>
                     </Box>
                 </Stack>
