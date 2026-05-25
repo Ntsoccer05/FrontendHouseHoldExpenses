@@ -47,7 +47,7 @@ const Sidebar = ({
         { text: "トップ", path: "/", icon: HomeIcon },
         { text: "レポート", path: "/report", icon: EqualizerIcon },
         { text: "カテゴリ編集", path: "/category", icon: CategoryIcon },
-        { text: "固定費管理", path: "/fixed-expenses", icon: RepeatIcon },
+        { text: "固定収支管理", path: "/fixed-expenses", icon: RepeatIcon },
     ];
 
     const LogoutItems = [{ text: "ログアウト", icon: LockOutlinedIcon }];
