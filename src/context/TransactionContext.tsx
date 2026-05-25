@@ -19,6 +19,11 @@ interface TransactionContext {
     onDeleteTransaction: (
         transactionIds: string | readonly string[]
     ) => Promise<void>;
+    onCopyMultipleTransactions: (
+        transactionIds: string[],
+        sourceDate: string,
+        destinationDate: string
+    ) => Promise<void>;
     onUpdateTransaction: (
         transaction: TransactionData,
         transactionId: string
@@ -247,6 +252,30 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
         [loginUser?.id, setMonthlyTransactions, refreshMonthCache, currentMonth]
     );
 
+    // 複数取引をコピー
+    const onCopyMultipleTransactions = useCallback(
+        async (
+            transactionIds: string[],
+            sourceDate: string,
+            destinationDate: string
+        ) => {
+            await apiClient.post("/copyMultipleContents", {
+                source_date: sourceDate,
+                destination_date: destinationDate,
+                content_ids: transactionIds.map((id) => parseInt(id, 10)),
+            });
+
+            // コピー元とコピー先の月のキャッシュを無効化
+            const sourceMonth = format(new Date(sourceDate), "yyyyMM");
+            const destinationMonth = format(new Date(destinationDate), "yyyyMM");
+            await refreshMonthCache(sourceMonth);
+            if (sourceMonth !== destinationMonth) {
+                await refreshMonthCache(destinationMonth);
+            }
+        },
+        [refreshMonthCache]
+    );
+
     // 取引を更新
     const onUpdateTransaction = useCallback(
         async (transaction: TransactionData, transactionId: string) => {
@@ -284,6 +313,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
             value={{
                 onSaveTransaction,
                 onDeleteTransaction,
+                onCopyMultipleTransactions,
                 onUpdateTransaction,
                 getMonthlyTransactions,
                 prefetchMonth,
