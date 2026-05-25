@@ -167,10 +167,15 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
             });
             const data: Transaction[] = response.data.monthlyTransactionData || [];
             monthCacheRef.current.set(yearMonth, data);
+            // 現在表示中の月なら画面にも即時反映
+            const currentMonthFormatted = format(currentMonth, "yyyyMM");
+            if (yearMonth === currentMonthFormatted) {
+                setMonthlyTransactions(data);
+            }
         } catch {
             // サイレント失敗（次回 getMonthlyTransactions で bulk 再取得）
         }
-    }, [loginUser?.id]);
+    }, [loginUser?.id, currentMonth]);
 
     // 年間取引データの取得
     const getYearlyTransactions = useCallback(async (currentYear: string) => {

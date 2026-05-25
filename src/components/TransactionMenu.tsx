@@ -91,12 +91,18 @@ const TransactionMenu = memo(
             message: "",
         });
 
+        // 今日の日付を取得
+        const today = new Date().toISOString().split('T')[0];
+
         // 複数選択コピー用 state
         const [selectedIds, setSelectedIds] = useState<string[]>([]);
+        // 前回のコピー先日付をキャッシュ（次回ダイアログ表示時に復元）
+        const lastCopyDateRef = useRef<string>(today);
         const [bulkCopyDialog, setBulkCopyDialog] = useState<{
             open: boolean;
             destinationDate: string;
-        }>({ open: false, destinationDate: '' });
+        }>({ open: false, destinationDate: today });
+        const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
         // 長押し関連
         const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -106,9 +112,6 @@ const TransactionMenu = memo(
         useEffect(() => {
             setSelectedIds([]);
         }, [currentDay]);
-
-        // 今日の日付を取得
-        const today = new Date().toISOString().split('T')[0];
 
         // コンテキストメニューを表示
         const handleContextMenu = useCallback((event: React.MouseEvent, transaction: Transaction) => {
@@ -349,9 +352,9 @@ const TransactionMenu = memo(
             );
         }, [dailyTransactions]);
 
-        // 一括コピーダイアログを開く
+        // 一括コピーダイアログを開く（前回入力日付を復元、なければ今日）
         const handleBulkCopyClick = useCallback(() => {
-            setBulkCopyDialog({ open: true, destinationDate: '' });
+            setBulkCopyDialog({ open: true, destinationDate: lastCopyDateRef.current });
         }, []);
 
         // 一括コピー実行
@@ -377,8 +380,10 @@ const TransactionMenu = memo(
                     backgroundColor: "#455a64",
                 });
 
+                // 次回のために日付をキャッシュ
+                lastCopyDateRef.current = bulkCopyDialog.destinationDate;
                 setSelectedIds([]);
-                setBulkCopyDialog({ open: false, destinationDate: '' });
+                setBulkCopyDialog({ open: false, destinationDate: today });
             } catch (error) {
                 console.error("一括コピー失敗:", error);
                 showSnackBar({
@@ -396,6 +401,42 @@ const TransactionMenu = memo(
             onCopyMultipleTransactions,
             showSnackBar,
         ]);
+
+        // 一括削除ダイアログを開く
+        const handleBulkDeleteClick = useCallback(() => {
+            setBulkDeleteDialogOpen(true);
+        }, []);
+
+        // 一括削除実行
+        const handleExecuteBulkDelete = useCallback(async () => {
+            if (selectedIds.length === 0) return;
+
+            setOperationState({
+                isOperating: true,
+                operationType: 'delete',
+                message: `${selectedIds.length}件を削除中...`,
+            });
+
+            try {
+                await onDeleteTransaction(selectedIds);
+                showSnackBar({
+                    title: "削除完了",
+                    bodyText: `${selectedIds.length}件を削除しました`,
+                    backgroundColor: "#455a64",
+                });
+                setSelectedIds([]);
+                setBulkDeleteDialogOpen(false);
+            } catch (error) {
+                console.error("一括削除失敗:", error);
+                showSnackBar({
+                    title: "エラー",
+                    bodyText: "削除に失敗しました",
+                    backgroundColor: "#d32f2f",
+                });
+            } finally {
+                setOperationState({ isOperating: false, operationType: null, message: '' });
+            }
+        }, [selectedIds, onDeleteTransaction, showSnackBar]);
 
         // コンテキストメニューアイテムの処理
         const handleContextMenuAction = useCallback((action: string, transaction: Transaction) => {
@@ -460,15 +501,8 @@ const TransactionMenu = memo(
                             columns={isMobile ? 3 : 2}
                         />
 
-                        {/* 内訳タイトル・全選択・コピーボタン・追加ボタン */}
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                p: 1,
-                                gap: 0.5,
-                            }}
-                        >
+                        {/* 内訳ヘッダー: 1行目（常時） */}
+                        <Box sx={{ display: "flex", alignItems: "center", px: 1, pt: 1 }}>
                             {dailyTransactions.length > 0 && (
                                 <Checkbox
                                     size="small"
@@ -485,37 +519,67 @@ const TransactionMenu = memo(
                                 />
                             )}
                             <Box display="flex" alignItems="center" sx={{ flex: 1 }}>
-                                <NotesIcon sx={{ mr: 0.5 }} />
-                                <Typography variant="body1">内訳</Typography>
-                                {selectedIds.length > 0 && (
-                                    <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
-                                        {selectedIds.length}件選択
-                                    </Typography>
-                                )}
+                                <NotesIcon sx={{ mr: 0.5 }} fontSize="small" />
+                                <Typography variant="body1" fontWeight="medium">内訳</Typography>
                             </Box>
-                            {selectedIds.length > 0 && (
-                                <Button
-                                    size="small"
-                                    variant="contained"
-                                    startIcon={<ContentCopyIcon />}
-                                    onClick={handleBulkCopyClick}
-                                    sx={{ whiteSpace: 'nowrap' }}
-                                >
-                                    コピー
-                                </Button>
-                            )}
                             <Button
-                                startIcon={<AddCircleIcon />}
+                                variant="contained"
+                                size="small"
                                 color="primary"
                                 onClick={onAddTransactionForm}
-                                size="small"
+                                startIcon={<AddCircleIcon />}
+                                sx={{ borderRadius: 2 }}
                             >
-                                内訳を追加
+                                追加
                             </Button>
                         </Box>
 
+                        {/* 内訳ヘッダー: 2行目（複数選択時のみ） */}
+                        {selectedIds.length > 0 && (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    px: 1,
+                                    pb: 0.5,
+                                    gap: 1,
+                                    bgcolor: 'action.selected',
+                                    borderRadius: 1,
+                                    mx: 1,
+                                }}
+                            >
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{ flex: 1 }}
+                                >
+                                    {selectedIds.length}件選択中
+                                </Typography>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    color="primary"
+                                    onClick={handleBulkCopyClick}
+                                    startIcon={<ContentCopyIcon />}
+                                    sx={{ borderRadius: 2 }}
+                                >
+                                    コピー
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    color="error"
+                                    onClick={handleBulkDeleteClick}
+                                    startIcon={<DeleteIcon />}
+                                    sx={{ borderRadius: 2 }}
+                                >
+                                    削除
+                                </Button>
+                            </Box>
+                        )}
+
                         {/* 取引一覧 */}
-                        <Box sx={{ flexGrow: 1, overflowY: "auto" }}>
+                        <Box sx={{ flexGrow: 1, overflowY: "auto", px: 0.5 }}>
                             <List aria-label="取引履歴">
                                 <Stack spacing={2}>
                                     {dailyTransactions.map((transaction) => (
@@ -544,10 +608,9 @@ const TransactionMenu = memo(
                                                             boxShadow: 2,
                                                         },
                                                         position: 'relative',
-                                                        outline: selectedIds.includes(transaction.id)
-                                                            ? '2px solid'
-                                                            : 'none',
-                                                        outlineColor: (theme) => theme.palette.primary.main,
+                                                        boxShadow: selectedIds.includes(transaction.id)
+                                                            ? (theme) => `0 0 0 2px ${theme.palette.primary.main}`
+                                                            : undefined,
                                                     }}
                                                     onContextMenu={(e) => handleContextMenu(e, transaction)}
                                                     onTouchStart={(e) => handleTouchStart(e, transaction)}
@@ -756,7 +819,7 @@ const TransactionMenu = memo(
                 {/* 一括コピー用日付選択ダイアログ */}
                 <Dialog
                     open={bulkCopyDialog.open}
-                    onClose={() => setBulkCopyDialog({ open: false, destinationDate: '' })}
+                    onClose={() => setBulkCopyDialog((prev) => ({ ...prev, open: false }))}
                     maxWidth="sm"
                     fullWidth
                 >
@@ -776,6 +839,12 @@ const TransactionMenu = memo(
                                     destinationDate: e.target.value,
                                 }))
                             }
+                            onClick={(e) => {
+                                const input = (e.currentTarget as HTMLElement).querySelector('input');
+                                if (input && 'showPicker' in input) {
+                                    (input as HTMLInputElement).showPicker();
+                                }
+                            }}
                             InputLabelProps={{ shrink: true }}
                         />
                         <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
@@ -795,9 +864,7 @@ const TransactionMenu = memo(
                     </DialogContent>
                     <DialogActions>
                         <Button
-                            onClick={() =>
-                                setBulkCopyDialog({ open: false, destinationDate: '' })
-                            }
+                            onClick={() => setBulkCopyDialog((prev) => ({ ...prev, open: false }))}
                         >
                             キャンセル
                         </Button>
@@ -814,9 +881,47 @@ const TransactionMenu = memo(
                     </DialogActions>
                 </Dialog>
 
+                {/* 一括削除確認ダイアログ */}
+                <Dialog
+                    open={bulkDeleteDialogOpen}
+                    onClose={() => setBulkDeleteDialogOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>削除確認</DialogTitle>
+                    <DialogContent>
+                        <Typography variant="body1" gutterBottom>
+                            選択した{selectedIds.length}件を削除しますか？
+                        </Typography>
+                        <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                            {dailyTransactions
+                                .filter((t) => selectedIds.includes(t.id))
+                                .map((t) => (
+                                    <Typography key={t.id} variant="body2">
+                                        {t.category}
+                                        {t.content && ` - ${t.content}`}
+                                        　¥{formatCurrency(t.amount)}
+                                    </Typography>
+                                ))}
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setBulkDeleteDialogOpen(false)}>
+                            キャンセル
+                        </Button>
+                        <Button
+                            onClick={handleExecuteBulkDelete}
+                            variant="contained"
+                            color="error"
+                        >
+                            削除
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
                 {/* 操作中のローディング */}
                 <Backdrop
-                    sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+                    sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.modal + 1 }}
                     open={operationState.isOperating}
                 >
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
