@@ -125,6 +125,7 @@ export interface FixedExpense {
 }
 
 export interface FixedExpenseFormData {
+    type: TransactionType;
     category_id: number;
     amount: number;
     content: string;

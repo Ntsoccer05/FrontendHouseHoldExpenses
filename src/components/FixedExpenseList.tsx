@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-    Box,
     Button,
     Chip,
     Dialog,
@@ -18,6 +17,7 @@ import {
     TableRow,
     Typography,
 } from "@mui/material";
+import LoadingButton from "@mui/lab/LoadingButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import type { FixedExpense } from "../types";
@@ -34,18 +34,24 @@ export const FixedExpenseList = ({
     onDelete,
 }: FixedExpenseListProps) => {
     const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleDeleteConfirm = async () => {
         if (deleteTarget !== null) {
-            await onDelete(deleteTarget);
-            setDeleteTarget(null);
+            setIsDeleting(true);
+            try {
+                await onDelete(deleteTarget);
+                setDeleteTarget(null);
+            } finally {
+                setIsDeleting(false);
+            }
         }
     };
 
     if (fixedExpenses.length === 0) {
         return (
             <Typography color="text.secondary">
-                固定費が登録されていません
+                固定費・収益が登録されていません
             </Typography>
         );
     }
@@ -56,6 +62,7 @@ export const FixedExpenseList = ({
                 <Table>
                     <TableHead>
                         <TableRow>
+                            <TableCell>種別</TableCell>
                             <TableCell>内容</TableCell>
                             <TableCell align="right">金額</TableCell>
                             <TableCell>実行日</TableCell>
@@ -66,6 +73,13 @@ export const FixedExpenseList = ({
                     <TableBody>
                         {fixedExpenses.map((item) => (
                             <TableRow key={item.id}>
+                                <TableCell>
+                                    <Chip
+                                        label={item.type_id === 1 ? "収入" : "支出"}
+                                        color={item.type_id === 1 ? "primary" : "error"}
+                                        size="small"
+                                    />
+                                </TableCell>
                                 <TableCell>{item.content}</TableCell>
                                 <TableCell align="right">
                                     ¥{item.amount.toLocaleString()}
@@ -95,22 +109,25 @@ export const FixedExpenseList = ({
                 </Table>
             </TableContainer>
 
-            <Dialog open={deleteTarget !== null} onClose={() => setDeleteTarget(null)}>
-                <DialogTitle>固定費を削除しますか？</DialogTitle>
+            <Dialog open={deleteTarget !== null} onClose={() => !isDeleting && setDeleteTarget(null)}>
+                <DialogTitle>削除しますか？</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        削除後、新しい複製は生成されません。既に登録された支出は削除されません。
+                        この固定費・収益を削除します。過去に登録済みのデータには影響しません。
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDeleteTarget(null)}>キャンセル</Button>
-                    <Button
+                    <Button onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
+                        キャンセル
+                    </Button>
+                    <LoadingButton
                         onClick={handleDeleteConfirm}
                         color="error"
                         variant="contained"
+                        loading={isDeleting}
                     >
                         削除
-                    </Button>
+                    </LoadingButton>
                 </DialogActions>
             </Dialog>
         </>
