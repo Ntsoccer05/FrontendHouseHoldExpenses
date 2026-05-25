@@ -1,5 +1,4 @@
-import * as React from "react";
-import {useRef} from "react";
+import React, { useRef, useState } from "react";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableRow from "@mui/material/TableRow";
@@ -13,7 +12,6 @@ import {
     TextField,
 } from "@mui/material";
 import { CategoryItem } from "../types";
-import { useState } from "react";
 import DynamicIcon from "./common/DynamicIcon";
 import { expenseMuiIcons, incomeMuiIcons } from "../config/CategoryIcon";
 import { useCategoryContext } from "../context/CategoryContext";
@@ -32,44 +30,66 @@ import {
     verticalListSortingStrategy,
     useSortable,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import DragHandleIcon from "@mui/icons-material/DragHandle";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+
+type LocalItem = {
+    id: number;
+    label: string;
+    icon: string;
+};
+
+const toLocalItems = (categories: CategoryItem[] | undefined): LocalItem[] =>
+    categories?.filter((c) => c.id !== undefined).map((c) => ({
+        id: c.id!,
+        label: c.label,
+        icon: c.icon,
+    })) ?? [];
+
+const toCategories = (items: LocalItem[]): CategoryItem[] =>
+    items.map((item) => ({
+        id: item.id,
+        label: item.label,
+        icon: item.icon,
+        filtered_id: 0, // sortCategories 内で index+1 に再採番される
+    }));
 
 interface CategoryEditProps {
     edited: boolean;
     type: "income" | "expense";
     categories: CategoryItem[] | undefined;
     selected: readonly number[];
-    swichedCategory: boolean;
     added: boolean;
-    deleted: boolean;
+    isSaving: boolean;
     setSelected: React.Dispatch<React.SetStateAction<readonly number[]>>;
-    setCategories: React.Dispatch<
-        React.SetStateAction<CategoryItem[] | undefined>
-    >;
     setAdded: React.Dispatch<React.SetStateAction<boolean>>;
     setEdited: React.Dispatch<React.SetStateAction<boolean>>;
-    setDeleted: React.Dispatch<React.SetStateAction<boolean>>;
+    setIsSaving: React.Dispatch<React.SetStateAction<boolean>>;
+    onSortChanged?: () => void;
 }
 
-const SortableItem = ({
+const SortableRow = ({
     id,
     children,
 }: {
     id: number;
     children: React.ReactNode;
 }) => {
-    const { attributes, listeners, setNodeRef, transform, transition } =
-        useSortable({ id });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-    };
-
+    const { attributes, listeners, setNodeRef, isDragging } = useSortable({ id });
     return (
-        <TableRow ref={setNodeRef} style={style} {...attributes} {...listeners}>
+        <TableRow
+            ref={setNodeRef}
+            {...attributes}
+            sx={{ opacity: isDragging ? 0.3 : 1 }}
+        >
+            <TableCell
+                padding="checkbox"
+                align="center"
+                {...listeners}
+                sx={{ cursor: "grab" }}
+            >
+                <DragHandleIcon />
+            </TableCell>
             {children}
         </TableRow>
     );
@@ -81,85 +101,121 @@ const CategoryEditForm = React.memo(
         type,
         categories,
         selected,
-        swichedCategory,
         added,
-        deleted,
+        isSaving,
         setSelected,
         setAdded,
         setEdited,
-        setDeleted,
+        setIsSaving,
+        onSortChanged,
     }: CategoryEditProps) => {
         const { editCategory, sortCategories } = useCategoryContext();
 
-        const [initialized, setInitialized] = useState<boolean>(false);
-
-        const [debounceTime, setDebounceTime] = useState(500); // デバウンス時間を状態として保存
-        const timer = useRef<ReturnType<typeof setTimeout> | null>(null); // タイマーを保存するためのref
-
-        // Check if the target element is interactive
-        const isInteractiveElement = (target: EventTarget | null) => {
-            if (target instanceof HTMLElement) {
-                const interactiveElements = [
-                    "input",
-                    "textarea",
-                    "select",
-                    "button",
-                ];
-                return interactiveElements.includes(
-                    target.tagName.toLowerCase(),
-                );
-            }
-            return false;
-        };
+        const [localItems, setLocalItems] = useState<LocalItem[]>([]);
+        const originalItemsRef = useRef<LocalItem[]>([]);
+        // stale closure 回避: effect 内で最新の localItems/categories を読む
+        const localItemsRef = useRef<LocalItem[]>(localItems);
+        localItemsRef.current = localItems;
+        const categoriesRef = useRef(categories);
+        categoriesRef.current = categories;
 
         const sensors = useSensors(
-            useSensor(MouseSensor, {
-                activationConstraint: {
-                    distance: 5,
-                },
-            }),
-            useSensor(TouchSensor, {
-                activationConstraint: {
-                    distance: 10,
-                },
-            }),
+            useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+            useSensor(TouchSensor, { activationConstraint: { distance: 10 } }),
         );
 
-        const handleDragStart = (event: any) => {
-            if (event.active && isInteractiveElement(event.active.node)) {
-                // Prevent drag start if the target is an interactive element
-                event.preventDefault();
+        // 編集開始時のみ localItems を初期化（編集中の categories 変化は無視）
+        React.useEffect(() => {
+            if (edited) {
+                const items = toLocalItems(categoriesRef.current);
+                setLocalItems(items);
+                originalItemsRef.current = items;
             }
+        }, [edited]);
+
+        // 非編集・非保存時のみ categories → localItems を同期
+        // （バグ根本の排除: 編集中に categories が変化しても上書きしない）
+        React.useEffect(() => {
+            if (!edited && !isSaving) {
+                setLocalItems(toLocalItems(categories));
+            }
+        }, [categories, edited, isSaving]);
+
+        // 編集中にカテゴリが追加された場合、編集モードを終了
+        React.useEffect(() => {
+            if (added) {
+                if (edited) setEdited(false);
+                setAdded(false);
+            }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [added]);
+
+        // 保存: isSaving が true になったとき一括送信
+        React.useEffect(() => {
+            if (!isSaving) return;
+            const save = async () => {
+                const items = localItemsRef.current;
+                await sortCategories(toCategories(items), type);
+                const changedItems = items.filter((item) => {
+                    const original = originalItemsRef.current.find(
+                        (o) => o.id === item.id,
+                    );
+                    return (
+                        original &&
+                        (original.label !== item.label ||
+                            original.icon !== item.icon)
+                    );
+                });
+                await Promise.all(
+                    changedItems.map((item) =>
+                        editCategory({
+                            id: item.id,
+                            content: item.label,
+                            icon: item.icon,
+                            type,
+                        }),
+                    ),
+                );
+                setIsSaving(false);
+            };
+            save();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [isSaving]);
+
+        const handleDragEnd = (event: DragEndEvent) => {
+            const { active, over } = event;
+            if (!over || active.id === over.id) return;
+            let moved = false;
+            setLocalItems((prev) => {
+                const oldIndex = prev.findIndex((item) => item.id === Number(active.id));
+                const newIndex = prev.findIndex((item) => item.id === Number(over.id));
+                if (oldIndex === -1 || newIndex === -1) return prev;
+                moved = true;
+                return arrayMove(prev, oldIndex, newIndex);
+            });
+            if (moved) onSortChanged?.();
         };
 
-        const handleDragEnd = async (event: DragEndEvent) => {
-            if (event.active.id !== event.over?.id && categories) {
-                const oldIndex = categories.findIndex(
-                    (category) => category.filtered_id === event.active.id,
-                );
-                const newIndex = categories.findIndex(
-                    (category) => category.filtered_id === event.over?.id,
-                );
-
-                const newCategories = arrayMove(categories, oldIndex, newIndex);
-
-                setContentValues(
-                    (prevCategory) =>
-                        (prevCategory = newCategories.map(
-                            (category) => category.label || "",
-                        )),
-                );
-                setIconValues(
-                    (prevCategory) =>
-                        (prevCategory = newCategories.map(
-                            (category) => category.icon || "",
-                        )),
-                );
-                sortCategories(newCategories, type);
-            }
+        const handleLabelChange = (index: number, value: string) => {
+            setLocalItems((prev) =>
+                prev.map((item, i) =>
+                    i === index ? { ...item, label: value } : item,
+                ),
+            );
         };
 
-        const handleClick = (event: React.MouseEvent<unknown>, id: number) => {
+        const handleIconChange = (index: number, value: string) => {
+            setLocalItems((prev) =>
+                prev.map((item, i) =>
+                    i === index ? { ...item, icon: value } : item,
+                ),
+            );
+        };
+
+        const handleClick = (
+            _event: React.MouseEvent<unknown>,
+            id: number,
+        ) => {
             const selectedIndex = selected.indexOf(id);
             let newSelected: readonly number[] = [];
             if (selectedIndex === -1) {
@@ -179,271 +235,92 @@ const CategoryEditForm = React.memo(
 
         const isSelected = (id: number) => selected.indexOf(id) !== -1;
 
-        const [contentValues, setContentValues] = useState<string[]>(
-            categories?.map((category) => category.label || "") || [],
-        );
-        const [iconValues, setIconValues] = useState<string[]>(
-            categories?.map((category) => category.icon || "") || [],
-        );
-
-        const setCategoryValues = (option: boolean) => {
-            if (!categories) {
-                return;
-            } else if (categories.length === 0) {
-                return;
-            } else {
-                if (categories[0].label !== "") {
-                    if (option && initialized) {
-                        return;
-                    }
-                    // カテゴリが取得できたときに初期値を設定
-                    setContentValues(
-                        (prevCategory) =>
-                            (prevCategory = categories.map(
-                                (category) => category.label || "",
-                            )),
-                    );
-                    setIconValues(
-                        (prevCategory) =>
-                            (prevCategory = categories.map(
-                                (category) => category.icon || "",
-                            )),
-                    );
-                    option && setInitialized(() => true); // 初期化完了フラグを立てる
-                }
-            }
-        };
-
-        React.useEffect(() => {
-            setCategoryValues(true);
-        }, [categories, initialized]);
-
-        React.useEffect(() => {
-            setCategoryValues(false);
-        }, [swichedCategory]);
-
-        React.useEffect(() => {
-            if (
-                added &&
-                categories &&
-                categories.length > contentValues.length
-            ) {
-                setCategoryValues(false);
-                setAdded(() => false);
-                setEdited(false);
-            }
-        }, [added, categories]);
-        React.useEffect(() => {
-            if (
-                deleted &&
-                categories &&
-                contentValues.length > categories.length
-            ) {
-                setCategoryValues(false);
-                setDeleted(false);
-            }
-        }, [deleted, categories]);
-
-        // デバウンスとは、一定時間内に複数回のイベントが発生した場合、最後のイベントのみを実行する処理
-        const handleCategoryChange =
-             (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-                if (timer.current) clearTimeout(timer.current); // タイマーが存在する場合はクリア
-                if (categories && categories?.length > 0) {
-                    const ids = extractIds(event.target.name);
-                    if (ids) {
-                        const newValues = [...contentValues];
-                        newValues[index] = event.target.value;
-                        setContentValues(newValues);
-                        const id = ids && Number(ids.id);
-                        const filtered_id = ids && Number(ids.filtered_id);
-                        const content = event.target.value;
-                        const tgtCategory = categories.filter((category) => {
-                            return category.filtered_id === filtered_id;
-                        });
-                        const icon = tgtCategory[0].icon;
-                        const argument = {
-                            id,
-                            content,
-                            icon,
-                            type,
-                        };
-                        timer.current = setTimeout(async ()=>{
-                            await editCategory(argument);
-                        }, debounceTime)
-                    }
-                }
-            };
-
-        const handleIconChange =
-            (index: number) => (event: SelectChangeEvent<string>) => {
-                if (categories && categories?.length > 0) {
-                    const ids = extractIds(event.target.name);
-                    if (ids) {
-                        const newValues = [...iconValues];
-                        newValues[index] = event.target.value;
-                        setIconValues(newValues);
-                        const id = ids && Number(ids.id);
-                        const filtered_id = ids && Number(ids.filtered_id);
-                        const icon = event.target.value;
-                        const tgtCategory = categories.filter((category) => {
-                            return category.filtered_id === filtered_id;
-                        });
-                        const content = tgtCategory[0].label;
-                        const argument = {
-                            id,
-                            icon,
-                            content,
-                            type,
-                        };
-                        editCategory(argument);
-                    }
-                }
-            };
-
-        const extractIds = (
-            str: string,
-        ): {
-            id: string;
-            filtered_id: string;
-        } | null => {
-            const regex = /(\D+)(\d+)(\D+)(\d+)/;
-            const matches = str.match(regex);
-            if (matches) {
-                const id = matches[2];
-                const filtered_id = matches[4];
-                return { id, filtered_id };
-            }
-            return null;
-        };
-
         return (
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 modifiers={[restrictToVerticalAxis]}
-                // dnd-kitのアクセシビリティ用<div>をbodyに描画し、<table>内の不正なDOM構造を回避
-                accessibility={{ container: document.body }}
             >
                 <SortableContext
-                    items={
-                        categories?.map(
-                            (category) => category.filtered_id || 0,
-                        ) || []
-                    }
+                    items={localItems.map((item) => item.id)}
                     strategy={verticalListSortingStrategy}
                 >
                     <TableBody>
-                        {categories?.map((category, index) => {
-                            const isItemSelected = isSelected(
-                                category.filtered_id || 0,
-                            );
+                        {localItems.map((item, index) => {
+                            const isItemSelected = isSelected(item.id);
                             const labelId = `enhanced-table-checkbox-${index}`;
 
-                            const tableRowContent = (
+                            const dataCells = (
                                 <>
-                                    {!edited ? (
-                                        <TableCell padding="checkbox">
-                                            <Checkbox
-                                                color="primary"
-                                                checked={isItemSelected}
-                                                inputProps={{
-                                                    "aria-labelledby": labelId,
-                                                }}
-                                            />
-                                        </TableCell>
-                                    ) : (
-                                        <TableCell
-                                            padding="checkbox"
-                                            align="center"
-                                            sx={{cursor: "pointer"}}
-                                        >
-                                            <DragHandleIcon />
-                                        </TableCell>
-                                    )}
                                     <TableCell
                                         component="th"
                                         id={labelId}
                                         scope="row"
                                         padding="none"
                                         align="center"
-                                        sx={{cursor: "pointer"}}
                                     >
                                         {edited ? (
                                             <TextField
                                                 required
-                                                name={
-                                                    "content_" +
-                                                    String(category.id) +
-                                                    "filteredContent_" +
-                                                    String(category.filtered_id)
+                                                value={item.label}
+                                                onChange={(e) =>
+                                                    handleLabelChange(
+                                                        index,
+                                                        e.target.value,
+                                                    )
                                                 }
-                                                value={contentValues[index]}
-                                                onChange={handleCategoryChange(
-                                                    index,
-                                                )}
                                                 InputProps={{
                                                     style: {
-                                                        height: "36px", // TextField自体の高さ
-                                                        padding: "0", // パディング調整
+                                                        height: "36px",
+                                                        padding: "0",
                                                     },
                                                 }}
                                             />
                                         ) : (
-                                            category.label
+                                            item.label
                                         )}
                                     </TableCell>
                                     <TableCell align="center">
                                         {edited ? (
                                             <FormControl fullWidth>
                                                 <Select
-                                                    value={iconValues[index]}
-                                                    name={
-                                                        "icon_" +
-                                                        String(category.id) +
-                                                        "filteredIcon_" +
-                                                        String(
-                                                            category.filtered_id,
+                                                    value={item.icon}
+                                                    onChange={(
+                                                        e: SelectChangeEvent<string>,
+                                                    ) =>
+                                                        handleIconChange(
+                                                            index,
+                                                            e.target.value,
                                                         )
                                                     }
-                                                    onChange={handleIconChange(
-                                                        index,
-                                                    )}
                                                     style={{ height: "36px" }}
                                                 >
                                                     {(type === "expense"
                                                         ? expenseMuiIcons
                                                         : incomeMuiIcons
                                                     ).map(
-                                                        (
-                                                            categoryIcon,
-                                                            index,
-                                                        ) => {
-                                                            return (
-                                                                <MenuItem
-                                                                    key={index}
-                                                                    value={
-                                                                        categoryIcon
-                                                                    }
-                                                                >
-                                                                    <ListItemIcon>
-                                                                        <DynamicIcon
-                                                                            iconName={
-                                                                                categoryIcon
-                                                                            }
-                                                                            fontSize="medium"
-                                                                        />
-                                                                    </ListItemIcon>
-                                                                </MenuItem>
-                                                            );
-                                                        },
+                                                        (categoryIcon) => (
+                                                            <MenuItem
+                                                                key={categoryIcon}
+                                                                value={categoryIcon}
+                                                            >
+                                                                <ListItemIcon>
+                                                                    <DynamicIcon
+                                                                        iconName={
+                                                                            categoryIcon
+                                                                        }
+                                                                        fontSize="medium"
+                                                                    />
+                                                                </ListItemIcon>
+                                                            </MenuItem>
+                                                        ),
                                                     )}
                                                 </Select>
                                             </FormControl>
                                         ) : (
                                             <DynamicIcon
-                                                iconName={category.icon}
+                                                iconName={item.icon}
                                                 fontSize="medium"
                                             />
                                         )}
@@ -451,35 +328,40 @@ const CategoryEditForm = React.memo(
                                 </>
                             );
 
-                            return edited ? (
-                                <SortableItem
-                                    key={category.filtered_id}
-                                    id={category.filtered_id || 0}
-                                >
-                                    {tableRowContent}
-                                </SortableItem>
-                            ) : (
+                            if (edited) {
+                                return (
+                                    <SortableRow key={item.id} id={item.id}>
+                                        {dataCells}
+                                    </SortableRow>
+                                );
+                            }
+
+                            return (
                                 <TableRow
-                                    key={index}
-                                    hover={!edited}
-                                    onClick={(event) => {
-                                        if (!edited) {
-                                            handleClick(
-                                                event,
-                                                category.filtered_id || 0,
-                                            );
-                                        }
-                                    }}
+                                    key={item.id}
+                                    hover
+                                    onClick={(event) =>
+                                        handleClick(event, item.id)
+                                    }
                                     role="checkbox"
                                     aria-checked={isItemSelected}
                                     tabIndex={-1}
                                     selected={isItemSelected}
                                     sx={{
-                                        cursor: edited ? "default" : "pointer",
+                                        cursor: "pointer",
                                         textAlign: "center",
                                     }}
                                 >
-                                    {tableRowContent}
+                                    <TableCell padding="checkbox">
+                                        <Checkbox
+                                            color="primary"
+                                            checked={isItemSelected}
+                                            inputProps={{
+                                                "aria-labelledby": labelId,
+                                            }}
+                                        />
+                                    </TableCell>
+                                    {dataCells}
                                 </TableRow>
                             );
                         })}

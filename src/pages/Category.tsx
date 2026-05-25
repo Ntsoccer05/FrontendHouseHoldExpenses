@@ -15,7 +15,16 @@ import Tooltip from "@mui/material/Tooltip";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
-import { Button, ButtonGroup } from "@mui/material";
+import CancelIcon from "@mui/icons-material/Cancel";
+import {
+    Button,
+    ButtonGroup,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+} from "@mui/material";
 import { Stack } from "@mui/material";
 import { CategoryItem, TransactionType } from "../types";
 import { useEffect, useState } from "react";
@@ -103,14 +112,20 @@ function Category() {
     const [selected, setSelected] = useState<readonly number[]>([]);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [added, setAdded] = useState(false);
-    const [deleted, setDeleted] = useState(false);
 
     const numSelected = selected.length;
     const [edited, setEdited] = useState<boolean>(false);
     const [type, setType] = useState<TransactionType>("expense");
 
     const onUpdateCategories = () => {
-        setEdited(!edited);
+        if (edited) {
+            setIsSaving(true);
+            setHasSortChanged(false);
+            setEdited(false);
+        } else {
+            setHasSortChanged(false);
+            setEdited(true);
+        }
     };
 
     const handleSelectAllClick = (
@@ -119,7 +134,7 @@ function Category() {
         if (!edited) {
             if (event.target.checked) {
                 const newSelected =
-                    categories && categories.map((n) => n.filtered_id);
+                    categories && categories.map((n) => n.id);
                 setSelected(newSelected as number[]);
                 return;
             }
@@ -140,9 +155,19 @@ function Category() {
             filtered_id: 0,
         },
     ]);
-    const [swichedCategory, setSwichedCategory] = useState<boolean>(false);
 
     const [initialized, setInitialized] = useState<boolean>(false);
+
+    // タブ切り替え確認ダイアログ
+    const [switchDialogOpen, setSwitchDialogOpen] = useState(false);
+    const [pendingType, setPendingType] = useState<TransactionType | null>(null);
+
+    // 並び替えの保存フラグ（true = 保存ボタン押下、false = キャンセル）
+    const [isSaving, setIsSaving] = useState(false);
+    // 未保存の並び替え変更があるか
+    const [hasSortChanged, setHasSortChanged] = useState(false);
+    // キャンセル確認ダイアログ
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
     // モバイル用Drawerを閉じる処理
     const handleCloseMobileDrawer = () => {
@@ -153,50 +178,87 @@ function Category() {
         if (ExpenseCategories && !initialized) {
             if (ExpenseCategories.length > 0) {
                 setCategories(ExpenseCategories);
-                setInitialized((prevState) => (prevState = true));
+                setInitialized(true);
             }
         }
-    }, [ExpenseCategories]);
+    }, [ExpenseCategories, initialized]);
     useEffect(() => {
         if (type === "expense") {
             setCategories(ExpenseCategories);
         } else {
             setCategories(IncomeCategories);
         }
-    }, [ExpenseCategories, IncomeCategories]);
+    }, [ExpenseCategories, IncomeCategories, type]);
 
-    // 収支タイプを切り替える関数
-    const incomeExpenseToggle = (type: IncomeExpense) => {
-        setSwichedCategory(false);
-        // formのvalueに値をセット
-        setType(type);
-        //セレクトボックスクリア
+    // 収支タイプを切り替える（内部実装）
+    const doSwitchType = (nextType: IncomeExpense) => {
+        setType(nextType);
         setSelected([]);
         const newCategories =
-            type === "expense" ? ExpenseCategories : IncomeCategories;
+            nextType === "expense" ? ExpenseCategories : IncomeCategories;
         setCategories(newCategories);
-        edited && setEdited(false);
+        setEdited(false);
+        setHasSortChanged(false);
     };
 
-    //収支タイプに応じたカテゴリを取得
-    useEffect(() => {
-        setSwichedCategory(true);
-    }, [type]);
+    // 収支タイプを切り替える関数（編集中の場合は確認ダイアログを表示）
+    const incomeExpenseToggle = (nextType: IncomeExpense) => {
+        if (nextType === type) return;
+        if (edited) {
+            setPendingType(nextType);
+            setSwitchDialogOpen(true);
+            return;
+        }
+        doSwitchType(nextType);
+    };
+
+    // 確認ダイアログで「切り替える」を選択
+    const handleSwitchConfirm = () => {
+        setSwitchDialogOpen(false);
+        if (pendingType) doSwitchType(pendingType);
+        setPendingType(null);
+    };
+
+    // 確認ダイアログでキャンセル
+    const handleSwitchCancel = () => {
+        setSwitchDialogOpen(false);
+        setPendingType(null);
+    };
+
+    // キャンセルボタン押下
+    const handleCancelEdit = () => {
+        if (hasSortChanged) {
+            setCancelDialogOpen(true);
+        } else {
+            setEdited(false);
+        }
+    };
+
+    // キャンセル確認ダイアログで「破棄する」
+    const handleCancelConfirm = () => {
+        setCancelDialogOpen(false);
+        setHasSortChanged(false);
+        setEdited(false);
+    };
+
+    // キャンセル確認ダイアログを閉じる（編集継続）
+    const handleCancelClose = () => {
+        setCancelDialogOpen(false);
+    };
 
     //削除処理
     const onDeleteCategories = async () => {
         if (selected.length > 0) {
-            const tgtCategories = categories?.filter((category, index) => {
-                return selected.includes(category.filtered_id as number);
+            const tgtCategories = categories?.filter((category) => {
+                return selected.includes(category.id as number);
             }) as CategoryItem[];
             await deleteCategories(tgtCategories, type);
             setSelected([]);
-            setDeleted(true);
         }
     };
 
     const openAddCategoryForm = () => {
-        isMobile && setIsMobileDrawerOpen(true);
+        if (isMobile) setIsMobileDrawerOpen(true);
     };
 
     return (
@@ -285,39 +347,58 @@ function Category() {
                                     </Box>
                                     {numSelected > 0 ? (
                                         <Box textAlign="center">
-                                        <IconButton onClick={onDeleteCategories} sx={{flexDirection: "column"}}>
-                                            <DeleteIcon />
-                                            <Typography variant="caption">削除</Typography>
-                                        </IconButton>
+                                            <IconButton onClick={onDeleteCategories} sx={{ flexDirection: "column" }}>
+                                                <DeleteIcon />
+                                                <Typography variant="caption">削除</Typography>
+                                            </IconButton>
                                         </Box>
                                     ) : (
-                                        <Box textAlign="center">
-                                        <IconButton onClick={onUpdateCategories} sx={{flexDirection: "column"}}>
-                                            {edited ? <SaveIcon /> : <EditIcon />}
-                                            <Typography variant="caption">{edited ? "保存" : "編集"}</Typography>
-                                        </IconButton>
+                                        <Box display="flex" gap={1}>
+                                            {edited && (
+                                                <Box textAlign="center">
+                                                    <IconButton onClick={handleCancelEdit} sx={{ flexDirection: "column" }}>
+                                                        <CancelIcon />
+                                                        <Typography variant="caption" sx={{ whiteSpace: "nowrap" }}>キャンセル</Typography>
+                                                    </IconButton>
+                                                </Box>
+                                            )}
+                                            <Box textAlign="center">
+                                                <IconButton onClick={onUpdateCategories} sx={{ flexDirection: "column" }}>
+                                                    {edited ? <SaveIcon /> : <EditIcon />}
+                                                    <Typography variant="caption">{edited ? "保存" : "編集"}</Typography>
+                                                </IconButton>
+                                            </Box>
                                         </Box>
-                                        )}
+                                    )}
                                 </Box>
                                 ) : (
                                 <>
                                     <Tooltip title="追加">
                                         <IconButton onClick={openAddCategoryForm}>
-                                        <AddIcon />
+                                            <AddIcon />
                                         </IconButton>
                                     </Tooltip>
                                     {numSelected > 0 ? (
                                         <Tooltip title="削除">
-                                        <IconButton onClick={onDeleteCategories}>
-                                            <DeleteIcon />
-                                        </IconButton>
+                                            <IconButton onClick={onDeleteCategories}>
+                                                <DeleteIcon />
+                                            </IconButton>
                                         </Tooltip>
                                     ) : (
-                                        <Tooltip title={edited ? "保存" : "編集"}>
-                                        <IconButton onClick={onUpdateCategories}>
-                                            {edited ? <SaveIcon /> : <EditIcon />}
-                                        </IconButton>
-                                        </Tooltip>
+                                        <>
+                                            {edited && (
+                                                <Tooltip title="キャンセル">
+                                                    <IconButton onClick={handleCancelEdit}>
+                                                        <CancelIcon />
+                                                    </IconButton>
+                                                </Tooltip>
+                                            )}
+                                            <Tooltip title={edited ? "保存" : "編集"}>
+                                                <IconButton onClick={onUpdateCategories}>
+                                                    {edited ? <SaveIcon /> : <EditIcon />}
+                                                </IconButton>
+                                            </Tooltip>
+                                        </>
                                     )}
                                 </>
                             )}
@@ -339,14 +420,13 @@ function Category() {
                                     type={type}
                                     categories={categories}
                                     selected={selected}
-                                    swichedCategory={swichedCategory}
                                     setSelected={setSelected}
-                                    setCategories={setCategories}
                                     added={added}
-                                    deleted={deleted}
                                     setAdded={setAdded}
                                     setEdited={setEdited}
-                                    setDeleted={setDeleted}
+                                    isSaving={isSaving}
+                                    setIsSaving={setIsSaving}
+                                    onSortChanged={() => setHasSortChanged(true)}
                                 />
                             </Table>
                         </TableContainer>
@@ -363,6 +443,39 @@ function Category() {
                     ></AddCategoryForm>
                 </Box>
             </Box>
+
+            {/* キャンセル確認ダイアログ */}
+            <Dialog open={cancelDialogOpen} onClose={handleCancelClose}>
+                <DialogTitle>変更を破棄しますか？</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        並び替えの変更は保存されません。編集をキャンセルしますか？
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCancelClose}>編集を続ける</Button>
+                    <Button onClick={handleCancelConfirm} color="error" variant="contained">
+                        破棄する
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* 編集中タブ切り替え確認ダイアログ */}
+            <Dialog open={switchDialogOpen} onClose={handleSwitchCancel}>
+                <DialogTitle>編集を破棄しますか？</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        編集中の変更は保存されません。
+                        {pendingType === "income" ? "収入" : "支出"}に切り替えますか？
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleSwitchCancel}>キャンセル</Button>
+                    <Button onClick={handleSwitchConfirm} color="error" variant="contained">
+                        切り替える
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 }
