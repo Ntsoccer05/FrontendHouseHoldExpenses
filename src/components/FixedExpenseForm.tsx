@@ -165,11 +165,11 @@ export const FixedExpenseForm = ({
                                 label="金額"
                                 type="text"
                                 inputMode="numeric"
-                                value={field.value === 0 ? "" : field.value}
+                                value={field.value === 0 ? "" : field.value.toLocaleString()}
                                 error={!!errors.amount}
                                 helperText={errors.amount?.message}
                                 onChange={(e) => {
-                                    const half = toHalfWidth(e.target.value);
+                                    const half = toHalfWidth(e.target.value).replace(/,/g, "");
                                     const num = Number(half);
                                     field.onChange(isNaN(num) ? field.value : num);
                                 }}
