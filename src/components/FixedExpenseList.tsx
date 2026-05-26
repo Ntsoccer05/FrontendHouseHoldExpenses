@@ -381,7 +381,7 @@ export const FixedExpenseList = ({
                 <DialogTitle>削除しますか？</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        この固定費・収益を削除します。過去に登録済みのデータには影響しません。
+                        この固定収支を削除します。
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
@@ -404,7 +404,7 @@ export const FixedExpenseList = ({
                 <DialogTitle>{selectedInView.length}件を削除しますか？</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        選択した固定費・収益を削除します。過去に登録済みのデータには影響しません。
+                        選択した固定収支を削除します。
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>

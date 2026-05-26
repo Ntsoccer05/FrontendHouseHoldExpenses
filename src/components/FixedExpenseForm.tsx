@@ -73,7 +73,9 @@ export const FixedExpenseForm = ({
         defaultValues: { type: "expense", category_id: 0, amount: 0, content: "", fixed_expense_day: 1 },
     });
 
+    const [amountFocused, setAmountFocused] = useState(false);
     const selectedType = watch("type");
+    const amountValue = watch("amount");
     const fixedExpenseDay = watch("fixed_expense_day");
     const showWarning = fixedExpenseDay >= 29;
     const categories = selectedType === "income" ? IncomeCategories : ExpenseCategories;
@@ -104,7 +106,7 @@ export const FixedExpenseForm = ({
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>{editTarget ? "固定費・収益を編集" : "固定費・収益を追加"}</DialogTitle>
+            <DialogTitle>{editTarget ? "固定収支を編集" : "固定収支を追加"}</DialogTitle>
             <DialogContent>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
                     {/* 種別トグル */}
@@ -165,9 +167,15 @@ export const FixedExpenseForm = ({
                                 label="金額"
                                 type="text"
                                 inputMode="numeric"
-                                value={field.value === 0 ? "" : field.value.toLocaleString()}
+                                value={
+                                    amountFocused
+                                        ? (amountValue === 0 ? "" : String(amountValue))
+                                        : (amountValue === 0 ? "" : amountValue.toLocaleString())
+                                }
                                 error={!!errors.amount}
                                 helperText={errors.amount?.message}
+                                onFocus={() => setAmountFocused(true)}
+                                onBlur={() => { setAmountFocused(false); field.onBlur(); }}
                                 onChange={(e) => {
                                     const half = toHalfWidth(e.target.value).replace(/,/g, "");
                                     const num = Number(half);

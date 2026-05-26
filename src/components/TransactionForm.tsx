@@ -602,7 +602,7 @@ const TransactionForm = memo(
                                         )}
                                         {showUnregisterWarning && (
                                             <Typography variant="caption" color="warning.main" sx={{ ml: 4, display: "block" }}>
-                                                保存すると固定収支登録が解除されます
+                                                更新すると固定収支登録が解除されます
                                             </Typography>
                                         )}
                                     </>
