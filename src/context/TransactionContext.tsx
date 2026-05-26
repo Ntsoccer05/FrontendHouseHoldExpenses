@@ -12,6 +12,7 @@ import { useAppContext } from "../context/AppContext";
 import apiClient from "../utils/axios";
 import { useAuthContext } from "./AuthContext";
 import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 
 // コンテキストの型定義
 interface TransactionContext {
@@ -54,6 +55,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
     } = useAppContext();
 
     const { loginUser } = useAuthContext();
+    const queryClient = useQueryClient();
 
     const [monthlyTransactions, setMonthlyTransactions] = useState<
         Transaction[]
@@ -217,11 +219,12 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 // キャッシュを無効化（トランザクションが追加された月）
                 const transactionMonth = format(new Date(transaction.date), "yyyyMM");
                 refreshMonthCache(transactionMonth);
+                queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
             } catch (err) {
                 console.error("Error saving transaction:", err);
             }
         },
-        [addCategoryIcon, loginUser?.id, setMonthlyTransactions, refreshMonthCache]
+        [addCategoryIcon, loginUser?.id, setMonthlyTransactions, refreshMonthCache, queryClient]
     );
 
     // 取引を削除
@@ -250,11 +253,12 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 // キャッシュを無効化（削除が行われた月）
                 const currentMonthFormatted = format(currentMonth, "yyyyMM");
                 refreshMonthCache(currentMonthFormatted);
+                queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
             } catch (err) {
                 console.error("Error deleting transaction(s):", err);
             }
         },
-        [loginUser?.id, setMonthlyTransactions, refreshMonthCache, currentMonth]
+        [loginUser?.id, setMonthlyTransactions, refreshMonthCache, currentMonth, queryClient]
     );
 
     // 複数取引をコピー
@@ -278,12 +282,13 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 if (sourceMonth !== destinationMonth) {
                     await refreshMonthCache(destinationMonth);
                 }
+                queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
             } catch (err) {
                 console.error("一括コピーエラー:", err);
                 throw err;
             }
         },
-        [refreshMonthCache]
+        [refreshMonthCache, queryClient]
     );
 
     // 取引を更新
@@ -311,11 +316,12 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 // キャッシュを無効化（更新が行われた月）
                 const transactionMonth = format(new Date(transaction.date), "yyyyMM");
                 refreshMonthCache(transactionMonth);
+                queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
             } catch (err) {
                 console.error("Error updating transaction:", err);
             }
         },
-        [addCategoryIcon, loginUser?.id, setMonthlyTransactions, refreshMonthCache]
+        [addCategoryIcon, loginUser?.id, setMonthlyTransactions, refreshMonthCache, queryClient]
     );
 
     return (

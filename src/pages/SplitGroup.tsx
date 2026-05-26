@@ -13,7 +13,6 @@ const SplitGroup = () => {
         addSplitGroup,
         editSplitGroup,
         saveSplitGroupSettings,
-        saveCategoryOverrides,
         removeSplitGroup,
     } = useSplitGroupContext();
 
@@ -32,29 +31,28 @@ const SplitGroup = () => {
 
     const handleSubmit = async (
         label: string,
-        settings: { income_other_ratio: number | null; expense_other_ratio: number | null },
+        settings: {
+            income_other_ratio: number | null;
+            income_other_offset: number | null;
+            expense_other_ratio: number | null;
+            expense_other_offset: number | null;
+        },
         overrides: SplitGroupCategoryOverride[]
     ) => {
         if (editTarget) {
             if (label !== editTarget.label) {
                 await editSplitGroup(editTarget.id, { label });
             }
-            await saveSplitGroupSettings(editTarget.id, settings);
-            await saveCategoryOverrides(editTarget.id, overrides);
+            await saveSplitGroupSettings(editTarget.id, { ...settings, overrides });
         } else {
             await addSplitGroup({ label });
             const { splitGroupApi } = await import('../api/splitGroupApi');
             const { data } = await splitGroupApi.getAll();
             const newGroup = data.splitGroups[data.splitGroups.length - 1];
             if (newGroup) {
-                await saveSplitGroupSettings(newGroup.id, settings);
-                await saveCategoryOverrides(newGroup.id, overrides);
+                await saveSplitGroupSettings(newGroup.id, { ...settings, overrides });
             }
         }
-    };
-
-    const handleToggleActive = async (id: number, isActive: boolean) => {
-        await editSplitGroup(id, { is_active: isActive });
     };
 
     return (
@@ -67,14 +65,14 @@ const SplitGroup = () => {
                     mb: 2,
                 }}
             >
-                <Typography variant="h5">分担管理</Typography>
+                <Typography variant="h5">収支分担管理</Typography>
                 <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenAdd}>
                     追加
                 </Button>
             </Box>
 
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                パートナー・ルームメイトなど、月の収支を分担して把握・共有できます。
+                月の収支の分担割合を設定・管理できます。
             </Typography>
 
             {isLoading ? (
@@ -86,7 +84,6 @@ const SplitGroup = () => {
                     splitGroups={splitGroups}
                     onEdit={handleEdit}
                     onDelete={removeSplitGroup}
-                    onToggleActive={handleToggleActive}
                 />
             )}
 

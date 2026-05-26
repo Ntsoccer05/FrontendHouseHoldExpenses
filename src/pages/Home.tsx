@@ -205,15 +205,15 @@ const Home = () => {
                 {/* 左側コンテンツ */}
                 <Box sx={{ flexGrow: 1, fontSize: { xs: "12px", sm: "1em" } }}>
                     <MonthlySummary monthlyTransactions={monthlyTransactions} />
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                    {/* 収支共有ボタン */}
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.5 }}>
                         <Button
                             variant="outlined"
                             size="small"
                             startIcon={<ShareIcon />}
                             onClick={() => setIsShareDialogOpen(true)}
-                            disabled={splitGroups.length === 0}
                         >
-                            共有
+                            収支を共有
                         </Button>
                     </Box>
                     <ShareDialog
@@ -221,18 +221,12 @@ const Home = () => {
                         onClose={() => setIsShareDialogOpen(false)}
                         splitGroups={splitGroups}
                     />
-                    <Grid
-                        item
-                        xs={12}
-                        sx={{
-                            marginBottom: { xs: "13px", sm: 0 },
-                        }}
-                    >
-                        {/* 日付選択エリア */}
+                    {/* 年月選択 */}
+                    <Box sx={{ marginBottom: { xs: "13px", sm: 0 } }}>
                         <ChangeCalendarMonth
                             calendarRef={calendarRef.current as FullCalendar}
                         />
-                    </Grid>
+                    </Box>
                     <Box
                         sx={{
                             // モバイル: 親の p:2 (=16px) を負マージンで打ち消して横幅いっぱいに表示

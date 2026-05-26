@@ -1,16 +1,24 @@
 import React, { useState } from "react";
-import { Alert, Box, Button, CircularProgress, Typography } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, Tooltip, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import { FixedExpenseList } from "../components/FixedExpenseList";
 import { FixedExpenseForm } from "../components/FixedExpenseForm";
 import { useFixedExpenseContext } from "../context/FixedExpenseContext";
 import type { FixedExpense as FixedExpenseType, FixedExpenseFormData } from "../types";
 
+const LIMIT = 10;
+
 const FixedExpense = () => {
     const { fixedExpenses, isLoading, addFixedExpense, editFixedExpense, removeFixedExpense, bulkRemoveFixedExpenses } =
         useFixedExpenseContext();
     const [formOpen, setFormOpen] = useState(false);
     const [editTarget, setEditTarget] = useState<FixedExpenseType | null>(null);
+    const [activeTab, setActiveTab] = useState<"expense" | "income">("expense");
+
+    const expenseCount = fixedExpenses.filter((e) => e.type_id !== 1).length;
+    const incomeCount = fixedExpenses.filter((e) => e.type_id === 1).length;
+    const currentCount = activeTab === "expense" ? expenseCount : incomeCount;
+    const isAtLimit = currentCount >= LIMIT;
 
     const handleOpenAdd = () => {
         setEditTarget(null);
@@ -53,13 +61,18 @@ const FixedExpense = () => {
                 }}
             >
                 <Typography variant="h5">固定収支管理</Typography>
-                <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={handleOpenAdd}
-                >
-                    追加
-                </Button>
+                <Tooltip title={isAtLimit ? `${activeTab === "expense" ? "支出" : "収入"}は${LIMIT}件まで登録できます` : ""}>
+                    <span>
+                        <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={handleOpenAdd}
+                            disabled={isAtLimit}
+                        >
+                            追加 ({currentCount}/{LIMIT})
+                        </Button>
+                    </span>
+                </Tooltip>
             </Box>
             <Alert severity="info" variant="outlined" sx={{ mb: 2 }}>
                 有効な固定収支は毎月1日10:00に自動で家計簿に登録されます
@@ -75,6 +88,8 @@ const FixedExpense = () => {
                     onDelete={removeFixedExpense}
                     onToggleActive={handleToggleActive}
                     onBulkDelete={bulkRemoveFixedExpenses}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
                 />
             )}
             <FixedExpenseForm

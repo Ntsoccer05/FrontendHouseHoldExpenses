@@ -142,7 +142,9 @@ export interface SplitGroup {
 
 export interface SplitGroupSetting {
     income_other_ratio: number | null;
+    income_other_offset: number | null;
     expense_other_ratio: number | null;
+    expense_other_offset: number | null;
 }
 
 export interface SplitGroupCategoryOverride {
@@ -164,6 +166,7 @@ export interface SplitPreview {
         other: number;
         self_ratio: number;
         other_ratio: number;
+        other_offset: number | null;
     };
     expense?: {
         total: number;
@@ -171,6 +174,7 @@ export interface SplitPreview {
         other: number;
         self_ratio: number;
         other_ratio: number;
+        other_offset: number | null;
     };
     balance?: {
         total: number;

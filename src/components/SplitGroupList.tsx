@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Box,
-    Chip,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+    Divider,
     IconButton,
     Paper,
-    Switch,
+    Stack,
     Table,
     TableBody,
     TableCell,
@@ -21,20 +27,37 @@ interface SplitGroupListProps {
     splitGroups: SplitGroup[];
     onEdit: (group: SplitGroup) => void;
     onDelete: (id: number) => Promise<void>;
-    onToggleActive: (id: number, isActive: boolean) => Promise<void>;
 }
 
-const ratioLabel = (ratio: number | null | undefined): string => {
+const ratioLabel = (ratio: number | null | undefined, offset: number | null | undefined): string => {
     if (ratio == null) return '未設定';
-    return `${100 - ratio}% / ${ratio}%`;
+    const base = `${ratio}%`;
+    if (!offset) return base;
+    const sign = offset > 0 ? '+' : '';
+    return `${base} (${sign}${offset.toLocaleString('ja-JP')} 円)`;
 };
 
 export const SplitGroupList = ({
     splitGroups,
     onEdit,
     onDelete,
-    onToggleActive,
 }: SplitGroupListProps) => {
+    const [confirmTarget, setConfirmTarget] = useState<SplitGroup | null>(null);
+
+    const handleDeleteClick = (group: SplitGroup) => {
+        setConfirmTarget(group);
+    };
+
+    const handleConfirm = async () => {
+        if (!confirmTarget) return;
+        await onDelete(confirmTarget.id);
+        setConfirmTarget(null);
+    };
+
+    const handleCancel = () => {
+        setConfirmTarget(null);
+    };
+
     if (splitGroups.length === 0) {
         return (
             <Typography color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
@@ -44,61 +67,96 @@ export const SplitGroupList = ({
     }
 
     return (
-        <TableContainer component={Paper} sx={{ mt: 2 }}>
-            <Table size="small">
-                <TableHead>
-                    <TableRow>
-                        <TableCell>グループ名</TableCell>
-                        <TableCell>収入（自分/グループ）</TableCell>
-                        <TableCell>支出（自分/グループ）</TableCell>
-                        <TableCell>有効</TableCell>
-                        <TableCell align="right">操作</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {splitGroups.map((group) => (
-                        <TableRow key={group.id}>
-                            <TableCell>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    {group.label}
-                                    {group.category_overrides.length > 0 && (
-                                        <Chip
-                                            label={`カテゴリ設定 ${group.category_overrides.length}件`}
-                                            size="small"
-                                            variant="outlined"
-                                        />
-                                    )}
-                                </Box>
-                            </TableCell>
-                            <TableCell>
-                                {ratioLabel(group.setting?.income_other_ratio)}
-                            </TableCell>
-                            <TableCell>
-                                {ratioLabel(group.setting?.expense_other_ratio)}
-                            </TableCell>
-                            <TableCell>
-                                <Switch
-                                    checked={group.is_active}
-                                    onChange={(e) => onToggleActive(group.id, e.target.checked)}
-                                    size="small"
-                                />
-                            </TableCell>
-                            <TableCell align="right">
+        <>
+            {/* SP: カード表示 */}
+            <Box sx={{ display: { xs: 'flex', md: 'none' }, flexDirection: 'column', gap: 1.5, mt: 2 }}>
+                {splitGroups.map((group) => (
+                    <Paper key={group.id} variant="outlined" sx={{ p: 1.5 }}>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between">
+                            <Typography fontWeight="bold" fontSize="0.95rem">
+                                {group.label}
+                            </Typography>
+                            <Stack direction="row" alignItems="center" spacing={0.5}>
                                 <IconButton size="small" onClick={() => onEdit(group)}>
                                     <EditIcon fontSize="small" />
                                 </IconButton>
-                                <IconButton
-                                    size="small"
-                                    color="error"
-                                    onClick={() => onDelete(group.id)}
-                                >
+                                <IconButton size="small" color="error" onClick={() => handleDeleteClick(group)}>
                                     <DeleteIcon fontSize="small" />
                                 </IconButton>
-                            </TableCell>
+                            </Stack>
+                        </Stack>
+                        <Divider sx={{ my: 1 }} />
+                        <Stack direction="row" spacing={2}>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="caption" color="text.secondary">収入</Typography>
+                                <Typography variant="body2" fontSize="0.8rem">
+                                    {ratioLabel(group.setting?.income_other_ratio, group.setting?.income_other_offset)}
+                                </Typography>
+                            </Box>
+                            <Box sx={{ flex: 1 }}>
+                                <Typography variant="caption" color="text.secondary">支出</Typography>
+                                <Typography variant="body2" fontSize="0.8rem">
+                                    {ratioLabel(group.setting?.expense_other_ratio, group.setting?.expense_other_offset)}
+                                </Typography>
+                            </Box>
+                        </Stack>
+                    </Paper>
+                ))}
+            </Box>
+
+            {/* PC: テーブル表示 */}
+            <TableContainer component={Paper} sx={{ display: { xs: 'none', md: 'block' }, mt: 2 }}>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell sx={{ fontWeight: 'bold' }}>グループ名</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>収入</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold' }}>支出</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>操作</TableCell>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                        {splitGroups.map((group) => (
+                            <TableRow key={group.id}>
+                                <TableCell>{group.label}</TableCell>
+                                <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                    {ratioLabel(group.setting?.income_other_ratio, group.setting?.income_other_offset)}
+                                </TableCell>
+                                <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                                    {ratioLabel(group.setting?.expense_other_ratio, group.setting?.expense_other_offset)}
+                                </TableCell>
+                                <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                                    <IconButton size="small" onClick={() => onEdit(group)}>
+                                        <EditIcon fontSize="small" />
+                                    </IconButton>
+                                    <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleDeleteClick(group)}
+                                    >
+                                        <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+
+            <Dialog open={!!confirmTarget} onClose={handleCancel}>
+                <DialogTitle>分担グループの削除</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        「{confirmTarget?.label}」を削除しますか？この操作は元に戻せません。
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCancel}>キャンセル</Button>
+                    <Button onClick={handleConfirm} color="error" variant="contained">
+                        削除
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
     );
 };

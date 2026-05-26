@@ -49,7 +49,7 @@ const Sidebar = ({
         { text: "レポート", path: "/report", icon: EqualizerIcon },
         { text: "カテゴリ編集", path: "/category", icon: CategoryIcon },
         { text: "固定収支管理", path: "/fixed-expenses", icon: RepeatIcon },
-        { text: "分担管理", path: "/split-groups", icon: GroupsIcon },
+        { text: "収支分担管理", path: "/split-groups", icon: GroupsIcon },
     ];
 
     const LogoutItems = [{ text: "ログアウト", icon: LockOutlinedIcon }];

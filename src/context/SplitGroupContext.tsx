@@ -6,28 +6,27 @@ import React, {
     useState,
     useCallback,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { SplitGroup, SplitGroupCategoryOverride, SplitGroupFormData } from '../types';
 import { splitGroupApi } from '../api/splitGroupApi';
 import { useAuthContext } from './AuthContext';
 import { useAppContext } from './AppContext';
+
+interface SplitGroupSettings {
+    income_other_ratio: number | null;
+    income_other_offset: number | null;
+    expense_other_ratio: number | null;
+    expense_other_offset: number | null;
+    overrides?: SplitGroupCategoryOverride[];
+}
 
 interface SplitGroupContextType {
     splitGroups: SplitGroup[];
     isLoading: boolean;
     fetchSplitGroups: () => Promise<void>;
     addSplitGroup: (data: SplitGroupFormData) => Promise<void>;
-    editSplitGroup: (
-        id: number,
-        data: Partial<SplitGroupFormData> & { is_active?: boolean }
-    ) => Promise<void>;
-    saveSplitGroupSettings: (
-        id: number,
-        data: { income_other_ratio: number | null; expense_other_ratio: number | null }
-    ) => Promise<void>;
-    saveCategoryOverrides: (
-        id: number,
-        overrides: SplitGroupCategoryOverride[]
-    ) => Promise<void>;
+    editSplitGroup: (id: number, data: Partial<SplitGroupFormData>) => Promise<void>;
+    saveSplitGroupSettings: (id: number, data: SplitGroupSettings) => Promise<void>;
     removeSplitGroup: (id: number) => Promise<void>;
 }
 
@@ -36,6 +35,7 @@ const SplitGroupContext = createContext<SplitGroupContextType | undefined>(undef
 export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
     const { loginUser } = useAuthContext();
     const { showSnackBar } = useAppContext();
+    const queryClient = useQueryClient();
     const [splitGroups, setSplitGroups] = useState<SplitGroup[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -69,11 +69,12 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
     );
 
     const editSplitGroup = useCallback(
-        async (id: number, data: Partial<SplitGroupFormData> & { is_active?: boolean }) => {
+        async (id: number, data: Partial<SplitGroupFormData>) => {
             if (!loginUser) return;
             try {
                 await splitGroupApi.update(id, data);
                 showSnackBar({ title: '成功', bodyText: '分担グループを更新しました' });
+                queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
                 await fetchSplitGroups();
             } catch {
                 showSnackBar({
@@ -83,18 +84,16 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
                 });
             }
         },
-        [loginUser, showSnackBar, fetchSplitGroups]
+        [loginUser, showSnackBar, fetchSplitGroups, queryClient]
     );
 
     const saveSplitGroupSettings = useCallback(
-        async (
-            id: number,
-            data: { income_other_ratio: number | null; expense_other_ratio: number | null }
-        ) => {
+        async (id: number, data: SplitGroupSettings) => {
             if (!loginUser) return;
             try {
                 await splitGroupApi.updateSettings(id, data);
                 showSnackBar({ title: '成功', bodyText: '設定を保存しました' });
+                queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
                 await fetchSplitGroups();
             } catch {
                 showSnackBar({
@@ -104,25 +103,7 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
                 });
             }
         },
-        [loginUser, showSnackBar, fetchSplitGroups]
-    );
-
-    const saveCategoryOverrides = useCallback(
-        async (id: number, overrides: SplitGroupCategoryOverride[]) => {
-            if (!loginUser) return;
-            try {
-                await splitGroupApi.updateCategoryOverrides(id, overrides);
-                showSnackBar({ title: '成功', bodyText: 'カテゴリ別設定を保存しました' });
-                await fetchSplitGroups();
-            } catch {
-                showSnackBar({
-                    title: 'エラー',
-                    bodyText: 'カテゴリ別設定の保存に失敗しました',
-                    backgroundColor: '#d32f2f',
-                });
-            }
-        },
-        [loginUser, showSnackBar, fetchSplitGroups]
+        [loginUser, showSnackBar, fetchSplitGroups, queryClient]
     );
 
     const removeSplitGroup = useCallback(
@@ -131,6 +112,7 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
             try {
                 await splitGroupApi.remove(id);
                 showSnackBar({ title: '成功', bodyText: '分担グループを削除しました' });
+                queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
                 await fetchSplitGroups();
             } catch {
                 showSnackBar({
@@ -140,7 +122,7 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
                 });
             }
         },
-        [loginUser, showSnackBar, fetchSplitGroups]
+        [loginUser, showSnackBar, fetchSplitGroups, queryClient]
     );
 
     useEffect(() => {
@@ -157,7 +139,6 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
                 addSplitGroup,
                 editSplitGroup,
                 saveSplitGroupSettings,
-                saveCategoryOverrides,
                 removeSplitGroup,
             }}
         >

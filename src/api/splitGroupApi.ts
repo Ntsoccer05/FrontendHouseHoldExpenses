@@ -6,6 +6,14 @@ import type {
     SplitPreview,
 } from '../types';
 
+interface SplitGroupSettings {
+    income_other_ratio: number | null;
+    income_other_offset: number | null;
+    expense_other_ratio: number | null;
+    expense_other_offset: number | null;
+    overrides?: SplitGroupCategoryOverride[];
+}
+
 export const splitGroupApi = {
     getAll: () =>
         apiClient.get<{ status: number; splitGroups: SplitGroup[] }>('/split-groups'),
@@ -19,24 +27,10 @@ export const splitGroupApi = {
     remove: (id: number) =>
         apiClient.delete(`/split-groups/${id}`),
 
-    updateSettings: (
-        id: number,
-        data: { income_other_ratio: number | null; expense_other_ratio: number | null }
-    ) =>
+    updateSettings: (id: number, data: SplitGroupSettings) =>
         apiClient.put<{ status: number; splitGroup: SplitGroup }>(
             `/split-groups/${id}/settings`,
             data
-        ),
-
-    getCategoryOverrides: (id: number) =>
-        apiClient.get<{ status: number; categoryOverrides: SplitGroupCategoryOverride[] }>(
-            `/split-groups/${id}/category-overrides`
-        ),
-
-    updateCategoryOverrides: (id: number, overrides: SplitGroupCategoryOverride[]) =>
-        apiClient.put<{ status: number; categoryOverrides: SplitGroupCategoryOverride[] }>(
-            `/split-groups/${id}/category-overrides`,
-            { overrides }
         ),
 
     getPreview: (id: number, month: string) =>
