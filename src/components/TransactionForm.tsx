@@ -65,7 +65,7 @@ const TransactionForm = memo(
             useAppContext();
         const { onSaveTransaction, onDeleteTransaction, onUpdateTransaction } =
             useTransactionContext();
-        const { addFixedExpense } = useFixedExpenseContext();
+        const { addFixedExpense, editFixedExpense } = useFixedExpenseContext();
         const formWidth = 320;
         const [categories, setCategories] = useState<
             CategoryItem[] | undefined
@@ -201,6 +201,10 @@ const TransactionForm = memo(
                             });
                         }
                     }
+                    // 固定収支チェックがオフになり fixedExpenseId がある場合は無効化
+                    if (!data.isFixedExpense && selectedTransaction.isFixedExpense && selectedTransaction.fixedExpenseId) {
+                        await editFixedExpense(selectedTransaction.fixedExpenseId, { is_active: false });
+                    }
                     setSelectedTransaction(null);
                     showSnackBar({
                         title: "更新完了",
@@ -220,6 +224,11 @@ const TransactionForm = memo(
                 }
             } catch (error) {
                 console.error(error);
+                showSnackBar({
+                    title: "エラー",
+                    bodyText: "保存中にエラーが発生しました。",
+                    backgroundColor: "#d32f2f"
+                });
             }
             //reset()でフォームフィールドの内容を引数の値でリセット
             reset({
@@ -593,6 +602,8 @@ const TransactionForm = memo(
                             control={control}
                             render={({ field }) => {
                                 const isAlreadyRegistered = selectedTransaction?.isFixedExpense === true;
+                                const canUnregister = isAlreadyRegistered && !!selectedTransaction?.fixedExpenseId;
+                                const showUnregisterWarning = isAlreadyRegistered && !field.value;
                                 return (
                                     <>
                                         <FormControlLabel
@@ -600,14 +611,19 @@ const TransactionForm = memo(
                                                 <Checkbox
                                                     checked={!!field.value}
                                                     onChange={(e) => field.onChange(e.target.checked)}
-                                                    disabled={isAlreadyRegistered}
+                                                    disabled={isAlreadyRegistered && !canUnregister}
                                                 />
                                             }
                                             label="固定収支として登録（毎月自動複製）"
                                         />
-                                        {isAlreadyRegistered && (
+                                        {isAlreadyRegistered && !showUnregisterWarning && (
                                             <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: "block" }}>
                                                 固定収支として登録済みです
+                                            </Typography>
+                                        )}
+                                        {showUnregisterWarning && (
+                                            <Typography variant="caption" color="warning.main" sx={{ ml: 4, display: "block" }}>
+                                                保存すると固定収支登録が解除されます
                                             </Typography>
                                         )}
                                     </>
