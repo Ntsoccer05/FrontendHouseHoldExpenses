@@ -32,10 +32,12 @@
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-H4VSJYD979', {
-        send_page_view: false
-      });
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        gtag('js', new Date());
+        gtag('config', 'G-H4VSJYD979', {
+          send_page_view: false
+        });
+      }
     </script>
   </head>
   <body>
