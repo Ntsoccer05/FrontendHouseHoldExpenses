@@ -206,7 +206,7 @@ const Home = () => {
                 <Box sx={{ flexGrow: 1, fontSize: { xs: "12px", sm: "1em" } }}>
                     <MonthlySummary monthlyTransactions={monthlyTransactions} />
                     {/* 収支共有ボタン */}
-                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.5 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: { xs: -0.5, sm: 0.5 } }}>
                         <Button
                             variant="outlined"
                             size="small"

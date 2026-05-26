@@ -107,7 +107,7 @@ const buildTotalsShareText = (
     const monthLabel = `${year}年${parseInt(month.substring(4, 6))}月`;
     const lines: string[] = [
         `${monthLabel}の家計まとめ`,
-        '─────────────────────',
+        '───────────',
     ];
     if (showIncome) {
         lines.push(`収入：${formatAmount(income)}`);
@@ -121,7 +121,7 @@ const buildTotalsShareText = (
         lines.push(`残高：${formatAmount(income - expense)}`);
         lines.push('');
     }
-    lines.push('─────────────────────');
+    lines.push('───────────');
     lines.push('#カケポン家計簿');
     return lines.join('\n');
 };
