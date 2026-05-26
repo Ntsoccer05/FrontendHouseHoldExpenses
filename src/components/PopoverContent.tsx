@@ -49,9 +49,10 @@ export const PopoverContent = ({
             open={Boolean(anchorEl)}
             anchorEl={anchorEl}
             onClose={onPopoverClose}
-            sx={{ top: "50px", left: isMobile ? "0px" :"120px" }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: isMobile ? 'right' : 'left' }}
+            transformOrigin={{ vertical: 'top', horizontal: isMobile ? 'right' : 'left' }}
         >
-            <Grid container direction="column" sx={{ width: isMobile ? "100%" : "250px" }}>
+            <Grid container direction="column" sx={{ width: isMobile ? "min(280px, calc(100vw - 32px))" : "250px" }}>
                 {/* 検索ボックス */}
                 <Paper
                     className="searchText"
