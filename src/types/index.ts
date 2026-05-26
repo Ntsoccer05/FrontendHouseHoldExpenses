@@ -135,7 +135,6 @@ export interface FixedExpenseFormData {
 export interface SplitGroup {
     id: number;
     label: string;
-    is_active: boolean;
     setting: SplitGroupSetting | null;
     category_overrides: SplitGroupCategoryOverride[];
 }
@@ -164,21 +163,15 @@ export interface SplitPreview {
         total: number;
         self: number;
         other: number;
-        self_ratio: number;
-        other_ratio: number;
-        other_offset: number | null;
     };
     expense?: {
         total: number;
         self: number;
         other: number;
-        self_ratio: number;
-        other_ratio: number;
-        other_offset: number | null;
     };
     balance?: {
         total: number;
-        self: number;
-        other: number;
+        self?: number;
+        other?: number;
     };
 }

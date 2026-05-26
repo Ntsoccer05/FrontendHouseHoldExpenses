@@ -24,11 +24,9 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import IosShareIcon from '@mui/icons-material/IosShare';
 import { format, subMonths } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
-import type { SplitGroup, SplitPreview, Transaction } from '../types';
+import type { SplitGroup, SplitGroupSetting, SplitPreview } from '../types';
 import { splitGroupApi } from '../api/splitGroupApi';
 import { useAppContext } from '../context/AppContext';
-import { useAuthContext } from '../context/AuthContext';
-import apiClient from '../utils/axios';
 
 interface ShareDialogProps {
     open: boolean;
@@ -44,6 +42,7 @@ type SharePrefs = {
     showIncome?: boolean;
     showExpense?: boolean;
     showBalance?: boolean;
+    showRatio?: boolean;
 };
 
 const loadPrefs = (): SharePrefs => {
@@ -57,11 +56,23 @@ const savePrefs = (prefs: SharePrefs) => {
 const formatAmount = (amount: number): string =>
     amount.toLocaleString('ja-JP') + ' 円';
 
+const buildRatioNote = (ratio: number, offset?: number | null): string => {
+    let note = `（${ratio}%`;
+    if (offset != null && offset !== 0) {
+        const sign = offset > 0 ? '+' : '';
+        note += ` ${sign}${offset.toLocaleString('ja-JP')}円`;
+    }
+    note += '）';
+    return note;
+};
+
 const buildShareText = (
     preview: SplitPreview,
     showIncome: boolean,
     showExpense: boolean,
-    showBalance: boolean
+    showBalance: boolean,
+    showRatio: boolean,
+    setting: SplitGroupSetting | null | undefined
 ): string => {
     const [year, monthStr] = preview.month.split('-');
     const monthLabel = `${year}年${parseInt(monthStr)}月`;
@@ -72,11 +83,16 @@ const buildShareText = (
 
     if (showIncome) {
         if (preview.income) {
-            const incOffset = preview.income.other_offset;
             lines.push(`収入：${formatAmount(preview.income.total)}`);
-            lines.push(`  自分：${formatAmount(preview.income.self)}（${preview.income.self_ratio}%）`);
-            lines.push(`  ${preview.group_label}：${formatAmount(preview.income.other)}（${preview.income.other_ratio}%）`);
-            if (incOffset) lines.push(`    調整：${incOffset > 0 ? '+' : ''}${incOffset.toLocaleString('ja-JP')} 円`);
+            if (showRatio && setting?.income_other_ratio != null) {
+                const otherRatio = setting.income_other_ratio;
+                const selfRatio  = 100 - otherRatio;
+                lines.push(`  自分：${formatAmount(preview.income.self)}${buildRatioNote(selfRatio)}`);
+                lines.push(`  ${preview.group_label}：${formatAmount(preview.income.other)}${buildRatioNote(otherRatio, setting.income_other_offset)}`);
+            } else {
+                lines.push(`  自分：${formatAmount(preview.income.self)}`);
+                lines.push(`  ${preview.group_label}：${formatAmount(preview.income.other)}`);
+            }
         } else {
             lines.push(`収入：${formatAmount(0)}`);
         }
@@ -85,11 +101,16 @@ const buildShareText = (
 
     if (showExpense) {
         if (preview.expense) {
-            const expOffset = preview.expense.other_offset;
             lines.push(`支出：${formatAmount(preview.expense.total)}`);
-            lines.push(`  自分：${formatAmount(preview.expense.self)}（${preview.expense.self_ratio}%）`);
-            lines.push(`  ${preview.group_label}：${formatAmount(preview.expense.other)}（${preview.expense.other_ratio}%）`);
-            if (expOffset) lines.push(`    調整：${expOffset > 0 ? '+' : ''}${expOffset.toLocaleString('ja-JP')} 円`);
+            if (showRatio && setting?.expense_other_ratio != null) {
+                const otherRatio = setting.expense_other_ratio;
+                const selfRatio  = 100 - otherRatio;
+                lines.push(`  自分：${formatAmount(preview.expense.self)}${buildRatioNote(selfRatio)}`);
+                lines.push(`  ${preview.group_label}：${formatAmount(preview.expense.other)}${buildRatioNote(otherRatio, setting.expense_other_offset)}`);
+            } else {
+                lines.push(`  自分：${formatAmount(preview.expense.self)}`);
+                lines.push(`  ${preview.group_label}：${formatAmount(preview.expense.other)}`);
+            }
         } else {
             lines.push(`支出：${formatAmount(0)}`);
         }
@@ -99,8 +120,10 @@ const buildShareText = (
     if (showBalance) {
         if (preview.balance) {
             lines.push(`残高：${formatAmount(preview.balance.total)}`);
-            lines.push(`  自分：${formatAmount(preview.balance.self)}`);
-            lines.push(`  ${preview.group_label}：${formatAmount(preview.balance.other)}`);
+            if (preview.balance.self !== undefined) {
+                lines.push(`  自分：${formatAmount(preview.balance.self)}`);
+                lines.push(`  ${preview.group_label}：${formatAmount(preview.balance.other!)}`);
+            }
         } else {
             lines.push(`残高：${formatAmount(0)}`);
         }
@@ -172,7 +195,6 @@ const canNativeShare = typeof navigator !== 'undefined' && 'share' in navigator;
 
 export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) => {
     const { currentMonth, showSnackBar } = useAppContext();
-    const { loginUser } = useAuthContext();
 
     const savedPrefs = useMemo(loadPrefs, []);
     const groupInitDoneRef = useRef(false);
@@ -186,6 +208,7 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
     const [showIncome, setShowIncome] = useState(savedPrefs.showIncome ?? true);
     const [showExpense, setShowExpense] = useState(savedPrefs.showExpense ?? true);
     const [showBalance, setShowBalance] = useState(savedPrefs.showBalance ?? true);
+    const [showRatio, setShowRatio] = useState(savedPrefs.showRatio ?? false);
     const [xConsent, setXConsent] = useState(false);
 
     const monthOptions = Array.from({ length: 12 }, (_, i) => {
@@ -222,33 +245,25 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
 
     // その他の設定を永続化
     useEffect(() => {
-        savePrefs({ ...loadPrefs(), selectedMonth, showIncome, showExpense, showBalance });
-    }, [selectedMonth, showIncome, showExpense, showBalance]);
+        savePrefs({ ...loadPrefs(), selectedMonth, showIncome, showExpense, showBalance, showRatio });
+    }, [selectedMonth, showIncome, showExpense, showBalance, showRatio]);
 
-    // グループなし：選択月のトランザクション合計を取得
-    const { data: noGroupTransactions, isFetching: isLoadingNoGroup } = useQuery<Transaction[]>({
-        queryKey: ['shareDialogTransactions', selectedMonth],
+    // グループなし：選択月の収支サマリーを取得
+    const { data: monthlySummary, isFetching: isLoadingNoGroup } = useQuery<{ income: number; expense: number; balance: number }>({
+        queryKey: ['shareDialogMonthlySummary', selectedMonth],
         queryFn: async () => {
-            const response = await apiClient.get('/monthly-transaction', {
-                params: { currentMonth: selectedMonth, user_id: loginUser?.id },
-            });
-            return response.data.monthlyTransactionData || [];
+            const { data } = await splitGroupApi.getMonthlySummary(selectedMonth);
+            return data;
         },
-        enabled: !selectedGroupId && !!selectedMonth && !!loginUser,
+        enabled: open && !selectedGroupId && !!selectedMonth,
         staleTime: Infinity,
         gcTime: 30 * 60 * 1000,
     });
 
-    const noGroupTotals = useMemo(() => {
-        const transactions = noGroupTransactions ?? [];
-        const income = transactions
-            .filter((t) => t.type === 'income')
-            .reduce((sum, t) => sum + t.amount, 0);
-        const expense = transactions
-            .filter((t) => t.type === 'expense')
-            .reduce((sum, t) => sum + t.amount, 0);
-        return { income, expense };
-    }, [noGroupTransactions]);
+    const noGroupTotals = useMemo(() => ({
+        income:  monthlySummary?.income  ?? 0,
+        expense: monthlySummary?.expense ?? 0,
+    }), [monthlySummary]);
 
     // グループあり：分担プレビューを取得
     const { data: preview, isFetching: isLoadingPreview } = useQuery<SplitPreview>({
@@ -260,7 +275,7 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
             );
             return data as SplitPreview;
         },
-        enabled: !!selectedGroupId && !!selectedMonth,
+        enabled: open && !!selectedGroupId && !!selectedMonth,
         staleTime: Infinity,
         gcTime: 30 * 60 * 1000,
     });
@@ -279,8 +294,9 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
                 showBalance
             );
         }
-        return preview ? buildShareText(preview, showIncome, showExpense, showBalance) : '';
-    }, [selectedGroupId, preview, noGroupTotals, selectedMonth, showIncome, showExpense, showBalance]);
+        const setting = splitGroups.find(g => g.id === selectedGroupId)?.setting;
+        return preview ? buildShareText(preview, showIncome, showExpense, showBalance, showRatio, setting) : '';
+    }, [selectedGroupId, preview, noGroupTotals, selectedMonth, showIncome, showExpense, showBalance, showRatio, splitGroups]);
 
     const handleCopy = async () => {
         if (!shareText) return;
@@ -388,6 +404,18 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
                                 }
                                 label="残高"
                             />
+                            <Tooltip title={!selectedGroupId ? 'グループ選択時のみ有効' : ''}>
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={showRatio}
+                                            onChange={(e) => setShowRatio(e.target.checked)}
+                                            disabled={!selectedGroupId}
+                                        />
+                                    }
+                                    label="割合"
+                                />
+                            </Tooltip>
                         </FormGroup>
                     </Box>
 
@@ -405,12 +433,13 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
                                     variant="outlined"
                                     sx={{
                                         p: 2,
-                                        pr: 5,
                                         backgroundColor: 'grey.50',
                                         whiteSpace: 'pre-wrap',
                                         fontFamily: 'monospace',
                                         fontSize: '0.85rem',
                                         overflow: 'hidden',
+                                        wordBreak: 'keep-all',
+                                        overflowWrap: 'break-word',
                                     }}
                                 >
                                     {shareText}
