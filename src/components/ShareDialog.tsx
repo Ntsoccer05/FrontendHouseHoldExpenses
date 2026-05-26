@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Box,
     Button,
@@ -36,6 +36,24 @@ interface ShareDialogProps {
     splitGroups: SplitGroup[];
 }
 
+const STORAGE_KEY = 'shareDialogPrefs';
+
+type SharePrefs = {
+    selectedGroupId?: number | '';
+    selectedMonth?: string;
+    showIncome?: boolean;
+    showExpense?: boolean;
+    showBalance?: boolean;
+};
+
+const loadPrefs = (): SharePrefs => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}'); } catch { return {}; }
+};
+
+const savePrefs = (prefs: SharePrefs) => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); } catch {}
+};
+
 const formatAmount = (amount: number): string =>
     amount.toLocaleString('ja-JP') + ' 円';
 
@@ -49,7 +67,7 @@ const buildShareText = (
     const monthLabel = `${year}年${parseInt(monthStr)}月`;
     const lines: string[] = [
         `${monthLabel}の家計まとめ【${preview.group_label}】`,
-        '─────────────────────',
+        '───────────',
     ];
 
     if (showIncome) {
@@ -89,7 +107,7 @@ const buildShareText = (
         lines.push('');
     }
 
-    lines.push('─────────────────────');
+    lines.push('───────────');
     lines.push('#カケポン家計簿');
 
     return lines.join('\n');
@@ -156,15 +174,18 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
     const { currentMonth, showSnackBar } = useAppContext();
     const { loginUser } = useAuthContext();
 
+    const savedPrefs = useMemo(loadPrefs, []);
+    const groupInitDoneRef = useRef(false);
+
     const [selectedGroupId, setSelectedGroupId] = useState<number | ''>('');
     const [selectedMonth, setSelectedMonth] = useState<string>(
-        format(currentMonth, 'yyyyMM')
+        savedPrefs.selectedMonth ?? format(currentMonth, 'yyyyMM')
     );
     const [copied, setCopied] = useState(false);
 
-    const [showIncome, setShowIncome] = useState(true);
-    const [showExpense, setShowExpense] = useState(true);
-    const [showBalance, setShowBalance] = useState(true);
+    const [showIncome, setShowIncome] = useState(savedPrefs.showIncome ?? true);
+    const [showExpense, setShowExpense] = useState(savedPrefs.showExpense ?? true);
+    const [showBalance, setShowBalance] = useState(savedPrefs.showBalance ?? true);
     const [xConsent, setXConsent] = useState(false);
 
     const monthOptions = Array.from({ length: 12 }, (_, i) => {
@@ -177,6 +198,32 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
         setCopied(false);
         setXConsent(false);
     }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // グループが読み込まれたら savedPref または先頭グループを初期選択
+    useEffect(() => {
+        if (groupInitDoneRef.current || splitGroups.length === 0) return;
+        groupInitDoneRef.current = true;
+
+        const savedId = savedPrefs.selectedGroupId;
+        if (savedId === '') {
+            setSelectedGroupId('');
+        } else if (typeof savedId === 'number' && splitGroups.some(g => g.id === savedId)) {
+            setSelectedGroupId(savedId);
+        } else {
+            setSelectedGroupId(splitGroups[0].id);
+        }
+    }, [splitGroups]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // selectedGroupId を永続化（グループ初期化後のみ）
+    useEffect(() => {
+        if (!groupInitDoneRef.current) return;
+        savePrefs({ ...loadPrefs(), selectedGroupId });
+    }, [selectedGroupId]);
+
+    // その他の設定を永続化
+    useEffect(() => {
+        savePrefs({ ...loadPrefs(), selectedMonth, showIncome, showExpense, showBalance });
+    }, [selectedMonth, showIncome, showExpense, showBalance]);
 
     // グループなし：選択月のトランザクション合計を取得
     const { data: noGroupTransactions, isFetching: isLoadingNoGroup } = useQuery<Transaction[]>({
