@@ -44,24 +44,33 @@ interface OffsetInputProps {
 }
 
 const OffsetInput = ({ value, onChange, label }: OffsetInputProps) => {
+    const [isFocused, setIsFocused] = useState(false);
     const [display, setDisplay] = useState('');
 
     useEffect(() => {
-        setDisplay(value === null ? '' : value.toLocaleString('ja-JP'));
-    }, [value]);
+        if (!isFocused) {
+            setDisplay(value === null ? '' : value.toLocaleString('ja-JP'));
+        }
+    }, [value, isFocused]);
+
+    const handleFocus = () => {
+        setIsFocused(true);
+        setDisplay(value === null ? '' : String(value));
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setDisplay(e.target.value);
-        const raw = e.target.value.replace(/[,，]/g, '');
-        if (raw === '' || raw === '-') {
+        const input = e.target.value.replace(/[,，]/g, '');
+        setDisplay(input);
+        if (input === '' || input === '-') {
             onChange(null);
         } else {
-            const n = parseInt(raw, 10);
+            const n = parseInt(input, 10);
             if (!isNaN(n)) onChange(n);
         }
     };
 
     const handleBlur = () => {
+        setIsFocused(false);
         if (value === null) { setDisplay(''); return; }
         const clamped = Math.min(OFFSET_MAX, Math.max(-OFFSET_MAX, value));
         onChange(clamped);
@@ -81,6 +90,7 @@ const OffsetInput = ({ value, onChange, label }: OffsetInputProps) => {
             }}
             value={display}
             onChange={handleChange}
+            onFocus={handleFocus}
             onBlur={handleBlur}
         />
     );
