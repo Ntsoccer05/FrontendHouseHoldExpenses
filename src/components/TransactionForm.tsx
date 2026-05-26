@@ -30,6 +30,7 @@ import { Schema, transactionSchema } from "../validations/schema";
 import { useAppContext } from "../context/AppContext";
 import DynamicIcon from "./common/DynamicIcon";
 import { useTransactionContext } from "../context/TransactionContext";
+import { useFixedExpenseContext } from "../context/FixedExpenseContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalculator } from "@fortawesome/free-solid-svg-icons";
 import Caluculator from "./Caluculator/Caluculator";
@@ -64,6 +65,7 @@ const TransactionForm = memo(
             useAppContext();
         const { onSaveTransaction, onDeleteTransaction, onUpdateTransaction } =
             useTransactionContext();
+        const { addFixedExpense } = useFixedExpenseContext();
         const formWidth = 320;
         const [categories, setCategories] = useState<
             CategoryItem[] | undefined
@@ -181,34 +183,43 @@ const TransactionForm = memo(
 
         // 送信処理
         const onSubmit: SubmitHandler<Schema> = async(data) => {
-            if (selectedTransaction) {
-                await onUpdateTransaction(data, selectedTransaction.id)
-                    .then(() => {
-                        setSelectedTransaction(null);
-                        showSnackBar({
-                            title: "更新完了",
-                            bodyText: "家計簿が更新されました。",
-                            backgroundColor: "#00695c"
-                        });
-                        if (isMobile) {
-                            setIsDialogOpen(false);
+            try {
+                if (selectedTransaction) {
+                    await onUpdateTransaction(data, selectedTransaction.id);
+                    // 固定収支チェックが入っており、かつ未登録の場合のみ登録
+                    if (data.isFixedExpense && !selectedTransaction.isFixedExpense) {
+                        const categoryId = categories?.find(
+                            (cat) => cat.label === data.category
+                        )?.id;
+                        if (categoryId !== undefined) {
+                            await addFixedExpense({
+                                type: data.type,
+                                category_id: categoryId,
+                                amount: Math.abs(data.amount),
+                                content: data.content ?? "",
+                                fixed_expense_day: parseInt(data.date.split("-")[2], 10),
+                            });
                         }
-                    })
-                    .catch((error) => {
-                        console.error(error);
+                    }
+                    setSelectedTransaction(null);
+                    showSnackBar({
+                        title: "更新完了",
+                        bodyText: "家計簿が更新されました。",
+                        backgroundColor: "#00695c"
                     });
-            } else {
-                await onSaveTransaction(data)
-                    .then(() => {
-                        showSnackBar({
-                            title: "保存完了",
-                            bodyText: "家計簿が登録されました。",
-                            backgroundColor: "#2e7d32"
-                        });
-                    })
-                    .catch((error) => {
-                        console.error(error);
+                    if (isMobile) {
+                        setIsDialogOpen(false);
+                    }
+                } else {
+                    await onSaveTransaction(data);
+                    showSnackBar({
+                        title: "保存完了",
+                        bodyText: "家計簿が登録されました。",
+                        backgroundColor: "#2e7d32"
                     });
+                }
+            } catch (error) {
+                console.error(error);
             }
             //reset()でフォームフィールドの内容を引数の値でリセット
             reset({
@@ -247,6 +258,7 @@ const TransactionForm = memo(
                 setValue("date", selectedTransaction.date);
                 setValue("amount", selectedTransaction.amount);
                 setValue("content", selectedTransaction.content);
+                setValue("isFixedExpense", selectedTransaction.isFixedExpense ?? false);
             } else {
                 reset({
                     type: "expense",
@@ -575,24 +587,33 @@ const TransactionForm = memo(
                                 />
                             )}
                         />
-                        {/* 固定費チェックボックス（支出かつ新規入力のみ表示） */}
-                        {currentType === "expense" && !selectedTransaction && (
-                            <Controller
-                                name="isFixedExpense"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={!!field.value}
-                                                onChange={(e) => field.onChange(e.target.checked)}
-                                            />
-                                        }
-                                        label="固定費として登録（毎月自動複製）"
-                                    />
-                                )}
-                            />
-                        )}
+                        {/* 固定収支チェックボックス（新規・編集・収入・支出すべてで表示） */}
+                        <Controller
+                            name="isFixedExpense"
+                            control={control}
+                            render={({ field }) => {
+                                const isAlreadyRegistered = selectedTransaction?.isFixedExpense === true;
+                                return (
+                                    <>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={!!field.value}
+                                                    onChange={(e) => field.onChange(e.target.checked)}
+                                                    disabled={isAlreadyRegistered}
+                                                />
+                                            }
+                                            label="固定収支として登録（毎月自動複製）"
+                                        />
+                                        {isAlreadyRegistered && (
+                                            <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: "block" }}>
+                                                固定収支として登録済みです
+                                            </Typography>
+                                        )}
+                                    </>
+                                );
+                            }}
+                        />
                         {/* 保存ボタン */}
                         <Button
                             type="submit"
