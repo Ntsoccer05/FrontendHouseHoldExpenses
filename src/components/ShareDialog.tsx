@@ -457,24 +457,6 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
                                             </IconButton>
                                         </span>
                                     </Tooltip>
-
-                                    {canNativeShare && (
-                                        <Tooltip title="その他のアプリで共有">
-                                            <IconButton
-                                                onClick={handleNativeShare}
-                                                sx={{
-                                                    width: 44,
-                                                    height: 44,
-                                                    borderRadius: '10px',
-                                                    backgroundColor: 'grey.200',
-                                                    color: 'text.primary',
-                                                    '&:hover': { backgroundColor: 'grey.300' },
-                                                }}
-                                            >
-                                                <IosShareIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    )}
                                 </Box>
                                 <FormControlLabel
                                     sx={{ mt: 1 }}
