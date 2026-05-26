@@ -502,6 +502,14 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
                 <Button onClick={onClose}>閉じる</Button>
+                <Button
+                    variant="contained"
+                    onClick={canNativeShare ? handleNativeShare : handleCopy}
+                    disabled={!shareText}
+                    startIcon={<IosShareIcon />}
+                >
+                    シェア
+                </Button>
             </DialogActions>
         </Dialog>
     );
