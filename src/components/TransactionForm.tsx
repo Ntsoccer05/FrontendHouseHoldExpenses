@@ -65,7 +65,7 @@ const TransactionForm = memo(
             useAppContext();
         const { onSaveTransaction, onDeleteTransaction, onUpdateTransaction } =
             useTransactionContext();
-        const { addFixedExpense, editFixedExpense } = useFixedExpenseContext();
+        const { editFixedExpense } = useFixedExpenseContext();
         const formWidth = 320;
         const [categories, setCategories] = useState<
             CategoryItem[] | undefined
@@ -186,21 +186,6 @@ const TransactionForm = memo(
             try {
                 if (selectedTransaction) {
                     await onUpdateTransaction(data, selectedTransaction.id);
-                    // 固定収支チェックが入っており、かつ未登録の場合のみ登録
-                    if (data.isFixedExpense && !selectedTransaction.isFixedExpense) {
-                        const categoryId = categories?.find(
-                            (cat) => cat.label === data.category
-                        )?.id;
-                        if (categoryId !== undefined) {
-                            await addFixedExpense({
-                                type: data.type,
-                                category_id: categoryId,
-                                amount: Math.abs(data.amount),
-                                content: data.content ?? "",
-                                fixed_expense_day: parseInt(data.date.split("-")[2], 10),
-                            });
-                        }
-                    }
                     // 固定収支チェックがオフになり fixedExpenseId がある場合は無効化
                     if (!data.isFixedExpense && selectedTransaction.isFixedExpense && selectedTransaction.fixedExpenseId) {
                         await editFixedExpense(selectedTransaction.fixedExpenseId, { is_active: false });
