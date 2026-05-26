@@ -30,7 +30,6 @@ import { Schema, transactionSchema } from "../validations/schema";
 import { useAppContext } from "../context/AppContext";
 import DynamicIcon from "./common/DynamicIcon";
 import { useTransactionContext } from "../context/TransactionContext";
-import { useFixedExpenseContext } from "../context/FixedExpenseContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalculator } from "@fortawesome/free-solid-svg-icons";
 import Caluculator from "./Caluculator/Caluculator";
@@ -65,7 +64,6 @@ const TransactionForm = memo(
             useAppContext();
         const { onSaveTransaction, onDeleteTransaction, onUpdateTransaction } =
             useTransactionContext();
-        const { editFixedExpense } = useFixedExpenseContext();
         const formWidth = 320;
         const [categories, setCategories] = useState<
             CategoryItem[] | undefined
@@ -186,10 +184,6 @@ const TransactionForm = memo(
             try {
                 if (selectedTransaction) {
                     await onUpdateTransaction(data, selectedTransaction.id);
-                    // 固定収支チェックがオフになり fixedExpenseId がある場合は無効化
-                    if (!data.isFixedExpense && selectedTransaction.isFixedExpense && selectedTransaction.fixedExpenseId) {
-                        await editFixedExpense(selectedTransaction.fixedExpenseId, { is_active: false });
-                    }
                     setSelectedTransaction(null);
                     showSnackBar({
                         title: "更新完了",
