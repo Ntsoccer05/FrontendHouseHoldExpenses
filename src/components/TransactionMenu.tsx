@@ -5,6 +5,7 @@ import {
     CardActionArea,
     CardContent,
     Checkbox,
+    Chip,
     Drawer,
     Grid,
     List,
@@ -675,6 +676,15 @@ const TransactionMenu = memo(
                                                                     </Typography>
                                                                 </Grid>
                                                             </Grid>
+                                                            {transaction.isFixedExpense && (
+                                                                <Chip
+                                                                    label="固定費"
+                                                                    size="small"
+                                                                    color="primary"
+                                                                    variant="outlined"
+                                                                    sx={{ ml: 1, fontSize: "0.65rem", height: 18 }}
+                                                                />
+                                                            )}
                                                         </CardContent>
                                                     </CardActionArea>
                                                 </Card>

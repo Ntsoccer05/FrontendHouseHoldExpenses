@@ -22,6 +22,8 @@ import { PrivateRoute } from "./PrivateRoute";
 import { AuthProvider } from "../context/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
 import MaintenanceGuard from "../components/common/MaintenanceGuard";
+import FixedExpense from "../pages/FixedExpense";
+import { FixedExpenseProvider } from "../context/FixedExpenseContext";
 
 function DefineRouter() {
     return (
@@ -87,6 +89,16 @@ function DefineRouter() {
                                                     <CategoryProvider>
                                                         <Category />
                                                     </CategoryProvider>
+                                                </PrivateRoute>
+                                            }
+                                        />
+                                        <Route
+                                            path="/fixed-expenses"
+                                            element={
+                                                <PrivateRoute>
+                                                    <FixedExpenseProvider>
+                                                        <FixedExpense />
+                                                    </FixedExpenseProvider>
                                                 </PrivateRoute>
                                             }
                                         />

@@ -1,4 +1,4 @@
-import { literal, z } from "zod";
+import { z } from "zod";
 
 // react-hook-formのバリデーション
 export const transactionSchema = z.object({
@@ -17,6 +17,8 @@ export const transactionSchema = z.object({
         .max(50, { message: "内容は50文字以内にしてください。" })
         .nullable(),
     category: z.string().min(1, { message: "カテゴリを選択してください" }),
+    isFixedExpense: z.boolean().optional(),
+    fixedExpenseDay: z.number().int().min(1).max(31).optional(),
 
     // category: z
     //     .union([
