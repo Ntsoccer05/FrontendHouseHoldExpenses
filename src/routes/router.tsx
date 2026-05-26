@@ -1,4 +1,7 @@
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 import Home from "../pages/Home";
 import Report from "../pages/Report";
 import NoMatch from "../pages/NoMatch";
@@ -24,9 +27,12 @@ import { HelmetProvider } from "react-helmet-async";
 import MaintenanceGuard from "../components/common/MaintenanceGuard";
 import FixedExpense from "../pages/FixedExpense";
 import { FixedExpenseProvider } from "../context/FixedExpenseContext";
+import SplitGroup from "../pages/SplitGroup";
+import { SplitGroupProvider } from "../context/SplitGroupContext";
 
 function DefineRouter() {
     return (
+        <QueryClientProvider client={queryClient}>
         <HelmetProvider>
             <ThemeProvider theme={theme}>
                 <CssBaseline />
@@ -43,7 +49,9 @@ function DefineRouter() {
                                             // PrivateRoute：ログインしていなかったらログイン画面へリダイレクト
                                             element={
                                                 <TransactionProvider>
-                                                    <Home />
+                                                    <SplitGroupProvider>
+                                                        <Home />
+                                                    </SplitGroupProvider>
                                                 </TransactionProvider>
                                             }
                                         />
@@ -103,6 +111,16 @@ function DefineRouter() {
                                             }
                                         />
                                         <Route
+                                            path="/split-groups"
+                                            element={
+                                                <PrivateRoute>
+                                                    <SplitGroupProvider>
+                                                        <SplitGroup />
+                                                    </SplitGroupProvider>
+                                                </PrivateRoute>
+                                            }
+                                        />
+                                        <Route
                                             path="/api/email/verify/:id/:hash"
                                             element={
                                                 <VerifyEmail />
@@ -134,6 +152,7 @@ function DefineRouter() {
                 </MaintenanceGuard>
             </ThemeProvider>
         </HelmetProvider>
+        </QueryClientProvider>
     );
 }
 

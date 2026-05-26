@@ -22,6 +22,7 @@ import ModalComponent from "./ModalComponent";
 import CategoryIcon from "@mui/icons-material/Category";
 import CloseIcon from "@mui/icons-material/Close";
 import RepeatIcon from "@mui/icons-material/Repeat";
+import GroupsIcon from "@mui/icons-material/Groups";
 import { useAuthContext } from "../../context/AuthContext";
 
 interface SidebarProps {
@@ -48,6 +49,7 @@ const Sidebar = ({
         { text: "レポート", path: "/report", icon: EqualizerIcon },
         { text: "カテゴリ編集", path: "/category", icon: CategoryIcon },
         { text: "固定収支管理", path: "/fixed-expenses", icon: RepeatIcon },
+        { text: "収支分担管理", path: "/split-groups", icon: GroupsIcon },
     ];
 
     const LogoutItems = [{ text: "ログアウト", icon: LockOutlinedIcon }];

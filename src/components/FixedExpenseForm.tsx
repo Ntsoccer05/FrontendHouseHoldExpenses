@@ -36,7 +36,7 @@ const fixedExpenseSchema = z.object({
         .number({ invalid_type_error: "金額を入力してください" })
         .int()
         .min(1, "金額を入力してください"),
-    content: z.string().min(1, "内容を入力してください").max(255),
+    content: z.string().max(255),
     fixed_expense_day: z
         .number({ invalid_type_error: "1〜31の数値を入力してください" })
         .int()

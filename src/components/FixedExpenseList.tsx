@@ -29,8 +29,10 @@ import LoadingButton from "@mui/lab/LoadingButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import type { FixedExpense } from "../types";
+import { useAppContext } from "../context/AppContext";
+import DynamicIcon from "./common/DynamicIcon";
 
-type SortField = "amount" | "fixed_expense_day" | "is_active" | "updated_at";
+type SortField = "category" | "content" | "amount" | "fixed_expense_day" | "is_active" | "updated_at";
 
 interface FixedExpenseListProps {
     fixedExpenses: FixedExpense[];
@@ -38,6 +40,8 @@ interface FixedExpenseListProps {
     onDelete: (id: number) => Promise<void>;
     onToggleActive: (id: number, isActive: boolean) => Promise<void>;
     onBulkDelete: (ids: number[]) => Promise<void>;
+    activeTab: "expense" | "income";
+    onTabChange: (tab: "expense" | "income") => void;
 }
 
 const formatDate = (iso: string) => {
@@ -46,6 +50,8 @@ const formatDate = (iso: string) => {
 };
 
 const SORT_LABELS: Record<SortField, string> = {
+    category: "カテゴリ",
+    content: "内容",
     amount: "金額",
     fixed_expense_day: "実行日",
     is_active: "有効",
@@ -58,8 +64,10 @@ export const FixedExpenseList = ({
     onDelete,
     onToggleActive,
     onBulkDelete,
+    activeTab,
+    onTabChange,
 }: FixedExpenseListProps) => {
-    const [activeTab, setActiveTab] = useState<"expense" | "income">("expense");
+    const { ExpenseCategories, IncomeCategories } = useAppContext();
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
     const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -74,28 +82,36 @@ export const FixedExpenseList = ({
 
     const isOperating = isDeleting || isBulkDeleting;
 
+    const getCategory = (item: FixedExpense) => {
+        const cats = item.type_id === 1 ? IncomeCategories : ExpenseCategories;
+        return cats?.find((c) => c.id === item.category_id);
+    };
+
     const displayed = fixedExpenses.filter((item) =>
         activeTab === "income" ? item.type_id === 1 : item.type_id !== 1
     );
 
     const sorted = [...displayed].sort((a, b) => {
         if (!sortField) return 0;
-        let aVal: number, bVal: number;
+        let cmp = 0;
         switch (sortField) {
             case "amount":
-                aVal = a.amount; bVal = b.amount; break;
+                cmp = a.amount - b.amount; break;
             case "fixed_expense_day":
-                aVal = a.fixed_expense_day; bVal = b.fixed_expense_day; break;
+                cmp = a.fixed_expense_day - b.fixed_expense_day; break;
             case "is_active":
-                aVal = a.is_active ? 1 : 0; bVal = b.is_active ? 1 : 0; break;
+                cmp = (a.is_active ? 1 : 0) - (b.is_active ? 1 : 0); break;
             case "updated_at":
-                aVal = new Date(a.updated_at).getTime();
-                bVal = new Date(b.updated_at).getTime();
-                break;
+                cmp = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(); break;
+            case "category": {
+                const aLabel = getCategory(a)?.label ?? "";
+                const bLabel = getCategory(b)?.label ?? "";
+                cmp = aLabel.localeCompare(bLabel, "ja"); break;
+            }
+            case "content":
+                cmp = (a.content ?? "").localeCompare(b.content ?? "", "ja"); break;
         }
-        if (aVal < bVal) return sortOrder === "asc" ? -1 : 1;
-        if (aVal > bVal) return sortOrder === "asc" ? 1 : -1;
-        return 0;
+        return sortOrder === "asc" ? cmp : -cmp;
     });
 
     const displayedIds = sorted.map((item) => item.id);
@@ -104,7 +120,7 @@ export const FixedExpenseList = ({
     const someSelected = selectedInView.length > 0 && !allSelected;
 
     const handleTabChange = (newTab: "expense" | "income") => {
-        setActiveTab(newTab);
+        onTabChange(newTab);
         setSelectedIds([]);
     };
 
@@ -161,6 +177,19 @@ export const FixedExpenseList = ({
         } finally {
             setTogglingId(null);
         }
+    };
+
+    const CategoryLabel = ({ item, size = "normal" }: { item: FixedExpense; size?: "small" | "normal" }) => {
+        const cat = getCategory(item);
+        if (!cat) return null;
+        return (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <DynamicIcon iconName={cat.icon} fontSize={size === "small" ? "small" : "medium"} />
+                <Typography variant={size === "small" ? "body2" : "body1"} component="span">
+                    {cat.label}
+                </Typography>
+            </Box>
+        );
     };
 
     const cellSx = { whiteSpace: "nowrap" as const };
@@ -251,6 +280,7 @@ export const FixedExpenseList = ({
                     </Box>
                     {sorted.map((item) => (
                         <Paper key={item.id} variant="outlined" sx={{ p: 1.5, mb: 1 }}>
+                            {/* 上段: チェックボックス + カテゴリ + 金額 */}
                             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
                                     <Checkbox
@@ -259,18 +289,24 @@ export const FixedExpenseList = ({
                                         size="small"
                                         sx={{ flexShrink: 0 }}
                                     />
-                                    <Typography
-                                        variant="body1"
-                                        fontWeight="medium"
-                                        sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                                    >
-                                        {item.content}
-                                    </Typography>
+                                    <Box sx={{ minWidth: 0 }}>
+                                        <CategoryLabel item={item} />
+                                        {item.content ? (
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                                            >
+                                                {item.content}
+                                            </Typography>
+                                        ) : null}
+                                    </Box>
                                 </Box>
                                 <Typography variant="body1" fontWeight="bold" sx={{ ml: 1, flexShrink: 0 }}>
                                     ¥{item.amount.toLocaleString()}
                                 </Typography>
                             </Box>
+                            {/* 下段: 実行日 + 有効 + 操作 */}
                             <Box
                                 sx={{
                                     display: "flex",
@@ -281,7 +317,7 @@ export const FixedExpenseList = ({
                                 }}
                             >
                                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mr: 2 }}>
+                                    <Typography variant="body2" color="text.secondary">
                                         毎月{item.fixed_expense_day}日
                                     </Typography>
                                     <Typography
@@ -314,7 +350,7 @@ export const FixedExpenseList = ({
             ) : (
                 /* デスクトップ：テーブル形式 */
                 <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
-                    <Table sx={{ minWidth: 560 }}>
+                    <Table sx={{ minWidth: 600 }}>
                         <TableHead>
                             <TableRow>
                                 <TableCell padding="checkbox">
@@ -325,7 +361,8 @@ export const FixedExpenseList = ({
                                         size="small"
                                     />
                                 </TableCell>
-                                <TableCell sx={cellSx}>内容</TableCell>
+                                {sortHeader("category", "カテゴリ")}
+                                {sortHeader("content", "内容")}
                                 {sortHeader("amount", "金額", "right")}
                                 {sortHeader("fixed_expense_day", "毎月実行日")}
                                 {sortHeader("is_active", "有効")}
@@ -342,6 +379,9 @@ export const FixedExpenseList = ({
                                             onChange={() => handleSelectOne(item.id)}
                                             size="small"
                                         />
+                                    </TableCell>
+                                    <TableCell sx={cellSx}>
+                                        <CategoryLabel item={item} size="small" />
                                     </TableCell>
                                     <TableCell sx={cellSx}>{item.content}</TableCell>
                                     <TableCell align="right" sx={cellSx}>

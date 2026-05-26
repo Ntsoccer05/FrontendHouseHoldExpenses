@@ -65,14 +65,14 @@ const ChangeCalendarMonth = memo(
                 mx: 2,
                 position: "absolute",
                 top: {
-                    xs: "183px",
-                    sm: "202px",
-                    md: "205px",
+                    xs: "219px",
+                    sm: "238px",
+                    md: "241px",
                     "@supports (-webkit-touch-callout: none)": {
                       // Safari固有のスタイル
-                      xs: "185px",
-                      sm: "204px",
-                      md: "207px",
+                      xs: "221px",
+                      sm: "240px",
+                      md: "243px",
                     },
                 },
                 left: { xs: "0%", md: "235px" },

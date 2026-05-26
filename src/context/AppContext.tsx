@@ -82,10 +82,10 @@ export const AppProvider = ({ children }: AppProviderProps) => {
 
     // 収入カテゴリー取得処理
     const getIncomeCategory = useCallback(async () => {
+        const cached = getSessionStorage('incomeCategories');
+        if (cached) { setIncomeCategories(cached); return; }
         try {
-            const { data } = await apiClient.get("/IncomeCategory", {
-                params: { user_id: loginUser?.id },
-            });
+            const { data } = await apiClient.get("/IncomeCategory");
             if (data.incomeUserCategory) {
                 const incomeCategories = data.incomeUserCategory.map(
                     (incomeCategory: BaseUserCategory) => ({
@@ -106,10 +106,10 @@ export const AppProvider = ({ children }: AppProviderProps) => {
 
     // 支出カテゴリー取得処理
     const getExpenseCategory = useCallback(async () => {
+        const cached = getSessionStorage('expenseCategories');
+        if (cached) { setExpenseCategories(cached); return; }
         try {
-            const { data } = await apiClient.get("/ExpenseCategory", {
-                params: { user_id: loginUser?.id },
-            });
+            const { data } = await apiClient.get("/ExpenseCategory");
             if (data.expenseUserCategory) {
                 const expenseCategories = data.expenseUserCategory.map(
                     (expenseCategory: BaseUserCategory) => ({

@@ -593,7 +593,7 @@ const TransactionForm = memo(
                                                     disabled={isAlreadyRegistered && !canUnregister}
                                                 />
                                             }
-                                            label="固定収支として登録（毎月自動複製）"
+                                            label="固定収支として登録"
                                         />
                                         {isAlreadyRegistered && !showUnregisterWarning && (
                                             <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: "block" }}>
