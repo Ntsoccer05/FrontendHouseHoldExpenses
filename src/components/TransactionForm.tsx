@@ -181,34 +181,33 @@ const TransactionForm = memo(
 
         // 送信処理
         const onSubmit: SubmitHandler<Schema> = async(data) => {
-            if (selectedTransaction) {
-                await onUpdateTransaction(data, selectedTransaction.id)
-                    .then(() => {
-                        setSelectedTransaction(null);
-                        showSnackBar({
-                            title: "更新完了",
-                            bodyText: "家計簿が更新されました。",
-                            backgroundColor: "#00695c"
-                        });
-                        if (isMobile) {
-                            setIsDialogOpen(false);
-                        }
-                    })
-                    .catch((error) => {
-                        console.error(error);
+            try {
+                if (selectedTransaction) {
+                    await onUpdateTransaction(data, selectedTransaction.id);
+                    setSelectedTransaction(null);
+                    showSnackBar({
+                        title: "更新完了",
+                        bodyText: "家計簿が更新されました。",
+                        backgroundColor: "#00695c"
                     });
-            } else {
-                await onSaveTransaction(data)
-                    .then(() => {
-                        showSnackBar({
-                            title: "保存完了",
-                            bodyText: "家計簿が登録されました。",
-                            backgroundColor: "#2e7d32"
-                        });
-                    })
-                    .catch((error) => {
-                        console.error(error);
+                    if (isMobile) {
+                        setIsDialogOpen(false);
+                    }
+                } else {
+                    await onSaveTransaction(data);
+                    showSnackBar({
+                        title: "保存完了",
+                        bodyText: "家計簿が登録されました。",
+                        backgroundColor: "#2e7d32"
                     });
+                }
+            } catch (error) {
+                console.error(error);
+                showSnackBar({
+                    title: "エラー",
+                    bodyText: "保存中にエラーが発生しました。",
+                    backgroundColor: "#d32f2f"
+                });
             }
             //reset()でフォームフィールドの内容を引数の値でリセット
             reset({
@@ -247,6 +246,7 @@ const TransactionForm = memo(
                 setValue("date", selectedTransaction.date);
                 setValue("amount", selectedTransaction.amount);
                 setValue("content", selectedTransaction.content);
+                setValue("isFixedExpense", selectedTransaction.isFixedExpense ?? false);
             } else {
                 reset({
                     type: "expense",
@@ -575,24 +575,40 @@ const TransactionForm = memo(
                                 />
                             )}
                         />
-                        {/* 固定費チェックボックス（支出かつ新規入力のみ表示） */}
-                        {currentType === "expense" && !selectedTransaction && (
-                            <Controller
-                                name="isFixedExpense"
-                                control={control}
-                                render={({ field }) => (
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={!!field.value}
-                                                onChange={(e) => field.onChange(e.target.checked)}
-                                            />
-                                        }
-                                        label="固定費として登録（毎月自動複製）"
-                                    />
-                                )}
-                            />
-                        )}
+                        {/* 固定収支チェックボックス（新規・編集・収入・支出すべてで表示） */}
+                        <Controller
+                            name="isFixedExpense"
+                            control={control}
+                            render={({ field }) => {
+                                const isAlreadyRegistered = selectedTransaction?.isFixedExpense === true;
+                                const canUnregister = isAlreadyRegistered && !!selectedTransaction?.fixedExpenseId;
+                                const showUnregisterWarning = isAlreadyRegistered && !field.value;
+                                return (
+                                    <>
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={!!field.value}
+                                                    onChange={(e) => field.onChange(e.target.checked)}
+                                                    disabled={isAlreadyRegistered && !canUnregister}
+                                                />
+                                            }
+                                            label="固定収支として登録（毎月自動複製）"
+                                        />
+                                        {isAlreadyRegistered && !showUnregisterWarning && (
+                                            <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: "block" }}>
+                                                固定収支として登録済みです
+                                            </Typography>
+                                        )}
+                                        {showUnregisterWarning && (
+                                            <Typography variant="caption" color="warning.main" sx={{ ml: 4, display: "block" }}>
+                                                更新すると固定収支登録が解除されます
+                                            </Typography>
+                                        )}
+                                    </>
+                                );
+                            }}
+                        />
                         {/* 保存ボタン */}
                         <Button
                             type="submit"
