@@ -131,3 +131,50 @@ export interface FixedExpenseFormData {
     content: string;
     fixed_expense_day: number;
 }
+
+export interface SplitGroup {
+    id: number;
+    label: string;
+    is_active: boolean;
+    setting: SplitGroupSetting | null;
+    category_overrides: SplitGroupCategoryOverride[];
+}
+
+export interface SplitGroupSetting {
+    income_other_ratio: number | null;
+    expense_other_ratio: number | null;
+}
+
+export interface SplitGroupCategoryOverride {
+    category_id: number;
+    type_id: number;
+    other_ratio: number;
+}
+
+export interface SplitGroupFormData {
+    label: string;
+}
+
+export interface SplitPreview {
+    group_label: string;
+    month: string;
+    income?: {
+        total: number;
+        self: number;
+        other: number;
+        self_ratio: number;
+        other_ratio: number;
+    };
+    expense?: {
+        total: number;
+        self: number;
+        other: number;
+        self_ratio: number;
+        other_ratio: number;
+    };
+    balance?: {
+        total: number;
+        self: number;
+        other: number;
+    };
+}

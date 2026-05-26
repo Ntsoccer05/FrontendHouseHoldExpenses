@@ -24,6 +24,8 @@ import { HelmetProvider } from "react-helmet-async";
 import MaintenanceGuard from "../components/common/MaintenanceGuard";
 import FixedExpense from "../pages/FixedExpense";
 import { FixedExpenseProvider } from "../context/FixedExpenseContext";
+import SplitGroup from "../pages/SplitGroup";
+import { SplitGroupProvider } from "../context/SplitGroupContext";
 
 function DefineRouter() {
     return (
@@ -43,7 +45,9 @@ function DefineRouter() {
                                             // PrivateRoute：ログインしていなかったらログイン画面へリダイレクト
                                             element={
                                                 <TransactionProvider>
-                                                    <Home />
+                                                    <SplitGroupProvider>
+                                                        <Home />
+                                                    </SplitGroupProvider>
                                                 </TransactionProvider>
                                             }
                                         />
@@ -99,6 +103,16 @@ function DefineRouter() {
                                                     <FixedExpenseProvider>
                                                         <FixedExpense />
                                                     </FixedExpenseProvider>
+                                                </PrivateRoute>
+                                            }
+                                        />
+                                        <Route
+                                            path="/split-groups"
+                                            element={
+                                                <PrivateRoute>
+                                                    <SplitGroupProvider>
+                                                        <SplitGroup />
+                                                    </SplitGroupProvider>
                                                 </PrivateRoute>
                                             }
                                         />

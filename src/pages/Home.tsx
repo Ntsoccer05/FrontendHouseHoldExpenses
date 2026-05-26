@@ -1,4 +1,4 @@
-import { Box, Fab, Grid } from "@mui/material";
+import { Box, Button, Fab, Grid } from "@mui/material";
 import React, {
     useMemo,
     useRef,
@@ -23,6 +23,9 @@ import { useAuthContext } from "../context/AuthContext";
 import { Helmet } from "react-helmet-async";
 import { ogIMG } from "../config/ogImg";
 import AddIcon from '@mui/icons-material/Add';
+import ShareIcon from '@mui/icons-material/Share';
+import { ShareDialog } from '../components/ShareDialog';
+import { useSplitGroupContext } from '../context/SplitGroupContext';
 
 const Home = () => {
     const today = format(new Date(), "yyyy-MM-dd");
@@ -34,6 +37,9 @@ const Home = () => {
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+    const { splitGroups } = useSplitGroupContext();
 
     const { isMobile, currentMonth, setCurrentMonth } = useAppContext();
     const { isAuthenticated } = useAuthContext();
@@ -199,6 +205,22 @@ const Home = () => {
                 {/* 左側コンテンツ */}
                 <Box sx={{ flexGrow: 1, fontSize: { xs: "12px", sm: "1em" } }}>
                     <MonthlySummary monthlyTransactions={monthlyTransactions} />
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<ShareIcon />}
+                            onClick={() => setIsShareDialogOpen(true)}
+                            disabled={splitGroups.length === 0}
+                        >
+                            共有
+                        </Button>
+                    </Box>
+                    <ShareDialog
+                        open={isShareDialogOpen}
+                        onClose={() => setIsShareDialogOpen(false)}
+                        splitGroups={splitGroups}
+                    />
                     <Grid
                         item
                         xs={12}
