@@ -21,7 +21,7 @@ export const splitGroupApi = {
     create: (data: SplitGroupFormData) =>
         apiClient.post<{ status: number; splitGroup: SplitGroup }>('/split-groups', data),
 
-    update: (id: number, data: Partial<SplitGroupFormData> & { is_active?: boolean }) =>
+    update: (id: number, data: Partial<SplitGroupFormData>) =>
         apiClient.put<{ status: number; splitGroup: SplitGroup }>(`/split-groups/${id}`, data),
 
     remove: (id: number) =>
@@ -36,5 +36,10 @@ export const splitGroupApi = {
     getPreview: (id: number, month: string) =>
         apiClient.get<{ status: number } & SplitPreview>(
             `/split-groups/${id}/preview?month=${month}`
+        ),
+
+    getMonthlySummary: (month: string) =>
+        apiClient.get<{ status: number; income: number; expense: number; balance: number }>(
+            `/monthly-summary?month=${month}`
         ),
 };

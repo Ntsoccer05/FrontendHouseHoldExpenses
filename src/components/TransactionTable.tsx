@@ -232,7 +232,7 @@ function TransactionTableToolbar(props: TransactionTableToolbarProps) {
                     variant="subtitle1"
                     component="div"
                 >
-                    {numSelected} selected
+                    {numSelected} 件選択中
                 </Typography>
             ) : (
                 <Typography
@@ -470,7 +470,7 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
     const theme = useTheme();
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(5);
+    const [rowsPerPage, setRowsPerPage] = React.useState(10);
     const [showComparison, setShowComparison] = React.useState(false);
     
     // カテゴリ別比較の展開状態
@@ -484,6 +484,7 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
     const [checkBoxItems, setCheckBoxItems] = React.useState<CheckBoxItem[]>([]);
     const [initialCheckBoxItems, setInitialCheckBoxItems] = React.useState<CheckBoxItem[]>([]);
     const [anchorEl, setAnchorEl] = React.useState(null);
+    const mobileFilterRef = React.useRef(null);
 
     const hasInitialized = React.useRef(false);
 
@@ -881,11 +882,105 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
                     viewType={viewType}
                     onDelete={handleDelete}
                 />
+                {isMobile ? (
+                    <Box>
+                        {/* ソート・フィルターバー */}
+                        <Box sx={{ display: 'flex', alignItems: 'center', px: 2, py: 0.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+                            <TableSortLabel
+                                active={orderBy === "amount"}
+                                direction={orderBy === "amount" ? order : "asc"}
+                                onClick={(e) => handleRequestSort(e, "amount")}
+                                IconComponent={
+                                    orderBy === "amount"
+                                        ? undefined
+                                        : () => <HeightIcon sx={{ fontSize: 18, verticalAlign: 'middle', ml: 0.5 }} />
+                                }
+                            >
+                                <Typography variant="caption">金額</Typography>
+                            </TableSortLabel>
+                            <Box sx={{ flex: 1 }} />
+                            <Badge badgeContent={checkedItems.length} color="primary">
+                                <IconButton
+                                    size="small"
+                                    ref={mobileFilterRef}
+                                    onClick={() => setAnchorEl(mobileFilterRef.current)}
+                                >
+                                    <FilterListIcon fontSize="small" />
+                                </IconButton>
+                            </Badge>
+                        </Box>
+                        {visibleRows.map((row, index) => {
+                            const isItemSelected = isSelected(row.id);
+                            const labelId = `enhanced-table-checkbox-${index}`;
+                            return (
+                                <Box
+                                    key={row.id}
+                                    onClick={viewType === "monthly" ? (event) => handleClick(event, row.id) : undefined}
+                                    sx={{
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        px: 2,
+                                        py: 1,
+                                        borderBottom: "1px solid",
+                                        borderColor: "divider",
+                                        cursor: viewType === "monthly" ? "pointer" : "default",
+                                        bgcolor: isItemSelected ? "action.selected" : "transparent",
+                                    }}
+                                >
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        {viewType === "monthly" && (
+                                            <Checkbox
+                                                size="small"
+                                                checked={isItemSelected}
+                                                sx={{ p: 0 }}
+                                                inputProps={{ "aria-labelledby": labelId }}
+                                            />
+                                        )}
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{ whiteSpace: "nowrap", minWidth: 40 }}
+                                        >
+                                            {viewType === "monthly"
+                                                ? format(parseISO(row.date as string), "M月d日")
+                                                : row.date}
+                                        </Typography>
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flex: 1, minWidth: 0 }}>
+                                            <DynamicIcon iconName={row.icon} />
+                                            <Typography variant="body2" noWrap>{row.category}</Typography>
+                                        </Box>
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                fontWeight: "bold",
+                                                whiteSpace: "nowrap",
+                                                color: row.type === "income"
+                                                    ? theme.palette.incomeColor.main
+                                                    : theme.palette.expenseColor.main,
+                                            }}
+                                        >
+                                            {row.type === "expense" && "−"}￥{formatCurrency(row.amount)}
+                                        </Typography>
+                                    </Box>
+                                    {viewType === "monthly" && row.content && (
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{ pl: 3.5, mt: 0.25 }}
+                                        >
+                                            {row.content}
+                                        </Typography>
+                                    )}
+                                </Box>
+                            );
+                        })}
+                    </Box>
+                ) : (
                 <TableContainer>
                     <Table
                         sx={{ minWidth: 750 }}
                         aria-labelledby="tableTitle"
-                        size={"medium"}
+                        size={"small"}
                     >
                         <TransactionTableHead
                             numSelected={selected.length}
@@ -1002,7 +1097,7 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
                             {emptyRows > 0 && (
                                 <TableRow
                                     style={{
-                                        height: 53 * emptyRows,
+                                        height: 33 * emptyRows,
                                     }}
                                 >
                                     <TableCell colSpan={viewType === "monthly" ? 6 : 4} />
@@ -1011,8 +1106,9 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
                         </TableBody>
                     </Table>
                 </TableContainer>
+                )}
                 <TablePagination
-                    rowsPerPageOptions={[5, 10, 25]}
+                    rowsPerPageOptions={[10, 25, 50]}
                     component="div"
                     count={
                         viewType === "monthly"
@@ -1029,7 +1125,9 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
                     onRowsPerPageChange={handleChangeRowsPerPage}
                     labelRowsPerPage="表示件数："
                     labelDisplayedRows={({ from, to, count }) =>
-                        `${from}〜${to} 件を表示 ／ 全 ${
+                        isMobile
+                            ? `${from}-${to} / ${count}件`
+                            : `${from}〜${to} 件を表示 ／ 全 ${
                             count !== -1 ? count : `より多くの`
                         } 件`
                     }
