@@ -3,10 +3,10 @@ import React, {
     createContext,
     useContext,
     useEffect,
-    useState,
     useCallback,
     useMemo,
 } from "react";
+import { useSessionState } from "../hooks/useSessionState";
 import { useMediaQuery, useTheme } from "@mui/material";
 import {
     BaseUserCategory,
@@ -62,18 +62,26 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
 
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [currentYear, setCurrentYear] = useState(new Date());
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [loginFlg, setLoginFlg] = useState<number>(0);
+    const [transactions, setTransactions] = React.useState<Transaction[]>([]);
+    const [currentMonth, setCurrentMonth] = useSessionState<Date>(
+        "currentMonth",
+        new Date(),
+        (stored) => new Date(stored as string)
+    );
+    const [currentYear, setCurrentYear] = useSessionState<Date>(
+        "currentYear",
+        new Date(),
+        (stored) => new Date(stored as string)
+    );
+    const [isLoading, setIsLoading] = React.useState<boolean>(true);
+    const [loginFlg, setLoginFlg] = React.useState<number>(0);
     const {loginUser} = useAuthContext();
 
     // 👇 useAuthを使ってLoginUser取得
-    const [IncomeCategories, setIncomeCategories] = useState<CategoryItem[]>([]);
-    const [ExpenseCategories, setExpenseCategories] = useState<CategoryItem[]>([]);
+    const [IncomeCategories, setIncomeCategories] = React.useState<CategoryItem[]>([]);
+    const [ExpenseCategories, setExpenseCategories] = React.useState<CategoryItem[]>([]);
 
-    const [snackBarState, setSnackBarState] = useState<SnackBarState>(defaultState);
+    const [snackBarState, setSnackBarState] = React.useState<SnackBarState>(defaultState);
 
     // 表示関数
     const showSnackBar = (state: Partial<SnackBarState>) => {
