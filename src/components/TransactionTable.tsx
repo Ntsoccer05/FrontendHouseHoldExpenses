@@ -37,6 +37,8 @@ import DynamicIcon from "./common/DynamicIcon";
 import TableSortLabel from "@mui/material/TableSortLabel";
 import HeightIcon from "@mui/icons-material/Height";
 import { useAppContext } from "../context/AppContext";
+import { useSessionState } from "../hooks/useSessionState";
+import { getSessionStorage, setSessionStorage } from "../utils/manageSessionStorage";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import { CheckBoxItem, Transaction, TransactionType } from "../types";
 import { PopoverContent } from "./PopoverContent";
@@ -470,16 +472,16 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
     const theme = useTheme();
     const [selected, setSelected] = React.useState<readonly string[]>([]);
     const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(10);
-    const [showComparison, setShowComparison] = React.useState(false);
-    
+
+    // セッション永続化する状態
+    const [rowsPerPage, setRowsPerPage] = useSessionState<number>("tableRowsPerPage", 10);
+    const [showComparison, setShowComparison] = useSessionState<boolean>("tableShowComparison", false);
+    const [order, setOrder] = useSessionState<"asc" | "desc" | undefined>("tableOrder", undefined);
+    const [orderBy, setOrderBy] = useSessionState<string>("tableOrderBy", "date");
+
     // カテゴリ別比較の展開状態
     const [incomeExpanded, setIncomeExpanded] = React.useState(false);
     const [expenseExpanded, setExpenseExpanded] = React.useState(false);
-
-    // 並び替えのための状態
-    const [order, setOrder] = React.useState<"asc" | "desc" | undefined>();
-    const [orderBy, setOrderBy] = React.useState<string>("date");
 
     const [checkBoxItems, setCheckBoxItems] = React.useState<CheckBoxItem[]>([]);
     const [initialCheckBoxItems, setInitialCheckBoxItems] = React.useState<CheckBoxItem[]>([]);
@@ -704,19 +706,31 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
 
     React.useEffect(() => {
         if (!hasInitialized.current && uniqueItems.length > 0) {
+            // セッションストレージから非チェックカテゴリを復元
+            const unchecked: string[] = getSessionStorage("tableUncheckedCategories") ?? [];
             const initialCheckBoxItems = uniqueItems.map((item) => ({
                 key: item.key,
                 label: item.label,
-                checked: true,
+                checked: !unchecked.includes(item.label),
                 disabled: false,
                 onStateChange: () => {},
             }));
 
             setInitialCheckBoxItems(initialCheckBoxItems);
             setCheckBoxItems(initialCheckBoxItems);
-            hasInitialized.current = true; // 処理を一度だけ走らせるためのフラグ
+            hasInitialized.current = true;
         }
     }, [uniqueItems]);
+
+    // カテゴリフィルターが変わったら非チェック状態を保存
+    React.useEffect(() => {
+        if (hasInitialized.current && checkBoxItems.length > 0) {
+            const unchecked = checkBoxItems
+                .filter((item) => !item.checked)
+                .map((item) => item.label);
+            setSessionStorage("tableUncheckedCategories", unchecked);
+        }
+    }, [checkBoxItems]);
 
     React.useEffect(() => {
         hasInitialized.current = false; // viewTypeが変わったらフラグをリセット

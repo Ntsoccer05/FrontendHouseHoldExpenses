@@ -80,6 +80,14 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
     // 進行中の一括取得リクエストを管理（重複リクエスト防止）
     const pendingMonthRef = useRef<string | null>(null);
 
+    // "yyyyMM" 形式の文字列から前月の "yyyyMM" を返すヘルパー
+    const getPreviousMonth = (yearMonth: string): string => {
+        const year = parseInt(yearMonth.substring(0, 4));
+        const month = parseInt(yearMonth.substring(4, 6));
+        if (month === 1) return `${year - 1}12`;
+        return `${year}${String(month - 1).padStart(2, "0")}`;
+    };
+
     // 共通アイコン取得処理をメモ化
     const { ExpenseCategories, IncomeCategories } = useAppContext();
     const addCategoryIcon = useMemo(() => {
@@ -103,6 +111,8 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
         if (monthCacheRef.current.has(currentMonth)) {
             const cachedData = monthCacheRef.current.get(currentMonth)!;
             setMonthlyTransactions(cachedData);
+            const prevMonth = getPreviousMonth(currentMonth);
+            setPreMonthlyTransactions(monthCacheRef.current.get(prevMonth) || []);
             return cachedData;
         }
 
@@ -124,7 +134,8 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
 
             const currentMonthData = monthCacheRef.current.get(currentMonth) || [];
             setMonthlyTransactions(currentMonthData);
-            setPreMonthlyTransactions([]);
+            const prevMonth = getPreviousMonth(currentMonth);
+            setPreMonthlyTransactions(monthCacheRef.current.get(prevMonth) || []);
             return currentMonthData;
         } catch (err) {
             console.error("Error fetching monthly transactions:", err);

@@ -116,21 +116,18 @@ const VisualComparisonView = ({ comparisonData, periodLabels }: VisualComparison
                             <Typography variant="caption" color="text.secondary">
                                 {periodLabels.previous}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" color={`${color}.main`} sx={{ opacity: 0.6 }}>
                                 ¥{previous.toLocaleString()}
                             </Typography>
                         </Box>
-                        <LinearProgress 
-                            variant="determinate" 
-                            value={progressPrevious} 
-                            color="inherit"
-                            sx={{ 
-                                height: 6, 
+                        <LinearProgress
+                            variant="determinate"
+                            value={progressPrevious}
+                            color={color}
+                            sx={{
+                                height: 6,
                                 borderRadius: 3,
-                                bgcolor: 'grey.200',
-                                '& .MuiLinearProgress-bar': {
-                                    bgcolor: 'grey.400'
-                                }
+                                opacity: 0.4,
                             }}
                         />
                     </Box>

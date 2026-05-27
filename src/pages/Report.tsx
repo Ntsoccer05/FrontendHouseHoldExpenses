@@ -22,6 +22,7 @@ import { ogIMG } from "../config/ogImg";
 import { ComparisonSummary } from "../components/ComparitionSummary/ComparitionSummary";
 import { Analytics } from "@mui/icons-material";
 import { useAppContext } from "../context/AppContext";
+import { useSessionState } from "../hooks/useSessionState";
 
 const Report = () => {
     const commonPaperStyle = {
@@ -31,15 +32,19 @@ const Report = () => {
         p: 2,
     };
 
-    // 年別/月別の表示を切り替える状態
-    const [viewType, setViewType] = React.useState<"monthly" | "yearly">(
-        "monthly",
-    );
-
     const { isMobile } = useAppContext();
 
-    // 比較分析の表示・非表示を切り替える状態
-    const [showComparison, setShowComparison] = React.useState<boolean>(isMobile ? false : true);
+    // 年別/月別の表示を切り替える状態（セッション永続化）
+    const [viewType, setViewType] = useSessionState<"monthly" | "yearly">(
+        "reportViewType",
+        "monthly"
+    );
+
+    // 比較分析の表示・非表示を切り替える状態（セッション永続化）
+    const [showComparison, setShowComparison] = useSessionState<boolean>(
+        "reportShowComparison",
+        !isMobile
+    );
 
     const handleViewTypeChange = (
         event: React.MouseEvent<HTMLElement>,
