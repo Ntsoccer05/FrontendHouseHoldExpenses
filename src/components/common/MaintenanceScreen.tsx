@@ -3,7 +3,7 @@ import BuildIcon from "@mui/icons-material/Build";
 import { MAINTENANCE_SCHEDULE } from "../../config/maintenance";
 
 export default function MaintenanceScreen() {
-  const { startHour, endHour } = MAINTENANCE_SCHEDULE;
+  const { startHour, startMinute, endHour, endMinute } = MAINTENANCE_SCHEDULE;
 
   return (
     <Box
@@ -39,7 +39,7 @@ export default function MaintenanceScreen() {
               メンテナンス時間
             </Typography>
             <Typography variant="h6" color="primary.main" fontWeight="bold">
-              毎日 {startHour}:00 〜 {endHour}:00 (JST)
+              毎日 {startHour}:{String(startMinute).padStart(2, "0")} 〜 {endHour}:{String(endMinute).padStart(2, "0")} (JST)
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary">
