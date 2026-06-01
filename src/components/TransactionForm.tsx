@@ -10,7 +10,6 @@ import {
     DialogContentText,
     DialogTitle,
     FormControl,
-    FormControlLabel,
     FormHelperText,
     IconButton,
     InputLabel,
@@ -585,16 +584,14 @@ const TransactionForm = memo(
                                 const showUnregisterWarning = isAlreadyRegistered && !field.value;
                                 return (
                                     <>
-                                        <FormControlLabel
-                                            control={
-                                                <Checkbox
-                                                    checked={!!field.value}
-                                                    onChange={(e) => field.onChange(e.target.checked)}
-                                                    disabled={isAlreadyRegistered && !canUnregister}
-                                                />
-                                            }
-                                            label="固定収支として登録"
-                                        />
+                                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                                            <Checkbox
+                                                checked={!!field.value}
+                                                onChange={(e) => field.onChange(e.target.checked)}
+                                                disabled={isAlreadyRegistered && !canUnregister}
+                                            />
+                                            <Typography variant="body2">固定収支として登録</Typography>
+                                        </Box>
                                         {isAlreadyRegistered && !showUnregisterWarning && (
                                             <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: "block" }}>
                                                 固定収支として登録済みです
