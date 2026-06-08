@@ -28,6 +28,7 @@ import {
 import LoadingButton from "@mui/lab/LoadingButton";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import CloseIcon from "@mui/icons-material/Close";
 import type { FixedExpense } from "../types";
 import { useAppContext } from "../context/AppContext";
 import DynamicIcon from "./common/DynamicIcon";
@@ -418,7 +419,16 @@ export const FixedExpenseList = ({
 
             {/* 単体削除ダイアログ */}
             <Dialog open={deleteTarget !== null} onClose={() => !isDeleting && setDeleteTarget(null)}>
-                <DialogTitle>削除しますか？</DialogTitle>
+                <DialogTitle sx={{ pr: 6 }}>
+                    削除しますか？
+                    <IconButton
+                        onClick={() => setDeleteTarget(null)}
+                        disabled={isDeleting}
+                        sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         この固定収支を削除します。
@@ -441,7 +451,16 @@ export const FixedExpenseList = ({
 
             {/* 一括削除ダイアログ */}
             <Dialog open={bulkDeleteOpen} onClose={() => !isBulkDeleting && setBulkDeleteOpen(false)}>
-                <DialogTitle>{selectedInView.length}件を削除しますか？</DialogTitle>
+                <DialogTitle sx={{ pr: 6 }}>
+                    {selectedInView.length}件を削除しますか？
+                    <IconButton
+                        onClick={() => setBulkDeleteOpen(false)}
+                        disabled={isBulkDeleting}
+                        sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         選択した固定収支を削除します。
