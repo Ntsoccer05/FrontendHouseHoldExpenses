@@ -12,10 +12,12 @@ import {
     MenuItem,
     Select,
     TextField,
+    IconButton,
     ToggleButton,
     ToggleButtonGroup,
     Typography,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import LoadingButton from "@mui/lab/LoadingButton";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -106,7 +108,15 @@ export const FixedExpenseForm = ({
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>{editTarget ? "固定収支を編集" : "固定収支を追加"}</DialogTitle>
+            <DialogTitle sx={{ pr: 6 }}>
+                {editTarget ? "固定収支を編集" : "固定収支を追加"}
+                <IconButton
+                    onClick={onClose}
+                    sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
             <DialogContent>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
                     {/* 種別トグル */}

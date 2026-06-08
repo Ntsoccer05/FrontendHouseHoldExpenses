@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import CloseIcon from '@mui/icons-material/Close';
 import type { SplitGroup } from '../types';
 
 interface SplitGroupListProps {
@@ -144,7 +145,15 @@ export const SplitGroupList = ({
             </TableContainer>
 
             <Dialog open={!!confirmTarget} onClose={handleCancel}>
-                <DialogTitle>分担グループの削除</DialogTitle>
+                <DialogTitle sx={{ pr: 6 }}>
+                    分担グループの削除
+                    <IconButton
+                        onClick={handleCancel}
+                        sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         「{confirmTarget?.label}」を削除しますか？この操作は元に戻せません。

@@ -12,11 +12,13 @@ import {
     DialogTitle,
     FormControlLabel,
     InputAdornment,
+    IconButton,
     Stack,
     TextField,
     Typography,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CloseIcon from '@mui/icons-material/Close';
 import LoadingButton from '@mui/lab/LoadingButton';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -210,8 +212,14 @@ export const SplitGroupForm = ({
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-            <DialogTitle>
+            <DialogTitle sx={{ pr: 6 }}>
                 {editTarget ? '分担グループを編集' : '分担グループを追加'}
+                <IconButton
+                    onClick={onClose}
+                    sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                >
+                    <CloseIcon />
+                </IconButton>
             </DialogTitle>
             <DialogContent>
                 <Stack spacing={3} sx={{ mt: 1 }}>

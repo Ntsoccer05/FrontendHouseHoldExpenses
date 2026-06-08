@@ -20,10 +20,12 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    IconButton,
     TextField,
     CircularProgress,
     Backdrop,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { memo, useState, useRef, useCallback, useEffect } from "react";
 import DailySummary from "./DailySummary";
 import NotesIcon from "@mui/icons-material/Notes";
@@ -745,7 +747,15 @@ const TransactionMenu = memo(
                     maxWidth="sm"
                     fullWidth
                 >
-                    <DialogTitle>コピー先の日付を選択</DialogTitle>
+                    <DialogTitle sx={{ pr: 6 }}>
+                        コピー先の日付を選択
+                        <IconButton
+                            onClick={() => setDatePickerDialog({ open: false, transaction: null })}
+                            sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
                     <DialogContent>
                         <TextField
                             autoFocus
@@ -795,7 +805,15 @@ const TransactionMenu = memo(
                     maxWidth="sm"
                     fullWidth
                 >
-                    <DialogTitle>削除確認</DialogTitle>
+                    <DialogTitle sx={{ pr: 6 }}>
+                        削除確認
+                        <IconButton
+                            onClick={() => setDeleteConfirmDialog({ open: false, transaction: null })}
+                            sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
                     <DialogContent>
                         <Typography variant="body1" gutterBottom>
                             以下の入力内容を削除しますか？
@@ -833,7 +851,15 @@ const TransactionMenu = memo(
                     maxWidth="sm"
                     fullWidth
                 >
-                    <DialogTitle>コピー先の日付を選択</DialogTitle>
+                    <DialogTitle sx={{ pr: 6 }}>
+                        コピー先の日付を選択
+                        <IconButton
+                            onClick={() => setBulkCopyDialog((prev) => ({ ...prev, open: false }))}
+                            sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
                     <DialogContent>
                         <TextField
                             autoFocus
@@ -898,7 +924,15 @@ const TransactionMenu = memo(
                     maxWidth="sm"
                     fullWidth
                 >
-                    <DialogTitle>削除確認</DialogTitle>
+                    <DialogTitle sx={{ pr: 6 }}>
+                        削除確認
+                        <IconButton
+                            onClick={() => setBulkDeleteDialogOpen(false)}
+                            sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
                     <DialogContent>
                         <Typography variant="body1" gutterBottom>
                             選択した{selectedIds.length}件を削除しますか？

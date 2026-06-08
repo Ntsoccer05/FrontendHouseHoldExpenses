@@ -16,6 +16,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 import CancelIcon from "@mui/icons-material/Cancel";
+import CloseIcon from "@mui/icons-material/Close";
 import {
     Button,
     ButtonGroup,
@@ -469,7 +470,15 @@ function Category() {
 
             {/* キャンセル確認ダイアログ */}
             <Dialog open={cancelDialogOpen} onClose={handleCancelClose}>
-                <DialogTitle>変更を破棄しますか？</DialogTitle>
+                <DialogTitle sx={{ pr: 6 }}>
+                    変更を破棄しますか？
+                    <IconButton
+                        onClick={handleCancelClose}
+                        sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         並び替えの変更は保存されません。編集をキャンセルしますか？
@@ -485,7 +494,15 @@ function Category() {
 
             {/* 編集中タブ切り替え確認ダイアログ */}
             <Dialog open={switchDialogOpen} onClose={handleSwitchCancel}>
-                <DialogTitle>編集を破棄しますか？</DialogTitle>
+                <DialogTitle sx={{ pr: 6 }}>
+                    編集を破棄しますか？
+                    <IconButton
+                        onClick={handleSwitchCancel}
+                        sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         編集中の変更は保存されません。
@@ -502,7 +519,16 @@ function Category() {
 
             {/* 削除確認ダイアログ */}
             <Dialog open={deleteDialogOpen} onClose={!isDeleting ? handleDeleteCancel : undefined}>
-                <DialogTitle>カテゴリを削除しますか？</DialogTitle>
+                <DialogTitle sx={{ pr: 6 }}>
+                    カテゴリを削除しますか？
+                    <IconButton
+                        onClick={handleDeleteCancel}
+                        disabled={isDeleting}
+                        sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         選択した {selected.length} 件のカテゴリを削除します。この操作は元に戻せません。

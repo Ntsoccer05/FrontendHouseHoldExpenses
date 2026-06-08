@@ -21,6 +21,7 @@ import {
     Typography,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CloseIcon from '@mui/icons-material/Close';
 import IosShareIcon from '@mui/icons-material/IosShare';
 import { format, subMonths } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
@@ -301,7 +302,15 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
 
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-            <DialogTitle>家計を共有する</DialogTitle>
+            <DialogTitle sx={{ pr: 6 }}>
+                家計を共有する
+                <IconButton
+                    onClick={onClose}
+                    sx={{ position: 'absolute', right: 8, top: 8, color: (theme) => theme.palette.grey[500] }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                     <FormControl fullWidth size="small">
