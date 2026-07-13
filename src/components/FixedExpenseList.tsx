@@ -209,42 +209,42 @@ export const FixedExpenseList = ({
 
     return (
         <>
-            <Stack sx={{ mb: 2 }}>
-                <ButtonGroup fullWidth disabled={isOperating}>
-                    <Button
-                        variant={activeTab === "expense" ? "contained" : "outlined"}
-                        color="error"
-                        onClick={() => handleTabChange("expense")}
-                    >
-                        支出
-                    </Button>
-                    <Button
-                        variant={activeTab === "income" ? "contained" : "outlined"}
-                        color="primary"
-                        onClick={() => handleTabChange("income")}
-                    >
-                        収入
-                    </Button>
-                </ButtonGroup>
+            {/* タブ切り替え（選択中は一括削除バーに切り替え、行は増やさない） */}
+            <Stack sx={{ mb: 2, minHeight: 40, justifyContent: "center" }}>
+                {selectedInView.length > 0 ? (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                            {selectedInView.length}件選択中
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            startIcon={<DeleteIcon />}
+                            onClick={() => setBulkDeleteOpen(true)}
+                        >
+                            一括削除
+                        </Button>
+                    </Box>
+                ) : (
+                    <ButtonGroup fullWidth disabled={isOperating} size="small">
+                        <Button
+                            variant={activeTab === "expense" ? "contained" : "outlined"}
+                            color="error"
+                            onClick={() => handleTabChange("expense")}
+                        >
+                            支出
+                        </Button>
+                        <Button
+                            variant={activeTab === "income" ? "contained" : "outlined"}
+                            color="primary"
+                            onClick={() => handleTabChange("income")}
+                        >
+                            収入
+                        </Button>
+                    </ButtonGroup>
+                )}
             </Stack>
-
-            {/* 一括削除ツールバー */}
-            {selectedInView.length > 0 && (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                    <Typography variant="body2" color="text.secondary">
-                        {selectedInView.length}件選択中
-                    </Typography>
-                    <Button
-                        variant="contained"
-                        color="error"
-                        size="small"
-                        startIcon={<DeleteIcon />}
-                        onClick={() => setBulkDeleteOpen(true)}
-                    >
-                        一括削除
-                    </Button>
-                </Box>
-            )}
 
             {displayed.length === 0 ? (
                 <Typography color="text.secondary">

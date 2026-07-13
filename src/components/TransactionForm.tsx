@@ -581,28 +581,26 @@ const TransactionForm = memo(
                             render={({ field }) => {
                                 const isAlreadyRegistered = selectedTransaction?.isFixedExpense === true;
                                 const canUnregister = isAlreadyRegistered && !!selectedTransaction?.fixedExpenseId;
-                                const showUnregisterWarning = isAlreadyRegistered && !field.value;
+                                const isDisabled = isAlreadyRegistered && !canUnregister;
                                 return (
-                                    <>
-                                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                                            <Checkbox
-                                                checked={!!field.value}
-                                                onChange={(e) => field.onChange(e.target.checked)}
-                                                disabled={isAlreadyRegistered && !canUnregister}
-                                            />
-                                            <Typography variant="body2">固定収支として登録</Typography>
-                                        </Box>
-                                        {isAlreadyRegistered && !showUnregisterWarning && (
-                                            <Typography variant="caption" color="text.secondary" sx={{ ml: 4, display: "block" }}>
-                                                固定収支として登録済みです
-                                            </Typography>
-                                        )}
-                                        {showUnregisterWarning && (
-                                            <Typography variant="caption" color="warning.main" sx={{ ml: 4, display: "block" }}>
-                                                更新すると固定収支登録が解除されます
-                                            </Typography>
-                                        )}
-                                    </>
+                                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                                        <Checkbox
+                                            checked={!!field.value}
+                                            onChange={(e) => field.onChange(e.target.checked)}
+                                            disabled={isDisabled}
+                                        />
+                                        <Typography
+                                            variant="body2"
+                                            onClick={
+                                                !isMobile && !isDisabled
+                                                    ? () => field.onChange(!field.value)
+                                                    : undefined
+                                            }
+                                            sx={!isMobile && !isDisabled ? { cursor: "pointer" } : undefined}
+                                        >
+                                            固定収支として登録
+                                        </Typography>
+                                    </Box>
                                 );
                             }}
                         />
