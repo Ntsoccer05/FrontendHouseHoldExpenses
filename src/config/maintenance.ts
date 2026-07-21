@@ -1,6 +1,6 @@
 export const MAINTENANCE_SCHEDULE = {
-  startHour: 1,   // メンテナンス開始時刻 (JST)
-  startMinute: 0,
-  endHour: 9,     // メンテナンス終了時刻 (JST)
-  endMinute: 20,
+  startHour: 23,  // メンテナンス開始時刻 (JST)
+  startMinute: 30,
+  endHour: 7,     // メンテナンス終了時刻 (JST)
+  endMinute: 50,
 } as const;

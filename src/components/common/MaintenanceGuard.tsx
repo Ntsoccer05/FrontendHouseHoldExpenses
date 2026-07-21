@@ -8,7 +8,11 @@ function isMaintenanceTime(): boolean {
   const { startHour, startMinute, endHour, endMinute } = MAINTENANCE_SCHEDULE;
   const start = startHour * 60 + startMinute;
   const end = endHour * 60 + endMinute;
-  return jstMinutes >= start && jstMinutes < end;
+  if (start <= end) {
+    return jstMinutes >= start && jstMinutes < end;
+  }
+  // 日をまたぐ場合 (例: 23:30〜翌7:50)
+  return jstMinutes >= start || jstMinutes < end;
 }
 
 export default function MaintenanceGuard({ children }: { children: ReactNode }) {
