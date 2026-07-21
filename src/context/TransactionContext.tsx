@@ -29,11 +29,11 @@ interface TransactionContext {
         transaction: TransactionData,
         transactionId: string
     ) => Promise<void>;
-    getMonthlyTransactions: (currentMonth: string) => Promise<any>;
+    getMonthlyTransactions: (currentMonth: string) => Promise<Transaction[]>;
     prefetchMonth: (yearMonth: string) => Promise<void>;
     refreshMonthCache: (yearMonth: string) => Promise<void>;
     monthlyTransactions: Transaction[];
-    getYearlyTransactions: (currentYear: string) => Promise<any>;
+    getYearlyTransactions: (currentYear: string) => Promise<Transaction[]>;
     yearlyTransactions: Transaction[];
     preMonthlyTransactions: Transaction[];
     preYearlyTransactions: Transaction[];
@@ -77,8 +77,16 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
 
     // 月間データキャッシュ
     const monthCacheRef = useRef<Map<string, Transaction[]>>(new Map());
-    // 進行中の一括取得リクエストを管理（重複リクエスト防止）
-    const pendingMonthRef = useRef<string | null>(null);
+    // 直近リクエストされた月。取得結果を画面に適用する前にこれと比較し、
+    // 一致する場合のみ反映する（別の月へ移動済みなら古いレスポンスは破棄）。
+    // 単純増分カウンタにしないのは、同じ月に戻ってきた際に自分自身より
+    // 「新しい」と誤判定されて結果を捨ててしまうのを避けるため。
+    const latestRequestedMonthRef = useRef<string | null>(null);
+    // 進行中の月次一括取得リクエストを月ごとに管理し、同じ月への
+    // 重複リクエストが発生した場合は新規発行せず既存のPromiseを共有する
+    const inFlightBulkRequestsRef = useRef<Map<string, Promise<Transaction[]>>>(
+        new Map()
+    );
 
     // "yyyyMM" 形式の文字列から前月の "yyyyMM" を返すヘルパー
     const getPreviousMonth = (yearMonth: string): string => {
@@ -107,6 +115,9 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
         // 未ログイン時はAPIを呼ばない
         if (!loginUser?.id) return [];
 
+        // キャッシュヒットの同期パスも含め、必ずここで更新する
+        latestRequestedMonthRef.current = currentMonth;
+
         // キャッシュに存在すれば即座に返す
         if (monthCacheRef.current.has(currentMonth)) {
             const cachedData = monthCacheRef.current.get(currentMonth)!;
@@ -116,35 +127,52 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
             return cachedData;
         }
 
-        // 同じ月の一括取得が進行中の場合は重複リクエストを防ぐ
-        if (pendingMonthRef.current === currentMonth) return [];
-        pendingMonthRef.current = currentMonth;
+        // 同じ月への一括取得が既に進行中なら、新規リクエストせず
+        // 既存のPromiseを共有する（同一月への重複リクエストを防止）
+        const existingRequest = inFlightBulkRequestsRef.current.get(currentMonth);
+        if (existingRequest) return existingRequest;
 
-        try {
-            // キャッシュがなければ4ヶ月一括取得（前々月・前月・当月・翌月）
-            const response = await apiClient.get("/monthly-transactions-bulk", {
-                params: { base_month: currentMonth, user_id: loginUser?.id },
-            });
+        const request = (async () => {
+            try {
+                // キャッシュがなければ4ヶ月一括取得（前々月・前月・当月・翌月）
+                const response = await apiClient.get(
+                    "/monthly-transactions-bulk",
+                    { params: { base_month: currentMonth, user_id: loginUser?.id } }
+                );
 
-            // レスポンス: { "202602": [...], "202603": [...], "202604": [...], "202605": [...] }
-            const bulkData: Record<string, Transaction[]> = response.data;
-            Object.entries(bulkData).forEach(([month, data]) => {
-                monthCacheRef.current.set(month, data);
-            });
+                // レスポンス: { "202602": [...], "202603": [...], "202604": [...], "202605": [...] }
+                const bulkData: Record<string, Transaction[]> = response.data;
+                Object.entries(bulkData).forEach(([month, data]) => {
+                    monthCacheRef.current.set(month, data);
+                });
 
-            const currentMonthData = monthCacheRef.current.get(currentMonth) || [];
-            setMonthlyTransactions(currentMonthData);
-            const prevMonth = getPreviousMonth(currentMonth);
-            setPreMonthlyTransactions(monthCacheRef.current.get(prevMonth) || []);
-            return currentMonthData;
-        } catch (err) {
-            console.error("Error fetching monthly transactions:", err);
-            setMonthlyTransactions([]);
-            setPreMonthlyTransactions([]);
-            return [];
-        } finally {
-            pendingMonthRef.current = null;
-        }
+                const currentMonthData =
+                    monthCacheRef.current.get(currentMonth) || [];
+
+                // 別の月への新しいナビゲーションが既に発生していれば、この結果は
+                // もう表示対象ではないため画面に反映せず破棄する
+                if (latestRequestedMonthRef.current === currentMonth) {
+                    setMonthlyTransactions(currentMonthData);
+                    const prevMonth = getPreviousMonth(currentMonth);
+                    setPreMonthlyTransactions(
+                        monthCacheRef.current.get(prevMonth) || []
+                    );
+                }
+                return currentMonthData;
+            } catch (err) {
+                console.error("Error fetching monthly transactions:", err);
+                if (latestRequestedMonthRef.current === currentMonth) {
+                    setMonthlyTransactions([]);
+                    setPreMonthlyTransactions([]);
+                }
+                return [];
+            } finally {
+                inFlightBulkRequestsRef.current.delete(currentMonth);
+            }
+        })();
+
+        inFlightBulkRequestsRef.current.set(currentMonth, request);
+        return request;
     }, [loginUser?.id]);
 
     // 月間データをバックグラウンドで先読み（キャッシュミス時のフォールバック）

@@ -10,7 +10,7 @@ import {
 import { calculateDailyBalances } from "../utils/financeCalculations";
 import { formatCurrency } from "../utils/formatting";
 import interactionPlugin, { DateClickArg } from "@fullcalendar/interaction";
-import { Box, useTheme } from "@mui/material";
+import { Box, Skeleton, useTheme } from "@mui/material";
 import {
     isSameMonth,
     startOfMonth,
@@ -73,6 +73,9 @@ const Calendar = memo(
         const isDateClickingRef = useRef(false);
         const swipeStartTimeRef = useRef(0);
         const hasMovedRef = useRef(false);
+        // 前/次ボタンの連打ロック用ref（stateではなくrefにすることで
+        // Reactの再レンダーを待たず同期的にチェックできる）
+        const navClickLockRef = useRef(false);
 
         // 状態をまとめて管理
         const [calendarState, setCalendarState] = useState({
@@ -119,6 +122,27 @@ const Calendar = memo(
             }
         }, [calendarRef, currentMonth, isMobile, calculateWeeksInMonth]);
 
+        // FullCalendar標準の前/次ボタンの連打をブロックする。
+        // FullCalendar自身がクリックを処理するため、Reactのstate経由（再レンダー待ち）
+        // では連打をすり抜けてしまう。refで同期チェックし、クールダウン中のクリックは
+        // FullCalendarに届く前にキャプチャフェーズで止める（連打時の強制リフロー多発を防止）。
+        const handleNavClickCapture = useCallback((e: React.MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const isNavButton = target.closest('.fc-prev-button, .fc-next-button');
+            if (!isNavButton) return;
+
+            if (navClickLockRef.current) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
+            navClickLockRef.current = true;
+            setTimeout(() => {
+                navClickLockRef.current = false;
+            }, 350);
+        }, []);
+
         // 非同期処理でデータを取得
         const fetchMonthlyTransactions = useCallback(
             async (date: Date) => {
@@ -147,10 +171,18 @@ const Calendar = memo(
         );
 
         // 初期表示時の処理を改善
+        // 連続ナビゲーション時は最後の月だけ取得する（クリック連打ロックとは別に、
+        // キーボード操作等クリックを経由しないcurrentMonth変更にも安全側の対策として機能する）
+        const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
         useEffect(() => {
-            if (currentMonth) {
+            if (!currentMonth) return;
+            if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
+            fetchDebounceRef.current = setTimeout(() => {
                 fetchMonthlyTransactions(currentMonth);
-            }
+            }, 200);
+            return () => {
+                if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
+            };
         }, [currentMonth, fetchMonthlyTransactions]);
 
         // 画面サイズ変更時にも高さを調整
@@ -183,6 +215,38 @@ const Calendar = memo(
                 }),
             [dailyBalances]
         );
+
+        // ローディングが一定時間(150ms)続いた場合のみスケルトンを表示する。
+        // キャッシュヒット等の速い遷移(多くは150ms未満)ではスケルトンを一切出さず、
+        // チラつき(一瞬だけ表示されて消える)を防ぐ。
+        const [showSkeleton, setShowSkeleton] = useState(false);
+        const skeletonDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+        useEffect(() => {
+            if (isLoading) {
+                skeletonDelayRef.current = setTimeout(() => setShowSkeleton(true), 150);
+            } else {
+                if (skeletonDelayRef.current) clearTimeout(skeletonDelayRef.current);
+                setShowSkeleton(false);
+            }
+            return () => {
+                if (skeletonDelayRef.current) clearTimeout(skeletonDelayRef.current);
+            };
+        }, [isLoading]);
+
+        // 表示中の月の日数分だけスケルトン用イベントを生成する。
+        // 実際のcalendarEventsと同じ構造(1日1イベント)にすることで、
+        // 実データに差し替わった時のレイアウトサイズが変わらないようにする。
+        const skeletonEvents = useMemo(() => {
+            if (!showSkeleton || !currentMonth) return [];
+            const daysInMonth = getDaysInMonth(currentMonth);
+            return Array.from({ length: daysInMonth }, (_, i) => {
+                const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i + 1);
+                return {
+                    start: format(date, "yyyy-MM-dd"),
+                    isSkeleton: true,
+                };
+            });
+        }, [showSkeleton, currentMonth]);
 
         // 祝日イベントを生成する関数
         const backgroundHoliday = useCallback((): HolidayEvent[] => {
@@ -506,34 +570,52 @@ const Calendar = memo(
 
         // イベントレンダリング関数
         const renderEventContent = useCallback(
-            (eventInfo: EventContentArg) => (
-                <div className="custom-event" style={{fontSize: isMobile ? "11px" : "auto"}}>
-                    <div
-                        className="money custom-event-content"
-                        id="event-income"
-                    >
-                        {eventInfo.event.extendedProps.income}
+            (eventInfo: EventContentArg) => {
+                if (eventInfo.event.extendedProps.isSkeleton) {
+                    return (
+                        <div className="custom-event" style={{ fontSize: isMobile ? "11px" : "auto" }}>
+                            <div className="money custom-event-content" id="event-income">
+                                <Skeleton variant="text" width="70%" sx={{ mx: "auto" }} />
+                            </div>
+                            <div className="money custom-event-content" id="event-expense">
+                                <Skeleton variant="text" width="70%" sx={{ mx: "auto" }} />
+                            </div>
+                            <div className="money custom-event-content" id="event-balance">
+                                <Skeleton variant="text" width="70%" sx={{ mx: "auto" }} />
+                            </div>
+                        </div>
+                    );
+                }
+                return (
+                    <div className="custom-event" style={{fontSize: isMobile ? "11px" : "auto"}}>
+                        <div
+                            className="money custom-event-content"
+                            id="event-income"
+                        >
+                            {eventInfo.event.extendedProps.income}
+                        </div>
+                        <div
+                            className="money custom-event-content"
+                            id="event-expense"
+                        >
+                            {eventInfo.event.extendedProps.expense}
+                        </div>
+                        <div
+                            className="money custom-event-content"
+                            id="event-balance"
+                        >
+                            {eventInfo.event.extendedProps.balance}
+                        </div>
                     </div>
-                    <div
-                        className="money custom-event-content"
-                        id="event-expense"
-                    >
-                        {eventInfo.event.extendedProps.expense}
-                    </div>
-                    <div
-                        className="money custom-event-content"
-                        id="event-balance"
-                    >
-                        {eventInfo.event.extendedProps.balance}
-                    </div>
-                </div>
-            ),
+                );
+            },
             [isMobile]
         );
 
         return (
             <Box
                 ref={swipeWrapperRef}
+                onClickCapture={handleNavClickCapture}
                 sx={{
                     height: "auto",
                     // ローディング中のスタイル
@@ -552,7 +634,7 @@ const Calendar = memo(
                     plugins={[dayGridPlugin, interactionPlugin]}
                     initialView="dayGridMonth"
                     events={[
-                        ...calendarEvents,
+                        ...(showSkeleton ? skeletonEvents : calendarEvents),
                         ...calendarState.holidayEvents,
                         {
                             start: currentDay,

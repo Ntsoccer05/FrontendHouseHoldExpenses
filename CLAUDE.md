@@ -166,6 +166,7 @@ src/
 | レビュー受け取り | `receiving-code-review` |
 | 複数の独立した問題 | `dispatching-parallel-agents` |
 | 機能ブランチの隔離 | `using-git-worktrees` |
+| フロントエンド画面の動作確認（実ブラウザ） | `chrome-screen-check` |
 
 ---
 
