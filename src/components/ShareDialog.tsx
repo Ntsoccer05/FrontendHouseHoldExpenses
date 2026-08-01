@@ -185,9 +185,22 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
     const groupInitDoneRef = useRef(false);
 
     const [selectedGroupId, setSelectedGroupId] = useState<number | ''>('');
-    const [selectedMonth, setSelectedMonth] = useState<string>(
-        getSessionMonth(format(currentMonth, 'yyyyMM'))
-    );
+
+    // 対象月の選択肢はアプリ本体の表示月(currentMonth)を基準に生成する。
+    // 実端末の「今日」基準にすると、表示月を1年以上前/未来へ移動した状態で
+    // ダイアログを開いた際に selectedMonth が候補外となり Select が崩れる。
+    const monthOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => {
+        const d = subMonths(currentMonth, i);
+        return { label: format(d, 'yyyy年M月'), value: format(d, 'yyyyMM') };
+    }), [currentMonth]);
+
+    const resolveMonth = (options: { value: string }[]): string => {
+        const currentMonthValue = format(currentMonth, 'yyyyMM');
+        const saved = getSessionMonth(currentMonthValue);
+        return options.some(o => o.value === saved) ? saved : currentMonthValue;
+    };
+
+    const [selectedMonth, setSelectedMonth] = useState<string>(() => resolveMonth(monthOptions));
     const [copied, setCopied] = useState(false);
 
     const [showIncome, setShowIncome] = useState(savedPrefs.showIncome ?? true);
@@ -195,15 +208,17 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
     const [showBalance, setShowBalance] = useState(savedPrefs.showBalance ?? true);
     const [showRatio, setShowRatio] = useState(savedPrefs.showRatio ?? false);
 
-    const monthOptions = Array.from({ length: 12 }, (_, i) => {
-        const d = subMonths(new Date(), i);
-        return { label: format(d, 'yyyy年M月'), value: format(d, 'yyyyMM') };
-    });
+    // ダイアログが閉じている間に表示月(currentMonth)が動くと monthOptions が
+    // 更新される一方 selectedMonth は更新されないため、実際の描画・取得に使う値は
+    // ここで候補内かを検証してからフォールバックする（Select の out-of-range を防ぐ）。
+    const displayMonth = monthOptions.some(o => o.value === selectedMonth)
+        ? selectedMonth
+        : format(currentMonth, 'yyyyMM');
 
     useEffect(() => {
         if (!open) return;
         setCopied(false);
-        setSelectedMonth(getSessionMonth(format(currentMonth, 'yyyyMM')));
+        setSelectedMonth(resolveMonth(monthOptions));
     }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // グループが読み込まれたら savedPref または先頭グループを初期選択
@@ -230,17 +245,17 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
     // その他の設定を永続化
     useEffect(() => {
         savePrefs({ ...loadPrefs(), showIncome, showExpense, showBalance, showRatio });
-        saveSessionMonth(selectedMonth);
-    }, [selectedMonth, showIncome, showExpense, showBalance, showRatio]);
+        saveSessionMonth(displayMonth);
+    }, [displayMonth, showIncome, showExpense, showBalance, showRatio]);
 
     // グループなし：選択月の収支サマリーを取得
     const { data: monthlySummary, isFetching: isLoadingNoGroup } = useQuery<{ income: number; expense: number; balance: number }>({
-        queryKey: ['shareDialogMonthlySummary', selectedMonth],
+        queryKey: ['shareDialogMonthlySummary', displayMonth],
         queryFn: async () => {
-            const { data } = await splitGroupApi.getMonthlySummary(selectedMonth);
+            const { data } = await splitGroupApi.getMonthlySummary(displayMonth);
             return data;
         },
-        enabled: open && !selectedGroupId && !!selectedMonth,
+        enabled: open && !selectedGroupId && !!displayMonth,
         staleTime: Infinity,
         gcTime: 30 * 60 * 1000,
     });
@@ -252,15 +267,15 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
 
     // グループあり：分担プレビューを取得
     const { data: preview, isFetching: isLoadingPreview } = useQuery<SplitPreview>({
-        queryKey: ['splitGroupPreview', selectedGroupId, selectedMonth],
+        queryKey: ['splitGroupPreview', selectedGroupId, displayMonth],
         queryFn: async () => {
             const { data } = await splitGroupApi.getPreview(
                 selectedGroupId as number,
-                selectedMonth
+                displayMonth
             );
             return data as SplitPreview;
         },
-        enabled: open && !!selectedGroupId && !!selectedMonth,
+        enabled: open && !!selectedGroupId && !!displayMonth,
         staleTime: Infinity,
         gcTime: 30 * 60 * 1000,
     });
@@ -273,7 +288,7 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
             return buildTotalsShareText(
                 noGroupTotals.income,
                 noGroupTotals.expense,
-                selectedMonth,
+                displayMonth,
                 showIncome,
                 showExpense,
                 showBalance
@@ -281,7 +296,7 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
         }
         const setting = splitGroups.find(g => g.id === selectedGroupId)?.setting;
         return preview ? buildShareText(preview, showIncome, showExpense, showBalance, showRatio, setting) : '';
-    }, [selectedGroupId, preview, noGroupTotals, selectedMonth, showIncome, showExpense, showBalance, showRatio, splitGroups]);
+    }, [selectedGroupId, preview, noGroupTotals, displayMonth, showIncome, showExpense, showBalance, showRatio, splitGroups]);
 
     const handleCopy = async () => {
         if (!shareText) return;
@@ -332,7 +347,7 @@ export const ShareDialog = ({ open, onClose, splitGroups }: ShareDialogProps) =>
                     <FormControl fullWidth size="small">
                         <InputLabel>対象月</InputLabel>
                         <Select
-                            value={selectedMonth}
+                            value={displayMonth}
                             label="対象月"
                             onChange={(e) => setSelectedMonth(e.target.value)}
                         >
