@@ -105,19 +105,6 @@ export default function AppLayout() {
                                     >
                                         ログインページへ
                                     </Link>
-                                    <Link
-                                        to="/about"
-                                        style={{
-                                            display: "inline-block",
-                                            marginLeft: "12px",
-                                            padding: "6px 16px",
-                                            color: "#f57c00",
-                                            textDecoration: "underline",
-                                            fontWeight: 500,
-                                        }}
-                                    >
-                                        カケポンとは？
-                                    </Link>
                                 </Box>
                             </Alert>
                             )
