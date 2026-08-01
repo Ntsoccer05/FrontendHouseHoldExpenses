@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import { Helmet } from 'react-helmet-async';
 import AddIcon from '@mui/icons-material/Add';
 import { SplitGroupList } from '../components/SplitGroupList';
 import { SplitGroupForm } from '../components/SplitGroupForm';
@@ -57,6 +58,9 @@ const SplitGroup = () => {
 
     return (
         <Box sx={{ p: { xs: 1, sm: 2 } }}>
+            <Helmet>
+                <meta name="robots" content="noindex, follow" />
+            </Helmet>
             <Box
                 sx={{
                     display: 'flex',

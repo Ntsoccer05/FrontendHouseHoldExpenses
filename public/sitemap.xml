@@ -7,28 +7,4 @@
       <priority>0.8</priority>
     </url>
     
-    <url>
-      <loc>https://kake-pon.com/category</loc>
-      <changefreq>monthly</changefreq>
-      <priority>0.8</priority>
-    </url>
-    
-    <url>
-      <loc>https://kake-pon.com/report</loc>
-      <changefreq>monthly</changefreq>
-      <priority>0.8</priority>
-    </url>
-    
-    <url>
-      <loc>https://kake-pon.com/login</loc>
-      <changefreq>monthly</changefreq>
-      <priority>0.8</priority>
-    </url>
-    
-    <url>
-      <loc>https://kake-pon.com/register</loc>
-      <changefreq>monthly</changefreq>
-      <priority>0.8</priority>
-    </url>
-    
   </urlset>

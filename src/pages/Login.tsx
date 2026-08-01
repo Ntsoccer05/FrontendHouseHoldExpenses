@@ -7,6 +7,7 @@ function Login() {
     <>
       <Helmet>
         <title>らくらく・シンプル家計簿カケポンに簡単ログイン｜カレンダーで収支をラクに記録</title>
+        <meta name="robots" content="noindex, follow" />
         <meta name="description" content="カケポンは完全無料のカレンダー家計簿アプリ。簡単ログインですぐ使える！支出・収入をサクッと記録して節約習慣をスタートしよう。"/>
         <meta property="og:title" content="無料のらくらく・シンプル家計簿アプリ『カケポン』に簡単ログイン" />
         <meta

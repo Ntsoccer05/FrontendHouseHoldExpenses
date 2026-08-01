@@ -289,6 +289,7 @@ function Category() {
         <>
             <Helmet>
                 <title>カテゴリを自由にカスタマイズ｜らくらく・シンプル家計簿カケポン</title>
+                <meta name="robots" content="noindex, follow" />
                 <meta
                     name="description"
                     content="家計簿の支出・収入カテゴリを自由に追加・編集。好きな色やアイコンで自分だけの家計簿を作成できます。"

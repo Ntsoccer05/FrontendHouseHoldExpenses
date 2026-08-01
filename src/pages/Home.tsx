@@ -200,6 +200,24 @@ const Home = () => {
                 <meta property="og:url" content="https://kake-pon.com/" />
                 <meta property="og:type" content="website" />
                 <meta property="og:image" content={ogIMG} />
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "SoftwareApplication",
+                        name: "カケポン",
+                        alternateName: "らくらく・シンプル家計簿カケポン",
+                        url: "https://kake-pon.com/",
+                        description:
+                            "カレンダー形式で収支を簡単に見える化できる無料家計簿アプリ。登録不要ですぐに使えます。",
+                        applicationCategory: "FinanceApplication",
+                        operatingSystem: "Web",
+                        offers: {
+                            "@type": "Offer",
+                            price: "0",
+                            priceCurrency: "JPY",
+                        },
+                    })}
+                </script>
             </Helmet>
             <Box sx={{ display: "flex" }}>
                 {/* 左側コンテンツ */}

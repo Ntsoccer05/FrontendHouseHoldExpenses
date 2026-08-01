@@ -5,13 +5,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 動的にURLリストを取得
+// 検索エンジンに見せる価値のある公開ページのみを列挙する。
+// /category, /report, /login, /register 等はログイン必須または認証フォームのみのページで、
+// 未ログインクロール時にリダイレクトや重複コンテンツ判定を受けるためsitemapには含めない（robots.txt側でnoindex/Disallow対応）。
 const urls = [
   '/',
-  '/category',
-  '/report',
-  '/login',
-  '/register'
   // 他のURLを追加
 ];
 

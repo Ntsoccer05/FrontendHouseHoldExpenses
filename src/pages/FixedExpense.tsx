@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Alert, Box, Button, CircularProgress, Tooltip, Typography } from "@mui/material";
+import { Helmet } from "react-helmet-async";
 import AddIcon from "@mui/icons-material/Add";
 import { FixedExpenseList } from "../components/FixedExpenseList";
 import { FixedExpenseForm } from "../components/FixedExpenseForm";
@@ -52,6 +53,9 @@ const FixedExpense = () => {
 
     return (
         <Box sx={{ p: { xs: 1, sm: 2 } }}>
+            <Helmet>
+                <meta name="robots" content="noindex, follow" />
+            </Helmet>
             <Box
                 sx={{
                     display: "flex",

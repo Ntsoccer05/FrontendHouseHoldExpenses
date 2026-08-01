@@ -63,6 +63,7 @@ const Report = () => {
         <>
             <Helmet>
                 <title>支出・収入をグラフで見える化｜らくらく・シンプル家計簿カケポンの家計簿分析</title>
+                <meta name="robots" content="noindex, follow" />
                 <meta
                     name="description"
                     content="月ごと・年ごとの収支をグラフで分析して、ムダ遣いを発見。視覚的に管理できる家計簿アプリ「カケポン」で、お金の流れを見える化。"
