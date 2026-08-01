@@ -8,6 +8,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Suspense } from "react";
 import SideBar from "../common/SideBar";
 import { Transaction } from "../../types";
 import { useAppContext } from "../../context/AppContext";
@@ -16,6 +17,7 @@ import { useAuthContext } from "../../context/AuthContext";
 import { getSessionStorage, setSessionStorage } from "../../utils/manageSessionStorage";
 import { Alert, AlertTitle } from "@mui/material";
 import SnackBar from "../common/SnackBar";
+import AppContentSkeleton from "../common/AppContentSkeleton";
 
 const drawerWidth = 240;
 
@@ -133,6 +135,19 @@ export default function AppLayout() {
                                     >
                                         ログインページへ
                                     </Link>
+                                    <Link
+                                        to="/about"
+                                        style={{
+                                            display: "inline-block",
+                                            marginLeft: "12px",
+                                            padding: "6px 16px",
+                                            color: "#f57c00",
+                                            textDecoration: "underline",
+                                            fontWeight: 500,
+                                        }}
+                                    >
+                                        カケポンとは？
+                                    </Link>
                                 </Box>
                             </Alert>
                             )
@@ -191,7 +206,10 @@ export default function AppLayout() {
                 >
                     <Toolbar />
                     {/* Outletで子コンポーネントにレイアウトを継承する */}
-                    <Outlet />
+                    {/* ヘッダー・サイドバーは表示済みのまま、コンテンツ部分のみスケルトンに差し替える */}
+                    <Suspense fallback={<AppContentSkeleton />}>
+                        <Outlet />
+                    </Suspense>
                 </Box>
             </Box>
             <SnackBar

@@ -10,7 +10,11 @@ const __dirname = path.dirname(__filename);
 // 未ログインクロール時にリダイレクトや重複コンテンツ判定を受けるためsitemapには含めない（robots.txt側でnoindex/Disallow対応）。
 const urls = [
   '/',
+  '/about',
+  '/guide',
+  '/calendar-kakeibo',
   // 他のURLを追加
+  // /contact, /privacy, /company はnoindexのためsitemapには含めない
 ];
 
 const generateSitemap = () => {

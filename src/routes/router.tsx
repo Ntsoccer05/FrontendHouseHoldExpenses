@@ -1,10 +1,9 @@
+import { lazy, Suspense } from "react";
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
 import Home from "../pages/Home";
-import Report from "../pages/Report";
-import NoMatch from "../pages/NoMatch";
 import AppLayout from "../components/layout/AppLayout";
 import { theme } from "../theme/theme";
 import { ThemeProvider } from "@emotion/react";
@@ -12,23 +11,35 @@ import { CssBaseline } from "@mui/material";
 
 import { AppProvider } from "../context/AppContext";
 import { CategoryProvider } from "../context/CategoryContext";
-import Login from "../pages/Login";
-import Register from "../pages/Register";
-import VerifyEmail from "../components/Auth/VerifyEmail";
-import PasswordForget from "../pages/PasswordForget";
-import ResetPassword from "../pages/ResetPassword";
-import Category from "../pages/Category";
 import OnlyPublicRoute from "./OnlyPublicRoute";
 import { TransactionProvider } from "../context/TransactionContext";
-import GoogleCallback from "../components/Auth/GoogleCallback";
 import { PrivateRoute } from "./PrivateRoute";
 import { AuthProvider } from "../context/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
-import MaintenanceGuard from "../components/common/MaintenanceGuard";
-import FixedExpense from "../pages/FixedExpense";
+// import MaintenanceGuard from "../components/common/MaintenanceGuard"; // メンテナンス時間終了のため無効化
 import { FixedExpenseProvider } from "../context/FixedExpenseContext";
-import SplitGroup from "../pages/SplitGroup";
 import { SplitGroupProvider } from "../context/SplitGroupContext";
+import PageSkeleton from "../components/common/PageSkeleton";
+
+// ルート単位でコード分割し、初期バンドルサイズを削減する
+// Homeはアプリのメイン画面（登録不要でも即表示させたい）のためlazy化の対象から除外
+const Report = lazy(() => import("../pages/Report"));
+const NoMatch = lazy(() => import("../pages/NoMatch"));
+const Login = lazy(() => import("../pages/Login"));
+const Register = lazy(() => import("../pages/Register"));
+const VerifyEmail = lazy(() => import("../components/Auth/VerifyEmail"));
+const PasswordForget = lazy(() => import("../pages/PasswordForget"));
+const ResetPassword = lazy(() => import("../pages/ResetPassword"));
+const Category = lazy(() => import("../pages/Category"));
+const GoogleCallback = lazy(() => import("../components/Auth/GoogleCallback"));
+const FixedExpense = lazy(() => import("../pages/FixedExpense"));
+const SplitGroup = lazy(() => import("../pages/SplitGroup"));
+const About = lazy(() => import("../pages/About"));
+const Contact = lazy(() => import("../pages/Contact"));
+const Privacy = lazy(() => import("../pages/Privacy"));
+const Company = lazy(() => import("../pages/Company"));
+const Guide = lazy(() => import("../pages/Guide"));
+const CalendarKakeibo = lazy(() => import("../pages/CalendarKakeibo"));
 
 function DefineRouter() {
     return (
@@ -36,12 +47,19 @@ function DefineRouter() {
         <HelmetProvider>
             <ThemeProvider theme={theme}>
                 <CssBaseline />
-                <MaintenanceGuard>
+                {/* <MaintenanceGuard> */}
                     <Router>
                     <AuthProvider>
                         {/* AppProviderで囲まれている中でvalueで設定した値をグローバルに参照できる */}
                         <AppProvider>
+                                <Suspense fallback={<PageSkeleton />}>
                                 <Routes>
+                                    <Route path="/about" element={<About />} />
+                                    <Route path="/contact" element={<Contact />} />
+                                    <Route path="/privacy" element={<Privacy />} />
+                                    <Route path="/company" element={<Company />} />
+                                    <Route path="/guide" element={<Guide />} />
+                                    <Route path="/calendar-kakeibo" element={<CalendarKakeibo />} />
                                     <Route path="/" element={<AppLayout />}>
                                         {/* 親と同じパスはindexと記述できる */}
                                         <Route
@@ -146,10 +164,11 @@ function DefineRouter() {
                                         <Route path="*" element={<NoMatch />} />
                                     </Route>
                                 </Routes>
+                                </Suspense>
                         </AppProvider>
                     </AuthProvider>
                     </Router>
-                </MaintenanceGuard>
+                {/* </MaintenanceGuard> */}
             </ThemeProvider>
         </HelmetProvider>
         </QueryClientProvider>

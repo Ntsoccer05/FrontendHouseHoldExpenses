@@ -23,6 +23,7 @@ import CategoryIcon from "@mui/icons-material/Category";
 import CloseIcon from "@mui/icons-material/Close";
 import RepeatIcon from "@mui/icons-material/Repeat";
 import GroupsIcon from "@mui/icons-material/Groups";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { useAuthContext } from "../../context/AuthContext";
 
 interface SidebarProps {
@@ -57,6 +58,7 @@ const Sidebar = ({
     const NotLoginMenuItems: menuItem[] = [
         { text: "ログイン", path: "/login", icon: MeetingRoomIcon },
         { text: "アカウント登録", path: "/register", icon: LockOpenIcon },
+        { text: "カケポンとは？", path: "/about", icon: InfoOutlinedIcon },
     ];
 
     const [menuItems, setMenuItems] = useState<menuItem[]>([
