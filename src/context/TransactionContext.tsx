@@ -104,6 +104,11 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
     const inFlightYearlyRequestsRef = useRef<Map<string, Promise<Transaction[]>>>(
         new Map()
     );
+    // 直近リクエストされた年。取得結果を画面に適用する前にこれと比較し、
+    // 一致する場合のみ反映する（別の年へ移動済みなら古いレスポンスは破棄する。
+    // 年送りボタンを連打した際に、後発の年より遅れて返ってきた古いレスポンスで
+    // 上書きされてしまうのを防ぐ）
+    const latestRequestedYearRef = useRef<string | null>(null);
 
     // "yyyyMM" 形式の文字列から前月の "yyyyMM" を返すヘルパー
     const getPreviousMonth = (yearMonth: string): string => {
@@ -246,6 +251,9 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
     const getYearlyTransactions = useCallback(async (currentYear: string) => {
         if (!loginUser?.id) return [];
 
+        // キャッシュヒットの同期パスも含め、必ずここで更新する
+        latestRequestedYearRef.current = currentYear;
+
         const cached = yearCacheRef.current.get(currentYear);
         if (cached) {
             setYearlyTransactions(cached.yearlyTransactionData);
@@ -268,15 +276,26 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 const yearlyTransactionData: Transaction[] = response.data.yearlyTransactionData;
                 const preYearlyTransactionData: Transaction[] = response.data.preYearlyTransactionData;
                 yearCacheRef.current.set(currentYear, { yearlyTransactionData, preYearlyTransactionData });
-                setYearlyTransactions(yearlyTransactionData);
-                setPreYearlyTransactions(preYearlyTransactionData);
+
+                // 別の年への新しいナビゲーションが既に発生していれば、この結果は
+                // もう表示対象ではないため画面に反映せず破棄する
+                if (latestRequestedYearRef.current === currentYear) {
+                    setYearlyTransactions(yearlyTransactionData);
+                    setPreYearlyTransactions(preYearlyTransactionData);
+                }
                 return yearlyTransactionData;
             } catch (err) {
                 console.error("Error fetching yearly transactions:", err);
+                if (latestRequestedYearRef.current === currentYear) {
+                    setYearlyTransactions([]);
+                    setPreYearlyTransactions([]);
+                }
                 return [];
             } finally {
                 inFlightYearlyRequestsRef.current.delete(currentYear);
-                setIsYearlyLoading(false);
+                if (latestRequestedYearRef.current === currentYear) {
+                    setIsYearlyLoading(false);
+                }
             }
         })();
 
