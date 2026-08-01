@@ -33,8 +33,10 @@ interface TransactionContext {
     prefetchMonth: (yearMonth: string) => Promise<void>;
     refreshMonthCache: (yearMonth: string) => Promise<void>;
     monthlyTransactions: Transaction[];
+    isMonthlyLoading: boolean;
     getYearlyTransactions: (currentYear: string) => Promise<Transaction[]>;
     yearlyTransactions: Transaction[];
+    isYearlyLoading: boolean;
     preMonthlyTransactions: Transaction[];
     preYearlyTransactions: Transaction[];
 }
@@ -75,8 +77,17 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
         []
     );
 
+    // 月次/年次データを実際にAPIへ取りに行っている間だけtrueになる
+    // （キャッシュヒット時は取得済みのため一度もtrueにならない）
+    const [isMonthlyLoading, setIsMonthlyLoading] = useState(false);
+    const [isYearlyLoading, setIsYearlyLoading] = useState(false);
+
     // 月間データキャッシュ
     const monthCacheRef = useRef<Map<string, Transaction[]>>(new Map());
+    // 年間データキャッシュ（当年分・前年比較分をまとめて年単位でキャッシュ）
+    const yearCacheRef = useRef<
+        Map<string, { yearlyTransactionData: Transaction[]; preYearlyTransactionData: Transaction[] }>
+    >(new Map());
     // 直近リクエストされた月。取得結果を画面に適用する前にこれと比較し、
     // 一致する場合のみ反映する（別の月へ移動済みなら古いレスポンスは破棄）。
     // 単純増分カウンタにしないのは、同じ月に戻ってきた際に自分自身より
@@ -85,6 +96,12 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
     // 進行中の月次一括取得リクエストを月ごとに管理し、同じ月への
     // 重複リクエストが発生した場合は新規発行せず既存のPromiseを共有する
     const inFlightBulkRequestsRef = useRef<Map<string, Promise<Transaction[]>>>(
+        new Map()
+    );
+    // 進行中の年次取得リクエストを年ごとに管理し、同じ年への重複リクエスト
+    // （StrictModeでのマウント時二重effect実行を含む）が発生した場合は
+    // 新規発行せず既存のPromiseを共有する
+    const inFlightYearlyRequestsRef = useRef<Map<string, Promise<Transaction[]>>>(
         new Map()
     );
 
@@ -118,12 +135,13 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
         // キャッシュヒットの同期パスも含め、必ずここで更新する
         latestRequestedMonthRef.current = currentMonth;
 
-        // キャッシュに存在すれば即座に返す
+        // キャッシュに存在すれば即座に返す（取得済みのためローディング表示は不要）
         if (monthCacheRef.current.has(currentMonth)) {
             const cachedData = monthCacheRef.current.get(currentMonth)!;
             setMonthlyTransactions(cachedData);
             const prevMonth = getPreviousMonth(currentMonth);
             setPreMonthlyTransactions(monthCacheRef.current.get(prevMonth) || []);
+            setIsMonthlyLoading(false);
             return cachedData;
         }
 
@@ -132,6 +150,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
         const existingRequest = inFlightBulkRequestsRef.current.get(currentMonth);
         if (existingRequest) return existingRequest;
 
+        setIsMonthlyLoading(true);
         const request = (async () => {
             try {
                 // キャッシュがなければ4ヶ月一括取得（前々月・前月・当月・翌月）
@@ -168,6 +187,11 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 return [];
             } finally {
                 inFlightBulkRequestsRef.current.delete(currentMonth);
+                // 別の月への新しいナビゲーションが既に発生していれば、
+                // そちらの結果が反映されるまでローディング表示を維持する
+                if (latestRequestedMonthRef.current === currentMonth) {
+                    setIsMonthlyLoading(false);
+                }
             }
         })();
 
@@ -218,20 +242,54 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
         }
     }, [loginUser?.id, currentMonth]);
 
-    // 年間取引データの取得
+    // 年間取引データの取得（キャッシュ優先）
     const getYearlyTransactions = useCallback(async (currentYear: string) => {
-        try {
-            const response = await apiClient.get("/yearly-transaction", {
-                params: { currentYear, user_id: loginUser?.id },
-            });
-            setYearlyTransactions(response.data.yearlyTransactionData);
-            setPreYearlyTransactions(response.data.preYearlyTransactionData);
-            return response.data.yearlyTransactionData;
-        } catch (err) {
-            console.error("Error fetching yearly transactions:", err);
-            return [];
+        if (!loginUser?.id) return [];
+
+        const cached = yearCacheRef.current.get(currentYear);
+        if (cached) {
+            setYearlyTransactions(cached.yearlyTransactionData);
+            setPreYearlyTransactions(cached.preYearlyTransactionData);
+            setIsYearlyLoading(false);
+            return cached.yearlyTransactionData;
         }
-    }, [loginUser]);
+
+        // 同じ年への取得が既に進行中なら、新規リクエストせず
+        // 既存のPromiseを共有する（StrictModeの二重effect実行を含む重複リクエストを防止）
+        const existingRequest = inFlightYearlyRequestsRef.current.get(currentYear);
+        if (existingRequest) return existingRequest;
+
+        setIsYearlyLoading(true);
+        const request = (async () => {
+            try {
+                const response = await apiClient.get("/yearly-transaction", {
+                    params: { currentYear, user_id: loginUser?.id },
+                });
+                const yearlyTransactionData: Transaction[] = response.data.yearlyTransactionData;
+                const preYearlyTransactionData: Transaction[] = response.data.preYearlyTransactionData;
+                yearCacheRef.current.set(currentYear, { yearlyTransactionData, preYearlyTransactionData });
+                setYearlyTransactions(yearlyTransactionData);
+                setPreYearlyTransactions(preYearlyTransactionData);
+                return yearlyTransactionData;
+            } catch (err) {
+                console.error("Error fetching yearly transactions:", err);
+                return [];
+            } finally {
+                inFlightYearlyRequestsRef.current.delete(currentYear);
+                setIsYearlyLoading(false);
+            }
+        })();
+
+        inFlightYearlyRequestsRef.current.set(currentYear, request);
+        return request;
+    }, [loginUser?.id]);
+
+    // 取引の変更（追加・更新・削除・コピー）後に年間キャッシュ全体を無効化する。
+    // 年をまたぐ組み合わせの特定が煩雑なため、対象を絞らず丸ごとクリアする
+    // （エントリ数が少なく再取得コストも小さいため許容できる）
+    const invalidateYearlyCache = useCallback(() => {
+        yearCacheRef.current.clear();
+    }, []);
 
     // 取引を保存
     const onSaveTransaction = useCallback(
@@ -258,12 +316,13 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 // キャッシュを無効化（トランザクションが追加された月）
                 const transactionMonth = format(new Date(transaction.date), "yyyyMM");
                 refreshMonthCache(transactionMonth);
+                invalidateYearlyCache();
                 queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
             } catch (err) {
                 console.error("Error saving transaction:", err);
             }
         },
-        [addCategoryIcon, loginUser?.id, setMonthlyTransactions, refreshMonthCache, queryClient]
+        [addCategoryIcon, loginUser?.id, setMonthlyTransactions, refreshMonthCache, invalidateYearlyCache, queryClient]
     );
 
     // 取引を削除
@@ -292,12 +351,13 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 // キャッシュを無効化（削除が行われた月）
                 const currentMonthFormatted = format(currentMonth, "yyyyMM");
                 refreshMonthCache(currentMonthFormatted);
+                invalidateYearlyCache();
                 queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
             } catch (err) {
                 console.error("Error deleting transaction(s):", err);
             }
         },
-        [loginUser?.id, setMonthlyTransactions, refreshMonthCache, currentMonth, queryClient]
+        [loginUser?.id, setMonthlyTransactions, refreshMonthCache, invalidateYearlyCache, currentMonth, queryClient]
     );
 
     // 複数取引をコピー
@@ -321,13 +381,14 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 if (sourceMonth !== destinationMonth) {
                     await refreshMonthCache(destinationMonth);
                 }
+                invalidateYearlyCache();
                 queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
             } catch (err) {
                 console.error("一括コピーエラー:", err);
                 throw err;
             }
         },
-        [refreshMonthCache, queryClient]
+        [refreshMonthCache, invalidateYearlyCache, queryClient]
     );
 
     // 取引を更新
@@ -355,12 +416,13 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 // キャッシュを無効化（更新が行われた月）
                 const transactionMonth = format(new Date(transaction.date), "yyyyMM");
                 refreshMonthCache(transactionMonth);
+                invalidateYearlyCache();
                 queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
             } catch (err) {
                 console.error("Error updating transaction:", err);
             }
         },
-        [addCategoryIcon, loginUser?.id, setMonthlyTransactions, refreshMonthCache, queryClient]
+        [addCategoryIcon, loginUser?.id, setMonthlyTransactions, refreshMonthCache, invalidateYearlyCache, queryClient]
     );
 
     return (
@@ -374,8 +436,10 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 prefetchMonth,
                 refreshMonthCache,
                 monthlyTransactions,
+                isMonthlyLoading,
                 getYearlyTransactions,
                 yearlyTransactions,
+                isYearlyLoading,
                 preMonthlyTransactions,
                 preYearlyTransactions,
             }}

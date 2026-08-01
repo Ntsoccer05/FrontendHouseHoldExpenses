@@ -60,17 +60,18 @@ function DefineRouter() {
                                     <Route path="/company" element={<Company />} />
                                     <Route path="/guide" element={<Guide />} />
                                     <Route path="/calendar-kakeibo" element={<CalendarKakeibo />} />
-                                    <Route path="/" element={<AppLayout />}>
+                                    {/* TransactionProviderはAppLayoutを一度だけラップする。
+                                        子ルートごとに個別にラップすると、Home⇔Report間のページ遷移で
+                                        Providerがアンマウントされ月次/年次キャッシュが消えてしまうため */}
+                                    <Route path="/" element={<TransactionProvider><AppLayout /></TransactionProvider>}>
                                         {/* 親と同じパスはindexと記述できる */}
                                         <Route
                                             index
                                             // PrivateRoute：ログインしていなかったらログイン画面へリダイレクト
                                             element={
-                                                <TransactionProvider>
-                                                    <SplitGroupProvider>
-                                                        <Home />
-                                                    </SplitGroupProvider>
-                                                </TransactionProvider>
+                                                <SplitGroupProvider>
+                                                    <Home />
+                                                </SplitGroupProvider>
                                             }
                                         />
                                         <Route
@@ -100,11 +101,9 @@ function DefineRouter() {
                                         <Route
                                             path="/report"
                                             element={
-                                                <TransactionProvider>
-                                                    <PrivateRoute>
-                                                        <Report />
-                                                    </PrivateRoute>
-                                                </TransactionProvider>
+                                                <PrivateRoute>
+                                                    <Report />
+                                                </PrivateRoute>
                                             }
                                         />
                                         {/* routerの中でcontextを一部に使いたいときはelementの中で指定する */}

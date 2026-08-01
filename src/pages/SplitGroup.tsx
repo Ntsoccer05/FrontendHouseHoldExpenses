@@ -46,10 +46,7 @@ const SplitGroup = () => {
             }
             await saveSplitGroupSettings(editTarget.id, { ...settings, overrides });
         } else {
-            await addSplitGroup({ label });
-            const { splitGroupApi } = await import('../api/splitGroupApi');
-            const { data } = await splitGroupApi.getAll();
-            const newGroup = data.splitGroups[data.splitGroups.length - 1];
+            const newGroup = await addSplitGroup({ label });
             if (newGroup) {
                 await saveSplitGroupSettings(newGroup.id, { ...settings, overrides });
             }

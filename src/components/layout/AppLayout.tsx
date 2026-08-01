@@ -10,11 +10,8 @@ import Typography from "@mui/material/Typography";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Suspense } from "react";
 import SideBar from "../common/SideBar";
-import { Transaction } from "../../types";
 import { useAppContext } from "../../context/AppContext";
-import apiClient from "../../utils/axios";
 import { useAuthContext } from "../../context/AuthContext";
-import { getSessionStorage, setSessionStorage } from "../../utils/manageSessionStorage";
 import { Alert, AlertTitle } from "@mui/material";
 import SnackBar from "../common/SnackBar";
 import AppContentSkeleton from "../common/AppContentSkeleton";
@@ -24,7 +21,7 @@ const drawerWidth = 240;
 export default function AppLayout() {
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [isAlert, setIsAlert] = React.useState(false);
-    const { setTransactions, setIsLoading, snackBarState, setSnackBarState } = useAppContext();
+    const { setIsLoading, snackBarState, setSnackBarState } = useAppContext();
     const { loginUser, isAuthenticated } = useAuthContext();
     const navigate = useNavigate();
     const headerIMG = import.meta.env.VITE_APP_HEADER_IMG_URL || "/src/assets/logo/カケポン.png"
@@ -35,38 +32,11 @@ export default function AppLayout() {
         setMobileOpen((prev) => !prev);
     }, []);
 
-    //家計簿データを全て取得
     React.useEffect(() => {
         if (loginUser) {
-            const fecheTransactions = async () => {
-                try {
-                    const querySnapshot = await apiClient.get(
-                        "/getTransactions",
-                        {
-                            params: { user_id: loginUser.id },
-                        }
-                    );
-                    if (querySnapshot.data.transactions) {
-                        const transactionsData =
-                            querySnapshot.data.transactions.map(
-                                (doc: Transaction) => {
-                                    return {
-                                        ...doc,
-                                    } as Transaction;
-                                }
-                            );
-                        setSessionStorage('transactionsData', transactionsData);
-                        setTransactions(transactionsData);
-                    }
-                } catch (err) {
-                    console.error("一般的なエラーは:", err);
-                }
-            };
-            const sessionTransactionsData = getSessionStorage('transactionsData')
-            sessionTransactionsData ? setTransactions(sessionTransactionsData) : fecheTransactions();
             setIsLoading(false);
         }
-    }, [loginUser]);
+    }, [loginUser, setIsLoading]);
 
     React.useEffect(()=>{
         if (!isAuthenticated) {

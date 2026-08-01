@@ -1,11 +1,5 @@
-import React, {
-    ReactNode,
-    createContext,
-    useContext,
-    useEffect,
-    useState,
-    useCallback,
-} from "react";
+import React, { ReactNode, createContext, useContext, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { FixedExpense, FixedExpenseFormData } from "../types";
 import { fixedExpenseApi } from "../api/fixedExpenseApi";
 import { useAuthContext } from "./AuthContext";
@@ -26,23 +20,35 @@ interface FixedExpenseContextType {
 
 const FixedExpenseContext = createContext<FixedExpenseContextType | undefined>(undefined);
 
+const fixedExpensesQueryKey = (userId?: number) => ['fixedExpenses', userId] as const;
+
 export const FixedExpenseProvider = ({ children }: { children: ReactNode }) => {
     const { loginUser } = useAuthContext();
     const { showSnackBar } = useAppContext();
-    const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const queryClient = useQueryClient();
 
-    // showSnackBar を deps から除外するため、fetch は純粋なデータ取得のみ担う
-    const fetchFixedExpenses = useCallback(async () => {
-        if (!loginUser) return;
-        setIsLoading(true);
-        try {
+    // react-queryの単一QueryClientにキャッシュされるため、Providerがページ遷移で
+    // アンマウント・再マウントされても再取得は起きない（staleTime内は再フェッチ不要）
+    const { data, isLoading, refetch } = useQuery({
+        queryKey: fixedExpensesQueryKey(loginUser?.id),
+        queryFn: async () => {
             const { data } = await fixedExpenseApi.getAll();
-            setFixedExpenses(data.fixedExpenses);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [loginUser]);
+            return data.fixedExpenses;
+        },
+        enabled: !!loginUser,
+        staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
+    });
+
+    const fixedExpenses = data ?? [];
+
+    const fetchFixedExpenses = useCallback(async () => {
+        await refetch();
+    }, [refetch]);
+
+    const invalidate = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: fixedExpensesQueryKey(loginUser?.id) });
+    }, [queryClient, loginUser?.id]);
 
     const addFixedExpense = useCallback(
         async (data: FixedExpenseFormData) => {
@@ -50,7 +56,7 @@ export const FixedExpenseProvider = ({ children }: { children: ReactNode }) => {
             try {
                 await fixedExpenseApi.create(data);
                 showSnackBar({ title: "成功", bodyText: "固定費を追加しました" });
-                await fetchFixedExpenses();
+                invalidate();
             } catch {
                 showSnackBar({
                     title: "エラー",
@@ -59,7 +65,7 @@ export const FixedExpenseProvider = ({ children }: { children: ReactNode }) => {
                 });
             }
         },
-        [loginUser, showSnackBar, fetchFixedExpenses]
+        [loginUser, showSnackBar, invalidate]
     );
 
     const editFixedExpense = useCallback(
@@ -68,7 +74,7 @@ export const FixedExpenseProvider = ({ children }: { children: ReactNode }) => {
             try {
                 await fixedExpenseApi.update(id, data);
                 showSnackBar({ title: "成功", bodyText: "固定費を更新しました" });
-                await fetchFixedExpenses();
+                invalidate();
             } catch {
                 showSnackBar({
                     title: "エラー",
@@ -77,7 +83,7 @@ export const FixedExpenseProvider = ({ children }: { children: ReactNode }) => {
                 });
             }
         },
-        [loginUser, showSnackBar, fetchFixedExpenses]
+        [loginUser, showSnackBar, invalidate]
     );
 
     const removeFixedExpense = useCallback(
@@ -86,7 +92,7 @@ export const FixedExpenseProvider = ({ children }: { children: ReactNode }) => {
             try {
                 await fixedExpenseApi.remove(id);
                 showSnackBar({ title: "成功", bodyText: "固定費を削除しました" });
-                await fetchFixedExpenses();
+                invalidate();
             } catch {
                 showSnackBar({
                     title: "エラー",
@@ -95,7 +101,7 @@ export const FixedExpenseProvider = ({ children }: { children: ReactNode }) => {
                 });
             }
         },
-        [loginUser, showSnackBar, fetchFixedExpenses]
+        [loginUser, showSnackBar, invalidate]
     );
 
     const bulkRemoveFixedExpenses = useCallback(
@@ -104,7 +110,7 @@ export const FixedExpenseProvider = ({ children }: { children: ReactNode }) => {
             try {
                 await Promise.all(ids.map((id) => fixedExpenseApi.remove(id)));
                 showSnackBar({ title: "成功", bodyText: `${ids.length}件を削除しました` });
-                await fetchFixedExpenses();
+                invalidate();
             } catch {
                 showSnackBar({
                     title: "エラー",
@@ -113,14 +119,8 @@ export const FixedExpenseProvider = ({ children }: { children: ReactNode }) => {
                 });
             }
         },
-        [loginUser, showSnackBar, fetchFixedExpenses]
+        [loginUser, showSnackBar, invalidate]
     );
-
-    useEffect(() => {
-        fetchFixedExpenses();
-        // loginUser?.id を依存にすることで、関数参照の変化による余分な再実行を防ぐ
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [loginUser?.id]);
 
     return (
         <FixedExpenseContext.Provider

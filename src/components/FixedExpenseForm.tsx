@@ -9,6 +9,7 @@ import {
     DialogTitle,
     FormControl,
     InputLabel,
+    ListItemIcon,
     MenuItem,
     Select,
     TextField,
@@ -24,6 +25,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { FixedExpense, FixedExpenseFormData } from "../types";
 import { useAppContext } from "../context/AppContext";
+import DynamicIcon from "./common/DynamicIcon";
 
 const toHalfWidth = (value: string) =>
     value.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xfee0));
@@ -155,6 +157,9 @@ export const FixedExpenseForm = ({
                                 <Select {...field} label="カテゴリ">
                                     {(categories ?? []).map((cat) => (
                                         <MenuItem key={cat.id} value={cat.id ?? 0}>
+                                            <ListItemIcon>
+                                                <DynamicIcon iconName={cat.icon} fontSize="small" />
+                                            </ListItemIcon>
                                             {cat.label}
                                         </MenuItem>
                                     ))}

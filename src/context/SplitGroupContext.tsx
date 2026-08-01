@@ -1,12 +1,5 @@
-import React, {
-    ReactNode,
-    createContext,
-    useContext,
-    useEffect,
-    useState,
-    useCallback,
-} from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import React, { ReactNode, createContext, useContext, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { SplitGroup, SplitGroupCategoryOverride, SplitGroupFormData } from '../types';
 import { splitGroupApi } from '../api/splitGroupApi';
 import { useAuthContext } from './AuthContext';
@@ -24,7 +17,7 @@ interface SplitGroupContextType {
     splitGroups: SplitGroup[];
     isLoading: boolean;
     fetchSplitGroups: () => Promise<void>;
-    addSplitGroup: (data: SplitGroupFormData) => Promise<void>;
+    addSplitGroup: (data: SplitGroupFormData) => Promise<SplitGroup | undefined>;
     editSplitGroup: (id: number, data: Partial<SplitGroupFormData>) => Promise<void>;
     saveSplitGroupSettings: (id: number, data: SplitGroupSettings) => Promise<void>;
     removeSplitGroup: (id: number) => Promise<void>;
@@ -32,40 +25,54 @@ interface SplitGroupContextType {
 
 const SplitGroupContext = createContext<SplitGroupContextType | undefined>(undefined);
 
+const splitGroupsQueryKey = (userId?: number) => ['splitGroups', userId] as const;
+
 export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
     const { loginUser } = useAuthContext();
     const { showSnackBar } = useAppContext();
     const queryClient = useQueryClient();
-    const [splitGroups, setSplitGroups] = useState<SplitGroup[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+
+    // react-queryの単一QueryClientにキャッシュされるため、Providerがページ遷移で
+    // アンマウント・再マウントされても再取得は起きない（staleTime内は再フェッチ不要）
+    const { data, isLoading, refetch } = useQuery({
+        queryKey: splitGroupsQueryKey(loginUser?.id),
+        queryFn: async () => {
+            const { data } = await splitGroupApi.getAll();
+            return data.splitGroups;
+        },
+        enabled: !!loginUser,
+        staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
+    });
+
+    const splitGroups = data ?? [];
 
     const fetchSplitGroups = useCallback(async () => {
-        if (!loginUser) return;
-        setIsLoading(true);
-        try {
-            const { data } = await splitGroupApi.getAll();
-            setSplitGroups(data.splitGroups);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [loginUser]);
+        await refetch();
+    }, [refetch]);
+
+    const invalidate = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: splitGroupsQueryKey(loginUser?.id) });
+    }, [queryClient, loginUser?.id]);
 
     const addSplitGroup = useCallback(
         async (data: SplitGroupFormData) => {
-            if (!loginUser) return;
+            if (!loginUser) return undefined;
             try {
-                await splitGroupApi.create(data);
+                const { data: responseData } = await splitGroupApi.create(data);
                 showSnackBar({ title: '成功', bodyText: '分担グループを作成しました' });
-                await fetchSplitGroups();
+                invalidate();
+                return responseData.splitGroup;
             } catch {
                 showSnackBar({
                     title: 'エラー',
                     bodyText: '分担グループの作成に失敗しました',
                     backgroundColor: '#d32f2f',
                 });
+                return undefined;
             }
         },
-        [loginUser, showSnackBar, fetchSplitGroups]
+        [loginUser, showSnackBar, invalidate]
     );
 
     const editSplitGroup = useCallback(
@@ -75,7 +82,7 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
                 await splitGroupApi.update(id, data);
                 showSnackBar({ title: '成功', bodyText: '分担グループを更新しました' });
                 queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
-                await fetchSplitGroups();
+                invalidate();
             } catch {
                 showSnackBar({
                     title: 'エラー',
@@ -84,7 +91,7 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
                 });
             }
         },
-        [loginUser, showSnackBar, fetchSplitGroups, queryClient]
+        [loginUser, showSnackBar, invalidate, queryClient]
     );
 
     const saveSplitGroupSettings = useCallback(
@@ -94,7 +101,7 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
                 await splitGroupApi.updateSettings(id, data);
                 showSnackBar({ title: '成功', bodyText: '設定を保存しました' });
                 queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
-                await fetchSplitGroups();
+                invalidate();
             } catch {
                 showSnackBar({
                     title: 'エラー',
@@ -103,7 +110,7 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
                 });
             }
         },
-        [loginUser, showSnackBar, fetchSplitGroups, queryClient]
+        [loginUser, showSnackBar, invalidate, queryClient]
     );
 
     const removeSplitGroup = useCallback(
@@ -113,7 +120,7 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
                 await splitGroupApi.remove(id);
                 showSnackBar({ title: '成功', bodyText: '分担グループを削除しました' });
                 queryClient.invalidateQueries({ queryKey: ['splitGroupPreview'] });
-                await fetchSplitGroups();
+                invalidate();
             } catch {
                 showSnackBar({
                     title: 'エラー',
@@ -122,13 +129,8 @@ export const SplitGroupProvider = ({ children }: { children: ReactNode }) => {
                 });
             }
         },
-        [loginUser, showSnackBar, fetchSplitGroups, queryClient]
+        [loginUser, showSnackBar, invalidate, queryClient]
     );
-
-    useEffect(() => {
-        fetchSplitGroups();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [loginUser?.id]);
 
     return (
         <SplitGroupContext.Provider

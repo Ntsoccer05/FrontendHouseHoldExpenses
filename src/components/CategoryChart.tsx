@@ -16,6 +16,7 @@ import {
     MenuItem,
     Select,
     SelectChangeEvent,
+    Skeleton,
     Typography,
 } from "@mui/material";
 import { TransactionType } from "../types";
@@ -42,7 +43,8 @@ const CategoryChart = ({ viewType }: CategoryChartProps) => {
     const { isLoading } = useAppContext();
     // const monthlyTransactions = useMonthlyTransactions();
     // const yearlyTransactions = useYearlyTransactions();
-    const { monthlyTransactions, yearlyTransactions } = useTransactionContext();
+    const { monthlyTransactions, yearlyTransactions, isMonthlyLoading, isYearlyLoading } = useTransactionContext();
+    const isDataLoading = viewType === "monthly" ? isMonthlyLoading : isYearlyLoading;
 
     const [selectedType, setSelectedType] =
         useState<TransactionType>("expense");
@@ -164,6 +166,8 @@ const CategoryChart = ({ viewType }: CategoryChartProps) => {
             >
                 {isLoading ? (
                     <CircularProgress />
+                ) : isDataLoading ? (
+                    <Skeleton variant="circular" width={200} height={200} />
                 ) : monthlyTransactions.length > 0 ? (
                     <Pie data={data} options={options} />
                 ) : (

@@ -11,6 +11,7 @@ import TableRow from "@mui/material/TableRow";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
+import Skeleton from "@mui/material/Skeleton";
 import Checkbox from "@mui/material/Checkbox";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
@@ -460,13 +461,16 @@ interface Summary {
 }
 
 export default function TransactionTable({ viewType }: TransactionTableProps) {
-    const { 
-        onDeleteTransaction, 
-        monthlyTransactions, 
+    const {
+        onDeleteTransaction,
+        monthlyTransactions,
         yearlyTransactions,
         preMonthlyTransactions,
-        preYearlyTransactions
+        preYearlyTransactions,
+        isMonthlyLoading,
+        isYearlyLoading,
     } = useTransactionContext();
+    const isDataLoading = viewType === "monthly" ? isMonthlyLoading : isYearlyLoading;
     const { currentYear, currentMonth, isMobile } = useAppContext();
 
     const theme = useTheme();
@@ -760,6 +764,20 @@ export default function TransactionTable({ viewType }: TransactionTableProps) {
     }, [viewType, monthlyTransactions, yearlyTransactions, preMonthlyTransactions, preYearlyTransactions]);
 
     const { income, expense, balance } = comparisonData.current;
+
+    if (isDataLoading) {
+        return (
+            <Box sx={{ width: "100%" }}>
+                <Paper sx={{ width: "100%", mb: 2, p: 2 }}>
+                    <Skeleton variant="text" width="20%" height={32} />
+                    <Skeleton variant="rectangular" height={70} sx={{ my: 2, borderRadius: 1 }} />
+                    {[...Array(5)].map((_, i) => (
+                        <Skeleton key={i} variant="rectangular" height={40} sx={{ mb: 1, borderRadius: 1 }} />
+                    ))}
+                </Paper>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={{ width: "100%" }}>

@@ -13,7 +13,7 @@ import {
     calculateDailyBalances,
     calculateMonthlyBalances,
 } from "../utils/financeCalculations";
-import { Box, Typography, useTheme } from "@mui/material";
+import { Box, Skeleton, Typography, useTheme } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useAppContext } from "../context/AppContext";
 import { useTransactionContext } from "../context/TransactionContext";
@@ -31,7 +31,8 @@ interface BarChartProps {
 
 const BarChart = ({ viewType }: BarChartProps) => {
     const { isLoading } = useAppContext();
-    const { monthlyTransactions, yearlyTransactions } = useTransactionContext();
+    const { monthlyTransactions, yearlyTransactions, isMonthlyLoading, isYearlyLoading } = useTransactionContext();
+    const isDataLoading = viewType === "monthly" ? isMonthlyLoading : isYearlyLoading;
 
     const theme = useTheme();
     const options = {
@@ -106,6 +107,8 @@ const BarChart = ({ viewType }: BarChartProps) => {
         >
             {isLoading ? (
                 <CircularProgress />
+            ) : isDataLoading ? (
+                <Skeleton variant="rectangular" width="100%" height="100%" />
             ) : (
                   viewType === "monthly"
                       ? monthlyTransactions.length > 0

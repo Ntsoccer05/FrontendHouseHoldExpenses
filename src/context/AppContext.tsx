@@ -12,7 +12,6 @@ import {
     BaseUserCategory,
     CategoryItem,
     SnackBarState,
-    Transaction,
 } from "../types/index";
 import apiClient from "../utils/axios";
 import { useAuthContext } from "./AuthContext";
@@ -30,8 +29,6 @@ const defaultState: SnackBarState = {
 
 // コンテキストの型定義
 interface AppContextType {
-    transactions: Transaction[];
-    setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
     currentMonth: Date;
     setCurrentMonth: React.Dispatch<React.SetStateAction<Date>>;
     currentYear: Date;
@@ -62,7 +59,6 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
 
-    const [transactions, setTransactions] = React.useState<Transaction[]>([]);
     const [currentMonth, setCurrentMonth] = useSessionState<Date>(
         "currentMonth",
         new Date(),
@@ -149,8 +145,6 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     // Context Value をメモ化
     const contextValue = useMemo(
         () => ({
-            transactions,
-            setTransactions,
             currentMonth,
             setCurrentMonth,
             currentYear,
@@ -169,7 +163,6 @@ export const AppProvider = ({ children }: AppProviderProps) => {
             showSnackBar
         }),
         [
-            transactions,
             currentMonth,
             currentYear,
             isLoading,

@@ -11,6 +11,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   CircularProgress,
+  Skeleton,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
@@ -36,7 +37,10 @@ export const ComparisonSummary = ({ viewType, isMobile }: ComparisonSummaryProps
     yearlyTransactions,
     preMonthlyTransactions,
     preYearlyTransactions,
+    isMonthlyLoading,
+    isYearlyLoading,
   } = useTransactionContext();
+  const isDataLoading = viewType === "monthly" ? isMonthlyLoading : isYearlyLoading;
 
   const { currentMonth, currentYear } = useAppContext();
 
@@ -82,6 +86,19 @@ export const ComparisonSummary = ({ viewType, isMobile }: ComparisonSummaryProps
 
   const overallScore = getOverallScore();
   const scoreData = getScoreMessage(overallScore);
+
+  if (isDataLoading) {
+    return (
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Skeleton variant="text" width="30%" height={32} />
+          <Skeleton variant="text" width="50%" height={24} sx={{ mb: 2 }} />
+          <Skeleton variant="rectangular" height={80} sx={{ mb: 2, borderRadius: 1 }} />
+          <Skeleton variant="rectangular" height={140} sx={{ borderRadius: 1 }} />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card sx={{ mb: 2 }}>
