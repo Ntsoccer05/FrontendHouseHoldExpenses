@@ -202,18 +202,25 @@ const Calendar = memo(
         }, [monthlyTransactions, isLoading]);
 
         // FullCalendar用イベントをメモ化
+        // 月切り替え直後、まだ前月分のmonthlyTransactionsが残っている一瞬の間に
+        // 新しいグリッド(非当月のグレーセルを含む)へ古いデータが描画されるのを防ぐため、
+        // currentMonthと一致する日付のみに絞り込む
         const calendarEvents = useMemo(
             () =>
-                Object.keys(dailyBalances).map((date) => {
-                    const { income, expense, balance } = dailyBalances[date];
-                    return {
-                        start: date,
-                        income: formatCurrency(income),
-                        expense: formatCurrency(expense),
-                        balance: formatCurrency(balance),
-                    };
-                }),
-            [dailyBalances]
+                Object.keys(dailyBalances)
+                    .filter(
+                        (date) => currentMonth && isSameMonth(new Date(date), currentMonth)
+                    )
+                    .map((date) => {
+                        const { income, expense, balance } = dailyBalances[date];
+                        return {
+                            start: date,
+                            income: formatCurrency(income),
+                            expense: formatCurrency(expense),
+                            balance: formatCurrency(balance),
+                        };
+                    }),
+            [dailyBalances, currentMonth]
         );
 
         // ローディングが一定時間(150ms)続いた場合のみスケルトンを表示する。

@@ -36,7 +36,6 @@ const Home = () => {
         useState<Transaction | null>(null);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
     const { splitGroups } = useSplitGroupContext();
@@ -51,39 +50,39 @@ const Home = () => {
         null
     );
 
-    const { monthlyTransactions, getMonthlyTransactions } = useTransactionContext();
+    const { monthlyTransactions, loadedMonth } = useTransactionContext();
 
-
-    // 初期データの読み込み
+    // sessionStorageに前回セッションの表示月が残っている場合、今月に補正する。
+    // データ取得自体はCalendar側が currentMonth の変更を検知して行う。
     useEffect(() => {
-        const initializeData = async () => {
-            const currentDate = new Date();
-            const formattedDate = format(currentDate, "yyyyMM");
-            
-            try {
-                // 現在の月のデータを読み込み
-                await getMonthlyTransactions(formattedDate);
-                
-                // currentMonthが設定されていない場合は設定
-                if (!currentMonth || format(currentMonth, "yyyyMM") !== formattedDate) {
-                    setCurrentMonth(currentDate);
-                }
-            } catch (error) {
-                console.error('Failed to initialize data:', error);
-            } finally {
-                // 初期化完了を少し遅らせて確実にデータを表示
-                setTimeout(() => {
-                    setIsInitialLoad(false);
-                }, 200);
-            }
-        };
-
-        if (isInitialLoad && isAuthenticated) {
-            initializeData();
-        } else if (isInitialLoad && !isAuthenticated) {
-            setIsInitialLoad(false);
+        if (!isAuthenticated) return;
+        const currentDate = new Date();
+        const formattedDate = format(currentDate, "yyyyMM");
+        if (!currentMonth || format(currentMonth, "yyyyMM") !== formattedDate) {
+            setCurrentMonth(currentDate);
         }
-    }, [isInitialLoad, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // monthlyTransactionsがcurrentMonthのものとして揃っているか
+    // (loadedMonthはTransactionContext側でデータ確定時に更新される)
+    const isSummaryDataReady =
+        !!currentMonth && loadedMonth === format(currentMonth, "yyyyMM");
+
+    // ローディングが一定時間(150ms)続いた場合のみスケルトンを表示する。
+    // Calendar.tsxの日別スケルトンと同じ考え方(キャッシュヒット等の速い遷移ではチラつきを防ぐ)
+    const [showSummarySkeleton, setShowSummarySkeleton] = useState(false);
+    const summarySkeletonDelayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (!isSummaryDataReady) {
+            summarySkeletonDelayRef.current = setTimeout(() => setShowSummarySkeleton(true), 150);
+        } else {
+            if (summarySkeletonDelayRef.current) clearTimeout(summarySkeletonDelayRef.current);
+            setShowSummarySkeleton(false);
+        }
+        return () => {
+            if (summarySkeletonDelayRef.current) clearTimeout(summarySkeletonDelayRef.current);
+        };
+    }, [isSummaryDataReady]);
 
     // 一日分のデータを取得
     const dailyTransactions = useMemo(() => {
@@ -222,7 +221,10 @@ const Home = () => {
             <Box sx={{ display: "flex" }}>
                 {/* 左側コンテンツ */}
                 <Box sx={{ flexGrow: 1, fontSize: { xs: "12px", sm: "1em" } }}>
-                    <MonthlySummary monthlyTransactions={monthlyTransactions} />
+                    <MonthlySummary
+                        monthlyTransactions={monthlyTransactions}
+                        isLoading={showSummarySkeleton}
+                    />
                     {/* 収支共有ボタン */}
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: { xs: -0.5, sm: 0.5 } }}>
                         <Button
@@ -251,21 +253,15 @@ const Home = () => {
                             mx: { xs: -2, sm: 0 },
                             width: { xs: "calc(100% + 32px)", sm: "100%" },
                             overflowX: "hidden",
-                            // 初期読み込み中の表示制御
-                            opacity: isInitialLoad ? 0.5 : 1,
-                            transition: "opacity 0.3s ease-in-out",
                         }}
                     >
-                        {/* 初期データが読み込まれてからカレンダーを表示 */}
-                        {!isInitialLoad && (
-                            <Calendar
-                                setCurrentDay={setCurrentDay}
-                                currentDay={currentDay}
-                                today={today}
-                                onDateClick={handleDateClick}
-                                calendarRef={calendarRef as React.RefObject<FullCalendar>}
-                            />
-                        )}
+                        <Calendar
+                            setCurrentDay={setCurrentDay}
+                            currentDay={currentDay}
+                            today={today}
+                            onDateClick={handleDateClick}
+                            calendarRef={calendarRef as React.RefObject<FullCalendar>}
+                        />
                     </Box>
                 </Box>
                 {/* 右側コンテンツ */}

@@ -1,4 +1,4 @@
-import { Card, CardContent, Grid, Stack, Typography } from "@mui/material";
+import { Card, CardContent, Grid, Skeleton, Stack, Typography } from "@mui/material";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
@@ -7,8 +7,9 @@ import { financeCalculations } from "../utils/financeCalculations";
 import { formatCurrency } from "../utils/formatting";
 interface MonthlySummaryProps {
     monthlyTransactions: Transaction[];
+    isLoading?: boolean;
 }
-const MonthlySummary = ({ monthlyTransactions }: MonthlySummaryProps) => {
+const MonthlySummary = ({ monthlyTransactions, isLoading = false }: MonthlySummaryProps) => {
     const { income, expense, balance } =
         financeCalculations(monthlyTransactions);
     return (
@@ -48,7 +49,15 @@ const MonthlySummary = ({ monthlyTransactions }: MonthlySummaryProps) => {
                                 },
                             }}
                         >
-                            ¥{formatCurrency(income)}
+                            {isLoading ? (
+                                <Skeleton
+                                    variant="text"
+                                    width="60%"
+                                    sx={{ ml: "auto", bgcolor: "rgba(255,255,255,0.35)" }}
+                                />
+                            ) : (
+                                `¥${formatCurrency(income)}`
+                            )}
                         </Typography>
                     </CardContent>
                 </Card>
@@ -88,7 +97,15 @@ const MonthlySummary = ({ monthlyTransactions }: MonthlySummaryProps) => {
                                 },
                             }}
                         >
-                            ¥{formatCurrency(expense)}
+                            {isLoading ? (
+                                <Skeleton
+                                    variant="text"
+                                    width="60%"
+                                    sx={{ ml: "auto", bgcolor: "rgba(255,255,255,0.35)" }}
+                                />
+                            ) : (
+                                `¥${formatCurrency(expense)}`
+                            )}
                         </Typography>
                     </CardContent>
                 </Card>
@@ -128,7 +145,15 @@ const MonthlySummary = ({ monthlyTransactions }: MonthlySummaryProps) => {
                                 },
                             }}
                         >
-                            ¥{formatCurrency(balance)}
+                            {isLoading ? (
+                                <Skeleton
+                                    variant="text"
+                                    width="60%"
+                                    sx={{ ml: "auto", bgcolor: "rgba(255,255,255,0.35)" }}
+                                />
+                            ) : (
+                                `¥${formatCurrency(balance)}`
+                            )}
                         </Typography>
                     </CardContent>
                 </Card>

@@ -34,6 +34,9 @@ interface TransactionContext {
     refreshMonthCache: (yearMonth: string) => Promise<void>;
     monthlyTransactions: Transaction[];
     isMonthlyLoading: boolean;
+    // monthlyTransactionsが実際にどの月("yyyyMM")のデータかを示す。
+    // currentMonthと一致するかどうかで「表示中の月のデータが揃っているか」を判定できる
+    loadedMonth: string | null;
     getYearlyTransactions: (currentYear: string) => Promise<Transaction[]>;
     yearlyTransactions: Transaction[];
     isYearlyLoading: boolean;
@@ -62,6 +65,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
     const [monthlyTransactions, setMonthlyTransactions] = useState<
         Transaction[]
     >([]);
+    const [loadedMonth, setLoadedMonth] = useState<string | null>(null);
 
     const [yearlyTransactions, setYearlyTransactions] = useState<Transaction[]>(
         []
@@ -144,6 +148,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
         if (monthCacheRef.current.has(currentMonth)) {
             const cachedData = monthCacheRef.current.get(currentMonth)!;
             setMonthlyTransactions(cachedData);
+            setLoadedMonth(currentMonth);
             const prevMonth = getPreviousMonth(currentMonth);
             setPreMonthlyTransactions(monthCacheRef.current.get(prevMonth) || []);
             setIsMonthlyLoading(false);
@@ -177,6 +182,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 // もう表示対象ではないため画面に反映せず破棄する
                 if (latestRequestedMonthRef.current === currentMonth) {
                     setMonthlyTransactions(currentMonthData);
+                    setLoadedMonth(currentMonth);
                     const prevMonth = getPreviousMonth(currentMonth);
                     setPreMonthlyTransactions(
                         monthCacheRef.current.get(prevMonth) || []
@@ -187,6 +193,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 console.error("Error fetching monthly transactions:", err);
                 if (latestRequestedMonthRef.current === currentMonth) {
                     setMonthlyTransactions([]);
+                    setLoadedMonth(currentMonth);
                     setPreMonthlyTransactions([]);
                 }
                 return [];
@@ -221,6 +228,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
             const currentMonthFormatted = format(currentMonth, "yyyyMM");
             if (yearMonth === currentMonthFormatted) {
                 setMonthlyTransactions(data);
+                setLoadedMonth(yearMonth);
             }
         } catch (err) {
             console.warn(`Failed to prefetch month ${yearMonth}:`, err);
@@ -241,6 +249,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
             const currentMonthFormatted = format(currentMonth, "yyyyMM");
             if (yearMonth === currentMonthFormatted) {
                 setMonthlyTransactions(data);
+                setLoadedMonth(yearMonth);
             }
         } catch {
             // サイレント失敗（次回 getMonthlyTransactions で bulk 再取得）
@@ -456,6 +465,7 @@ export const TransactionProvider = ({ children }: TransactionProviderProps) => {
                 refreshMonthCache,
                 monthlyTransactions,
                 isMonthlyLoading,
+                loadedMonth,
                 getYearlyTransactions,
                 yearlyTransactions,
                 isYearlyLoading,
