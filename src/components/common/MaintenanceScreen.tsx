@@ -1,10 +1,17 @@
 import { Box, Card, CardContent, Typography } from "@mui/material";
 import BuildIcon from "@mui/icons-material/Build";
-import { MAINTENANCE_SCHEDULE } from "../../config/maintenance";
+import { MAINTENANCE_SCHEDULE, MaintenanceWindow } from "../../config/maintenance";
+
+function formatWindows(windows: readonly MaintenanceWindow[]): string {
+  return windows
+    .map(
+      ({ startHour, startMinute, endHour, endMinute }) =>
+        `${startHour}:${String(startMinute).padStart(2, "0")} 〜 ${endHour}:${String(endMinute).padStart(2, "0")}`
+    )
+    .join(" / ");
+}
 
 export default function MaintenanceScreen() {
-  const { startHour, startMinute, endHour, endMinute } = MAINTENANCE_SCHEDULE;
-
   return (
     <Box
       sx={{
@@ -38,8 +45,14 @@ export default function MaintenanceScreen() {
             <Typography variant="body2" color="text.secondary" gutterBottom>
               メンテナンス時間
             </Typography>
-            <Typography variant="h6" color="primary.main" fontWeight="bold">
-              毎日 {startHour}:{String(startMinute).padStart(2, "0")} 〜 {endHour}:{String(endMinute).padStart(2, "0")} (JST)
+            <Typography variant="body1" color="primary.main" fontWeight="bold">
+              平日 {formatWindows(MAINTENANCE_SCHEDULE.weekday)}
+            </Typography>
+            <Typography variant="body1" color="primary.main" fontWeight="bold">
+              土日祝 {formatWindows(MAINTENANCE_SCHEDULE.holiday)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              (JST)
             </Typography>
           </Box>
           <Typography variant="body2" color="text.secondary">
