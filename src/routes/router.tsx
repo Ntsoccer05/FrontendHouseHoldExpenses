@@ -16,7 +16,7 @@ import { TransactionProvider } from "../context/TransactionContext";
 import { PrivateRoute } from "./PrivateRoute";
 import { AuthProvider } from "../context/AuthContext";
 import { HelmetProvider } from "react-helmet-async";
-// import MaintenanceGuard from "../components/common/MaintenanceGuard"; // メンテナンス時間終了のため無効化
+import MaintenanceGuard from "../components/common/MaintenanceGuard";
 import { FixedExpenseProvider } from "../context/FixedExpenseContext";
 import { SplitGroupProvider } from "../context/SplitGroupContext";
 import PageSkeleton from "../components/common/PageSkeleton";
@@ -47,7 +47,7 @@ function DefineRouter() {
         <HelmetProvider>
             <ThemeProvider theme={theme}>
                 <CssBaseline />
-                {/* <MaintenanceGuard> */}
+                <MaintenanceGuard>
                     <Router>
                     <AuthProvider>
                         {/* AppProviderで囲まれている中でvalueで設定した値をグローバルに参照できる */}
@@ -167,7 +167,7 @@ function DefineRouter() {
                         </AppProvider>
                     </AuthProvider>
                     </Router>
-                {/* </MaintenanceGuard> */}
+                </MaintenanceGuard>
             </ThemeProvider>
         </HelmetProvider>
         </QueryClientProvider>
